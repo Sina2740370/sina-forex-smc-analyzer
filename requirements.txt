@@ -6,3 +6,4 @@ yfinance
 apscheduler
 httpx
 python-dotenv
+requests
