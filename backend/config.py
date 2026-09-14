@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================================
-#  FRED API
+#  FRED API (fallback داخل کد)
 # ============================================================
-FRED_API_KEY = os.getenv("FRED_API_KEY", "")
+FRED_API_KEY = os.getenv("FRED_API_KEY", "efd75b3fd5aa542e2d803b7d53a892aa")
 
 # ============================================================
 #  نمادهای فارکس (۱۰ جفت‌ارز + طلا)
