@@ -1,12 +1,24 @@
 """
-تنظیمات پروژه - Top-Down SMC/ICT Analysis
+تنظیمات پروژه - Sina Quant
 """
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# ============================================================
+#  API Keys
+# ============================================================
 FRED_API_KEY = os.getenv("FRED_API_KEY", "efd75b3fd5aa542e2d803b7d53a892aa")
+
+# ============================================================
+#  Telegram Notifications
+# ============================================================
+TELEGRAM_BOT_TOKEN = os.getenv(
+    "TELEGRAM_BOT_TOKEN",
+    "8914305119:AAHNP1bba8m13wUMqx0CUrfv923ZP_cKQyk"
+)
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "6362801737")
 
 # ============================================================
 #  نمادها
@@ -26,18 +38,16 @@ SYMBOLS = {
 }
 
 # ============================================================
-#  تایم‌فریم‌های 5گانه (Top-Down)
+#  تایم‌فریم‌ها (Top-Down)
 # ============================================================
 TIMEFRAMES = ["1wk", "1d", "4h", "1h", "15m"]
-
-# ⚠️ HTF از 1h به 4h تغییر کرد (کیفیت بالاتر)
 SYMBOL_TIMEFRAMES = {sym: TIMEFRAMES for sym in SYMBOLS.keys()}
 
 MIN_CANDLES = 60
 CANDLE_LIMIT = 200
 
 # ============================================================
-#  تنظیمات تست
+#  تست
 # ============================================================
 TEST_DURATION_DAYS = int(os.getenv("TEST_DURATION_DAYS", 20))
 MIN_WIN_RATE = float(os.getenv("MIN_WIN_RATE", 0.65))
@@ -46,7 +56,7 @@ MIN_PROFIT_FACTOR = float(os.getenv("MIN_PROFIT_FACTOR", 1.5))
 MAX_DRAWDOWN = float(os.getenv("MAX_DRAWDOWN", 0.15))
 
 # ============================================================
-#  آستانه سیگنال - حفظ کیفیت
+#  آستانه سیگنال
 # ============================================================
 MIN_SIGNAL_SCORE = 0.55
 RISK_REWARD = 2.0
@@ -54,7 +64,7 @@ SL_ATR_MULTIPLIER = 1.5
 SL_OB_BUFFER = 0.3
 
 # ============================================================
-#  کش هوشمند (دقیقه)
+#  کش هوشمند
 # ============================================================
 CACHE_TTL = {
     "1wk": 240,
@@ -85,7 +95,7 @@ DB_PATH = os.getenv("DB_PATH", "signals.db")
 SCAN_INTERVAL_MINUTES = 15
 
 # ============================================================
-#  وزن لایه‌های تحلیل
+#  وزن لایه‌ها
 # ============================================================
 WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.60))
 WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.15))
