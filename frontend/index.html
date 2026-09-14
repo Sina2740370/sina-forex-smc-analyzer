@@ -6,17 +6,17 @@
   <meta name="theme-color" content="#0a0e17">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SMC Forex">
+  <meta name="apple-mobile-web-app-title" content="Sina Quant">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/static/style.css">
-  <title>SMC Forex Analyzer</title>
+  <title>Sina Quant</title>
 </head>
 <body>
 
 <header>
   <div class="logo">
     <span class="logo-icon">📊</span>
-    <h1>SMC Forex</h1>
+    <h1>Sina Quant</h1>
   </div>
   <button id="refreshBtn" class="icon-btn" aria-label="بازخوانی">
     <span class="refresh-icon">🔄</span>
@@ -40,7 +40,6 @@
 
 <main>
 
-  <!-- ==== تب لحظه‌ای ==== -->
   <section id="tab-live" class="tab-content active">
     <div id="scanInfo" class="scan-info"></div>
     <div id="loading" class="spinner">
@@ -52,7 +51,6 @@
     <div id="cards"></div>
   </section>
 
-  <!-- ==== تب سیگنال‌ها ==== -->
   <section id="tab-signals" class="tab-content">
     <div class="filter-bar">
       <button class="filter-btn active" data-filter="all">همه</button>
@@ -63,7 +61,6 @@
     <div id="signalsList"></div>
   </section>
 
-  <!-- ==== تب آمار ==== -->
   <section id="tab-stats" class="tab-content">
     <div id="statsContent"></div>
   </section>
@@ -72,14 +69,13 @@
 
 <footer>
   <div class="footer-info">
-    <span>SMC Forex Analyzer v1.0</span>
+    <span>Sina Quant v1.0</span>
     <span id="lastUpdate">-</span>
   </div>
 </footer>
 
 <script src="/static/app.js"></script>
 <script>
-  // ثبت Service Worker برای PWA
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
@@ -90,4 +86,4 @@
 </script>
 
 </body>
-  </html>
+</html>
