@@ -1,0 +1,161 @@
+"""
+مدیریت دیتابیس SQLite برای ذخیره سیگنال‌ها
+"""
+import sqlite3
+import logging
+from datetime import datetime
+from contextlib import contextmanager
+from .config import DB_PATH
+
+logger = logging.getLogger(__name__)
+
+
+def init_db():
+    """ساخت جداول در اولین اجرا"""
+    with get_conn() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            name TEXT,
+            direction TEXT NOT NULL,
+            entry REAL NOT NULL,
+            sl REAL NOT NULL,
+            tp REAL NOT NULL,
+            score REAL NOT NULL,
+            reasons TEXT,
+            created_at TEXT NOT NULL,
+            closed_at TEXT,
+            status TEXT DEFAULT 'OPEN',
+            exit_price REAL,
+            pnl_pips REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            currency TEXT,
+            impact TEXT,
+            event_time TEXT,
+            fetched_at TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_signals_symbol ON signals(symbol);
+        CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
+        CREATE INDEX IF NOT EXISTS idx_signals_created ON signals(created_at);
+        """)
+    logger.info("✅ دیتابیس آماده شد")
+
+
+@contextmanager
+def get_conn():
+    """اتصال به دیتابیس با auto-commit/rollback"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"خطا در دیتابیس: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
+    """ثبت سیگنال جدید"""
+    with get_conn() as conn:
+        cur = conn.execute("""
+            INSERT INTO signals
+            (symbol, name, direction, entry, sl, tp, score, reasons, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            symbol, name, direction, entry, sl, tp, score,
+            "|".join(reasons) if isinstance(reasons, list) else reasons,
+            datetime.utcnow().isoformat()
+        ))
+        return cur.lastrowid
+
+
+def get_open_signals():
+    """همه سیگنال‌های باز"""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM signals WHERE status = 'OPEN' ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_all_signals(limit: int = 200):
+    """همه سیگنال‌ها (برای نمایش در اپ)"""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM signals ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def close_signal(signal_id, exit_price, pnl_pips, status):
+    """بستن سیگنال با WIN یا LOSS"""
+    with get_conn() as conn:
+        conn.execute("""
+            UPDATE signals
+            SET status = ?, exit_price = ?, pnl_pips = ?, closed_at = ?
+            WHERE id = ?
+        """, (
+            status, exit_price, pnl_pips,
+            datetime.utcnow().isoformat(), signal_id
+        ))
+
+
+def get_stats_summary():
+    """آمار کلی برای نمایش در اپ"""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT status, pnl_pips FROM signals WHERE status != 'OPEN'
+        """).fetchall()
+
+    if not rows:
+        return {
+            "total": 0, "wins": 0, "losses": 0,
+            "win_rate": 0.0, "profit_factor": 0.0,
+            "total_pips": 0.0, "open_signals": 0,
+        }
+
+    wins = [r["pnl_pips"] for r in rows if r["status"] == "WIN" and r["pnl_pips"]]
+    losses = [r["pnl_pips"] for r in rows if r["status"] == "LOSS" and r["pnl_pips"]]
+
+    total = len(rows)
+    gross_profit = sum(p for p in wins if p > 0)
+    gross_loss = abs(sum(p for p in losses if p < 0))
+    pf = gross_profit / gross_loss if gross_loss > 0 else 0.0
+
+    # تعداد سیگنال‌های باز
+    with get_conn() as conn:
+        open_count = conn.execute(
+            "SELECT COUNT(*) as c FROM signals WHERE status = 'OPEN'"
+        ).fetchone()["c"]
+
+    return {
+        "total": total,
+        "wins": len(wins),
+        "losses": len(losses),
+        "win_rate": round(len(wins) / total, 4) if total else 0.0,
+        "profit_factor": round(pf, 2),
+        "total_pips": round(sum(wins) + sum(losses), 1),
+        "open_signals": open_count,
+    }
+
+
+def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
+    """سیگنال‌های اخیر یه نماد (برای جلوگیری از تکرار)"""
+    from datetime import timedelta
+    cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT * FROM signals
+            WHERE symbol = ? AND created_at > ?
+        """, (symbol, cutoff)).fetchall()
+        return [dict(r) for r in rows]
