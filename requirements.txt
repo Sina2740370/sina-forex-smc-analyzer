@@ -1,8 +1,8 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-pandas==2.2.1
-numpy==1.26.4
-yfinance==0.2.35
-apscheduler==3.10.4
-httpx==0.26.0
-python-dotenv==1.0.0
+fastapi
+uvicorn[standard]
+pandas
+numpy
+yfinance
+apscheduler
+httpx
+python-dotenv
