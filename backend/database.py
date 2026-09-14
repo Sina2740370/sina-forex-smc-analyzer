@@ -3,7 +3,7 @@
 """
 import sqlite3
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from contextlib import contextmanager
 from .config import DB_PATH
 
@@ -111,47 +111,55 @@ def close_signal(signal_id, exit_price, pnl_pips, status):
 
 
 def get_stats_summary():
-    """آمار کلی برای نمایش در اپ"""
+    """آمار کلی برای نمایش در اپ - نسخه اصلاح‌شده"""
     with get_conn() as conn:
         rows = conn.execute("""
-            SELECT status, pnl_pips FROM signals WHERE status != 'OPEN'
+            SELECT status, pnl_pips FROM signals
+            WHERE status IN ('WIN', 'LOSS')
         """).fetchall()
 
-    if not rows:
-        return {
-            "total": 0, "wins": 0, "losses": 0,
-            "win_rate": 0.0, "profit_factor": 0.0,
-            "total_pips": 0.0, "open_signals": 0,
-        }
-
-    wins = [r["pnl_pips"] for r in rows if r["status"] == "WIN" and r["pnl_pips"]]
-    losses = [r["pnl_pips"] for r in rows if r["status"] == "LOSS" and r["pnl_pips"]]
-
     total = len(rows)
-    gross_profit = sum(p for p in wins if p > 0)
-    gross_loss = abs(sum(p for p in losses if p < 0))
-    pf = gross_profit / gross_loss if gross_loss > 0 else 0.0
 
-    # تعداد سیگنال‌های باز
     with get_conn() as conn:
         open_count = conn.execute(
             "SELECT COUNT(*) as c FROM signals WHERE status = 'OPEN'"
         ).fetchone()["c"]
 
+    if total == 0:
+        return {
+            "total": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "total_pips": 0.0,
+            "open_signals": open_count,
+        }
+
+    # جدا کردن برد و باخت - بدون فیلتر اشتباه
+    wins_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "WIN"]
+    losses_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "LOSS"]
+
+    wins_count = len(wins_list)
+    losses_count = len(losses_list)
+
+    gross_profit = sum(p for p in wins_list if p > 0)
+    gross_loss = abs(sum(p for p in losses_list if p < 0))
+    pf = gross_profit / gross_loss if gross_loss > 0 else 0.0
+
     return {
         "total": total,
-        "wins": len(wins),
-        "losses": len(losses),
-        "win_rate": round(len(wins) / total, 4) if total else 0.0,
+        "wins": wins_count,
+        "losses": losses_count,
+        "win_rate": round(wins_count / total, 4) if total else 0.0,
         "profit_factor": round(pf, 2),
-        "total_pips": round(sum(wins) + sum(losses), 1),
+        "total_pips": round(sum(wins_list) + sum(losses_list), 1),
         "open_signals": open_count,
     }
 
 
 def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
     """سیگنال‌های اخیر یه نماد (برای جلوگیری از تکرار)"""
-    from datetime import timedelta
     cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
     with get_conn() as conn:
         rows = conn.execute("""
