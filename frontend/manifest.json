@@ -1,7 +1,7 @@
 {
-  "name": "SMC Forex Analyzer",
-  "short_name": "SMC Forex",
-  "description": "تحلیل تکنیکال فارکس با سبک SMC/ICT",
+  "name": "Sina Quant",
+  "short_name": "Sina Quant",
+  "description": "Quantitative Forex Analysis with SMC/ICT",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -13,16 +13,16 @@
   "categories": ["finance", "business"],
   "icons": [
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjM4IiBmaWxsPSIjMGExMDE3Ii8+PHRleHQgeD0iOTYiIHk9IjEyMCIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+SjDwvdGV4dD48L3N2Zz4=",
-      "sizes": "192x192",
+      "src": "/static/icon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzBhMTAxNyIvPjx0ZXh0IHg9IjI1NiIgeT0iMzIwIiBmb250LXNpemU9IjI0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+SjDwvdGV4dD48L3N2Zz4=",
-      "sizes": "512x512",
+      "src": "/static/icon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
