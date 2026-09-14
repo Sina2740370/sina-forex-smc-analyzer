@@ -1,14 +1,15 @@
 """
-زمان‌بند خودکار: اسکن بازار + رصد سیگنال‌ها
+زمان‌بند خودکار - نسخه Top-Down
+اسکن 5 تایم‌فریم + رصد سیگنال‌ها
 """
 import logging
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .config import (
-    SYMBOLS, SYMBOL_TIMEFRAMES, SCAN_INTERVAL_MINUTES
+    SYMBOLS, SCAN_INTERVAL_MINUTES, TIMEFRAMES
 )
-from .data_fetcher import fetch_multi_timeframe
+from .data_fetcher import fetch_topdown, get_cache_stats
 from .analysis_engine import full_analysis
 from .news_fetcher import fetch_news, is_news_safe
 from .signal_tracker import check_open_signals, is_duplicate_signal
@@ -23,12 +24,13 @@ _scan_stats = {
     "last_scan_time": None,
     "signals_today": 0,
     "errors": 0,
+    "timeframes": TIMEFRAMES,
 }
 
 
 async def scan_market():
-    logger.info("=" * 50)
-    logger.info("🔍 شروع اسکن بازار...")
+    logger.info("=" * 55)
+    logger.info("🔍 شروع اسکن Top-Down (5 تایم‌فریم)...")
     start_time = datetime.now(timezone.utc)
 
     news = await fetch_news()
@@ -36,34 +38,45 @@ async def scan_market():
 
     signals_created = 0
     errors = 0
+    blocked = 0
 
     for symbol, name in SYMBOLS.items():
         try:
             result = await _scan_symbol(symbol, name, news)
-            if result:
-                _last_scan[symbol] = result
 
-                if result.get("direction"):
-                    if not is_duplicate_signal(symbol, result["direction"], hours=4):
-                        insert_signal(
-                            symbol=symbol,
-                            name=name,
-                            direction=result["direction"],
-                            entry=result["current_price"],
-                            sl=result["suggested_sl"],
-                            tp=result["suggested_tp"],
-                            score=result["score"],
-                            reasons=result.get("reasons", []),
-                        )
-                        signals_created += 1
-                        logger.info(
-                            f"✅ سیگنال: {name} {result['direction']} "
-                            f"@ {result['current_price']} | امتیاز {result['score']}"
-                        )
+            if result is None:
+                continue
+
+            _last_scan[symbol] = result
+
+            # چک سیگنال
+            if result.get("direction"):
+                if not is_duplicate_signal(symbol, result["direction"], hours=4):
+                    insert_signal(
+                        symbol=symbol,
+                        name=name,
+                        direction=result["direction"],
+                        entry=result["current_price"],
+                        sl=result["suggested_sl"],
+                        tp=result["suggested_tp"],
+                        score=result["score"],
+                        reasons=result.get("reasons", []),
+                    )
+                    signals_created += 1
+                    logger.info(
+                        f"✅ سیگنال: {name} {result['direction']} "
+                        f"@ {result['current_price']} | امتیاز {result['score']}"
+                    )
+            else:
+                # شمارش اسکن‌های بلاک‌شده
+                if result.get("htf_trend") == "CONFLICT":
+                    blocked += 1
+
         except Exception as e:
             errors += 1
             logger.error(f"خطا در اسکن {name}: {e}")
 
+    # رصد سیگنال‌های باز
     try:
         check_open_signals()
     except Exception as e:
@@ -75,35 +88,44 @@ async def scan_market():
     _scan_stats["signals_today"] += signals_created
     _scan_stats["errors"] += errors
 
+    # آمار کش
+    cache = get_cache_stats()
+
     logger.info(
         f"✔️ اسکن تمام شد ({elapsed:.1f}s) | "
-        f"سیگنال: {signals_created} | خطا: {errors}"
+        f"سیگنال: {signals_created} | "
+        f"بلاک‌شده: {blocked} | "
+        f"خطا: {errors} | "
+        f"کش: {cache['size']}"
     )
-    logger.info("=" * 50)
+    logger.info("=" * 55)
 
 
 async def _scan_symbol(symbol, name, news):
-    htf, ltf = SYMBOL_TIMEFRAMES.get(symbol, ("1h", "15m"))
-
-    data = fetch_multi_timeframe(symbol, htf, ltf)
+    """اسکن یه نماد با 5 تایم‌فریم"""
+    # دریافت داده Top-Down
+    data = fetch_topdown(symbol)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None
 
+    # فیلتر اخبار
     safe, news_reason = is_news_safe(news, symbol, buffer_min=30)
 
+    # تحلیل کامل 4 لایه
     result = await full_analysis(
-        data["htf"], data["ltf"], symbol,
-        news_safe=safe, news_reason=news_reason,
+        data, symbol,
+        news_safe=safe,
+        news_reason=news_reason,
     )
 
-    if result.get("score") is None:
+    if result.get("score") is None and result.get("score") != 0.0:
         return None
 
+    # اضافه کردن متادیتا
     result["symbol"] = symbol
     result["name"] = name
-    result["htf_tf"] = htf
-    result["ltf_tf"] = ltf
+    result["timeframes"] = TIMEFRAMES
     result["scanned_at"] = datetime.now(timezone.utc).isoformat()
     result["news_safe"] = safe
 
@@ -125,7 +147,10 @@ def start_scheduler():
         replace_existing=True,
     )
     _scheduler.start()
-    logger.info(f"⏰ Scheduler شروع شد (هر {SCAN_INTERVAL_MINUTES} دقیقه)")
+    logger.info(
+        f"⏰ Scheduler شروع شد (هر {SCAN_INTERVAL_MINUTES} دقیقه)\n"
+        f"📊 تایم‌فریم‌ها: {' → '.join(TIMEFRAMES)}"
+    )
 
 
 def stop_scheduler():
