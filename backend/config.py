@@ -55,9 +55,9 @@ MIN_PROFIT_FACTOR = float(os.getenv("MIN_PROFIT_FACTOR", 1.5))
 MAX_DRAWDOWN = float(os.getenv("MAX_DRAWDOWN", 0.15))
 
 # ============================================================
-#  آستانه سیگنال
+#  آستانه سیگنال (تعدیل‌شده)
 # ============================================================
-MIN_SIGNAL_SCORE = 0.65
+MIN_SIGNAL_SCORE = 0.55
 RISK_REWARD = 2.0
 SL_ATR_MULTIPLIER = 1.5
 SL_OB_BUFFER = 0.3
@@ -104,9 +104,9 @@ DB_PATH = os.getenv("DB_PATH", "signals.db")
 SCAN_INTERVAL_MINUTES = 15
 
 # ============================================================
-#  وزن لایه‌های تحلیل
+#  وزن لایه‌های تحلیل (تعدیل‌شده)
 # ============================================================
-WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.40))
-WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.20))
-WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.25))
-WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.15))
+WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.60))
+WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.15))
+WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.15))
+WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.10))
