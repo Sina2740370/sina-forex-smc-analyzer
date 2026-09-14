@@ -1,6 +1,5 @@
 """
-زمان‌بند خودکار - نسخه Top-Down
-اسکن 5 تایم‌فریم + رصد سیگنال‌ها
+زمان‌بند خودکار با Notification
 """
 import logging
 from datetime import datetime, timezone
@@ -14,6 +13,7 @@ from .analysis_engine import full_analysis
 from .news_fetcher import fetch_news, is_news_safe
 from .signal_tracker import check_open_signals, is_duplicate_signal
 from .database import insert_signal
+from .notifier import notify_new_signal, notify_startup
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,22 @@ _scan_stats = {
     "errors": 0,
     "timeframes": TIMEFRAMES,
 }
+_notified_startup = False
 
 
 async def scan_market():
+    global _notified_startup
+
     logger.info("=" * 55)
-    logger.info("🔍 شروع اسکن Top-Down (5 تایم‌فریم)...")
+    logger.info("🔍 شروع اسکن Top-Down...")
     start_time = datetime.now(timezone.utc)
+
+    if not _notified_startup:
+        try:
+            await notify_startup()
+            _notified_startup = True
+        except Exception as e:
+            logger.error(f"خطا در پیام شروع: {e}")
 
     news = await fetch_news()
     logger.info(f"📰 {len(news)} خبر بارگذاری شد")
@@ -43,13 +53,11 @@ async def scan_market():
     for symbol, name in SYMBOLS.items():
         try:
             result = await _scan_symbol(symbol, name, news)
-
             if result is None:
                 continue
 
             _last_scan[symbol] = result
 
-            # چک سیگنال
             if result.get("direction"):
                 if not is_duplicate_signal(symbol, result["direction"], hours=4):
                     insert_signal(
@@ -63,12 +71,28 @@ async def scan_market():
                         reasons=result.get("reasons", []),
                     )
                     signals_created += 1
+
                     logger.info(
                         f"✅ سیگنال: {name} {result['direction']} "
                         f"@ {result['current_price']} | امتیاز {result['score']}"
                     )
+
+                    try:
+                        await notify_new_signal(
+                            symbol=symbol,
+                            name=name,
+                            direction=result["direction"],
+                            entry=result["current_price"],
+                            sl=result["suggested_sl"],
+                            tp=result["suggested_tp"],
+                            score=result["score"],
+                            reasons=result.get("reasons", []),
+                            trend=result.get("htf_trend", "-"),
+                            zone=result.get("zone", "-"),
+                        )
+                    except Exception as e:
+                        logger.error(f"خطا در ارسال نوتیف: {e}")
             else:
-                # شمارش اسکن‌های بلاک‌شده
                 if result.get("htf_trend") == "CONFLICT":
                     blocked += 1
 
@@ -76,9 +100,8 @@ async def scan_market():
             errors += 1
             logger.error(f"خطا در اسکن {name}: {e}")
 
-    # رصد سیگنال‌های باز
     try:
-        check_open_signals()
+        await check_open_signals_and_notify()
     except Exception as e:
         logger.error(f"خطا در رصد سیگنال‌ها: {e}")
 
@@ -88,7 +111,6 @@ async def scan_market():
     _scan_stats["signals_today"] += signals_created
     _scan_stats["errors"] += errors
 
-    # آمار کش
     cache = get_cache_stats()
 
     logger.info(
@@ -101,18 +123,44 @@ async def scan_market():
     logger.info("=" * 55)
 
 
+async def check_open_signals_and_notify():
+    """رصد سیگنال‌ها + نوتیف بسته شدن"""
+    from .database import get_open_signals, get_all_signals
+    from .notifier import notify_signal_closed
+
+    before = {s["id"] for s in get_open_signals()}
+    check_open_signals()
+    after_open = {s["id"] for s in get_open_signals()}
+    closed_ids = before - after_open
+
+    if not closed_ids:
+        return
+
+    all_signals = get_all_signals(limit=50)
+    for sig in all_signals:
+        if sig["id"] in closed_ids and sig["status"] in ("WIN", "LOSS"):
+            try:
+                await notify_signal_closed(
+                    symbol=sig["symbol"],
+                    name=sig.get("name", sig["symbol"]),
+                    direction=sig["direction"],
+                    status=sig["status"],
+                    pnl_pips=sig.get("pnl_pips") or 0,
+                    entry=sig["entry"],
+                    exit_price=sig.get("exit_price") or sig["entry"],
+                )
+            except Exception as e:
+                logger.error(f"خطا در نوتیف بسته شدن: {e}")
+
+
 async def _scan_symbol(symbol, name, news):
-    """اسکن یه نماد با 5 تایم‌فریم"""
-    # دریافت داده Top-Down
     data = fetch_topdown(symbol)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None
 
-    # فیلتر اخبار
     safe, news_reason = is_news_safe(news, symbol, buffer_min=30)
 
-    # تحلیل کامل 4 لایه
     result = await full_analysis(
         data, symbol,
         news_safe=safe,
@@ -122,7 +170,6 @@ async def _scan_symbol(symbol, name, news):
     if result.get("score") is None and result.get("score") != 0.0:
         return None
 
-    # اضافه کردن متادیتا
     result["symbol"] = symbol
     result["name"] = name
     result["timeframes"] = TIMEFRAMES
@@ -148,8 +195,7 @@ def start_scheduler():
     )
     _scheduler.start()
     logger.info(
-        f"⏰ Scheduler شروع شد (هر {SCAN_INTERVAL_MINUTES} دقیقه)\n"
-        f"📊 تایم‌فریم‌ها: {' → '.join(TIMEFRAMES)}"
+        f"⏰ Scheduler شروع شد (هر {SCAN_INTERVAL_MINUTES} دقیقه)"
     )
 
 
