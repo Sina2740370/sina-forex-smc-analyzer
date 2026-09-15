@@ -1,6 +1,5 @@
 """
-FastAPI Backend - نقطه ورود اپ
-شامل API endpoints و سرو فرانت‌اند (PWA)
+FastAPI Backend - Sina Quant
 """
 import logging
 from contextlib import asynccontextmanager
@@ -23,6 +22,7 @@ from .scheduler import (
     start_scheduler, get_last_scan, get_scan_stats,
     scan_market,
 )
+from .data_fetcher import fetch_live_prices
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sina Quant",
     description="Quantitative Forex Analysis with SMC/ICT",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
@@ -83,6 +83,17 @@ def get_config():
         "max_drawdown": MAX_DRAWDOWN,
         "scan_interval_minutes": SCAN_INTERVAL_MINUTES,
         "timeframes": TIMEFRAMES,
+    }
+
+
+@app.get("/api/prices")
+def get_prices():
+    """قیمت‌های زنده همه نمادها"""
+    prices = fetch_live_prices()
+    return {
+        "status": "ok",
+        "data": list(prices.values()),
+        "count": len(prices),
     }
 
 
