@@ -1,5 +1,5 @@
 """
-موتور تحلیل Top-Down SMC/ICT - نسخه 4.0
+موتور تحلیل Top-Down SMC/ICT - نسخه 4.1
 5 تایم‌فریم + ICT Unicorn + 4 لایه امتیازدهی
 """
 import logging
@@ -137,6 +137,8 @@ def detect_fvg(df, lookback=15):
 
 
 def get_premium_discount(df, lookback=60):
+    if len(df) < lookback:
+        lookback = len(df)
     w = df.iloc[-lookback:]
     sh = float(w["high"].max())
     sl = float(w["low"].min())
@@ -170,14 +172,9 @@ def get_candle_confirmation(df, direction):
     return False
 
 
-# ============================================================
-#  تشخیص Liquidity Sweep (شکار نقدینگی)
-# ============================================================
-
 def detect_liquidity_sweep(df, lookback=30):
     if len(df) < lookback + 3:
         return None
-
     recent = df.iloc[-lookback:-3]
     prev_high = float(recent["high"].max())
     prev_low = float(recent["low"].min())
@@ -185,36 +182,23 @@ def detect_liquidity_sweep(df, lookback=30):
     for i in range(-3, 0):
         c = df.iloc[i]
         if c["high"] > prev_high and c["close"] < prev_high:
-            return {"type": "BEARISH_SWEEP",
-                    "level": prev_high,
-                    "wick": float(c["high"])}
+            return {"type": "BEARISH_SWEEP", "level": prev_high}
         if c["low"] < prev_low and c["close"] > prev_low:
-            return {"type": "BULLISH_SWEEP",
-                    "level": prev_low,
-                    "wick": float(c["low"])}
+            return {"type": "BULLISH_SWEEP", "level": prev_low}
     return None
 
-
-# ============================================================
-#  تشخیص CHOCH (تغییر ساختار)
-# ============================================================
 
 def detect_choch(df, lookback=20):
     if len(df) < lookback + 5:
         return None
-
     w = df.iloc[-lookback:]
     sw = find_swings(w, 2, 2)
     highs, lows = sw["highs"], sw["lows"]
-
     if len(highs) < 2 or len(lows) < 2:
         return None
-
     last_high = highs[-1][1]
     last_low = lows[-1][1]
     price = float(df["close"].iloc[-1])
-
-    # CHOCH صعودی: شکست سقف قبلی
     if price > last_high:
         return {"type": "BULLISH_CHOCH", "level": last_high}
     if price < last_low:
@@ -222,21 +206,13 @@ def detect_choch(df, lookback=20):
     return None
 
 
-# ============================================================
-#  تشخیص Breaker Block
-# ============================================================
-
 def find_breaker_block(df, lookback=40):
-    """Breaker Block: OB شکسته‌شده که حالا به عنوان مقاومت/حمایت عمل می‌کنه"""
     obs = find_order_blocks(df, lookback)
     price = float(df["close"].iloc[-1])
-
-    # اگه قیمت OB صعودی رو شکسته باشه
     if obs["bullish"] and price < obs["bullish"]["low"]:
         return {"type": "BEARISH_BREAKER",
                 "high": obs["bullish"]["high"],
                 "low": obs["bullish"]["low"]}
-
     if obs["bearish"] and price > obs["bearish"]["high"]:
         return {"type": "BULLISH_BREAKER",
                 "high": obs["bearish"]["high"],
@@ -244,63 +220,43 @@ def find_breaker_block(df, lookback=40):
     return None
 
 
-# ============================================================
-#  مدل ICT Unicorn (ورود پیشرفته)
-# ============================================================
-
 def detect_unicorn_setup(df_4h, df_1h, df_15m):
-    """
-    مدل Unicorn:
-    1. Liquidity Sweep در 15m
-    2. Displacement (حرکت شارپ)
-    3. CHoCH در 1h
-    4. بازگشت به Breaker + FVG
-    """
     sweep = detect_liquidity_sweep(df_15m, lookback=30)
     if not sweep:
         return None
-
     choch = detect_choch(df_1h, lookback=20)
     if not choch:
         return None
-
-    # هم‌جهتی: Sweep و CHOCH باید هم‌جهت باشن
     if sweep["type"] == "BULLISH_SWEEP" and choch["type"] != "BULLISH_CHOCH":
         return None
     if sweep["type"] == "BEARISH_SWEEP" and choch["type"] != "BEARISH_CHOCH":
         return None
-
     breaker = find_breaker_block(df_4h, lookback=40)
     fvg = detect_fvg(df_15m, lookback=15)
-
     return {
-        "sweep": sweep,
-        "choch": choch,
-        "breaker": breaker,
-        "fvg": fvg,
+        "sweep": sweep, "choch": choch,
+        "breaker": breaker, "fvg": fvg,
         "direction": "BUY" if sweep["type"] == "BULLISH_SWEEP" else "SELL",
     }
 
 
 # ============================================================
-#  فیلتر Top-Down (هفتگی + روزانه)
+#  فیلتر Top-Down
 # ============================================================
 
 def top_down_filter(data_dict):
     """
-    فیلتر محیطی: هفتگی و روزانه باید هم‌جهت باشن
-    Returns: (direction, reason)
+    Returns: (direction, reason, wk_trend, d_trend)
+    direction: BULLISH, BEARISH, CONFLICT, NEUTRAL
     """
     try:
         df_wk = pd.DataFrame(data_dict["1wk"])
         df_d = pd.DataFrame(data_dict["1d"])
     except (KeyError, Exception):
-        return "NEUTRAL", "داده کافی برای فیلتر"
+        return "NEUTRAL", "داده کافی برای فیلتر", "-", "-"
 
-    # تشخیص روند
     wk_struct = detect_structure(df_wk)
     d_struct = detect_structure(df_d)
-
     wk_trend = wk_struct["trend"]
     d_trend = d_struct["trend"]
 
@@ -311,65 +267,98 @@ def top_down_filter(data_dict):
     elif wk_trend == "BEARISH" and wk_ema == "BULLISH":
         wk_trend = "RANGING"
 
-    # هر دو باید هم‌جهت باشن
     if wk_trend == "BULLISH" and d_trend == "BULLISH":
-        return "BULLISH", "هفتگی و روزانه صعودی ✅"
+        return "BULLISH", "هفتگی و روزانه صعودی ✅", wk_trend, d_trend
     if wk_trend == "BEARISH" and d_trend == "BEARISH":
-        return "BEARISH", "هفتگی و روزانه نزولی ✅"
-
+        return "BEARISH", "هفتگی و روزانه نزولی ✅", wk_trend, d_trend
     if wk_trend != d_trend:
-        return "CONFLICT", f"تضاد: هفتگی {wk_trend} / روزانه {d_trend}"
-
-    return "NEUTRAL", f"هفتگی {wk_trend} / روزانه {d_trend}"
+        return "CONFLICT", f"تضاد: هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend
+    return "NEUTRAL", f"هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend
 
 
 # ============================================================
-#  لایه تکنیکال جدید (Top-Down + Unicorn)
+#  لایه تکنیکال (Top-Down + Unicorn)
 # ============================================================
 
 def analyze_technical_topdown(data_dict):
     """
     تحلیل تکنیکال با 5 تایم‌فریم
-    Returns: dict با score, direction, sl, tp, reasons
+    Returns: dict کامل حتی اگه blocked باشه
     """
-    # --- فیلتر Top-Down ---
-    td_dir, td_reason = top_down_filter(data_dict)
+    # ابتدا قیمت و داده 15m رو بگیر (حتی اگه blocked)
+    price = None
+    atr = 0.0
+    zone = "-"
+    df_4h = df_1h = df_15m = None
 
-    if td_dir == "CONFLICT":
-        return {
-            "score": 0.0,
-            "direction": None,
-            "reasons": [f"🚫 {td_reason}"],
-            "blocked": True,
-        }
+    try:
+        df_15m = pd.DataFrame(data_dict["15m"])
+        if len(df_15m) > 0:
+            price = float(df_15m["close"].iloc[-1])
+            atr = calculate_atr(df_15m)
+    except Exception:
+        pass
 
-    if td_dir == "NEUTRAL":
-        return {
-            "score": 0.0,
-            "direction": None,
-            "reasons": [f"⏸ {td_reason}"],
-            "blocked": True,
-        }
-
-    # --- تحلیل در 4h (OB اصلی) ---
     try:
         df_4h = pd.DataFrame(data_dict["4h"])
+        if len(df_4h) >= 20:
+            pd_zone = get_premium_discount(df_4h, lookback=60)
+            zone = pd_zone["zone"]
+    except Exception:
+        pass
+
+    try:
         df_1h = pd.DataFrame(data_dict["1h"])
-        df_15m = pd.DataFrame(data_dict["15m"])
-    except (KeyError, Exception) as e:
-        return {"score": 0.0, "direction": None,
-                "reasons": [f"خطا: {e}"], "blocked": True}
+    except Exception:
+        pass
+
+    # فیلتر Top-Down
+    td_dir, td_reason, wk_trend, d_trend = top_down_filter(data_dict)
+
+    # Base response با همه اطلاعات موجود
+    base = {
+        "score": 0.0,
+        "direction": None,
+        "price": price,
+        "sl": None,
+        "tp": None,
+        "trend": td_dir if td_dir in ("BULLISH", "BEARISH") else (wk_trend or "RANGING"),
+        "wk_trend": wk_trend,
+        "d_trend": d_trend,
+        "zone": zone,
+        "atr": round(atr, 6) if atr else 0,
+        "reasons": [],
+        "blocked": False,
+    }
+
+    # اگه تضاد یا خنثی
+    if td_dir == "CONFLICT":
+        base["reasons"] = [f"🚫 {td_reason}", f"هفتگی: {wk_trend}", f"روزانه: {d_trend}"]
+        base["blocked"] = True
+        return base
+
+    if td_dir == "NEUTRAL":
+        base["reasons"] = [f"⏸ {td_reason}"]
+        base["blocked"] = True
+        return base
+
+    # چک داده کافی
+    if df_4h is None or df_1h is None or df_15m is None:
+        base["reasons"] = ["داده کافی نیست"]
+        base["blocked"] = True
+        return base
 
     if len(df_4h) < 30 or len(df_1h) < MIN_CANDLES or len(df_15m) < MIN_CANDLES:
-        return {"score": 0.0, "direction": None,
-                "reasons": ["داده کافی نیست"], "blocked": True}
+        base["reasons"] = ["داده کافی نیست"]
+        base["blocked"] = True
+        return base
 
-    price = float(df_15m["close"].iloc[-1])
-    atr = calculate_atr(df_15m)
     if atr == 0:
-        return {"score": 0.0, "direction": None,
-                "reasons": ["ATR صفر"], "blocked": True}
+        base["reasons"] = ["ATR صفر"]
+        base["blocked"] = True
+        return base
 
+    # تحلیل
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
@@ -381,9 +370,7 @@ def analyze_technical_topdown(data_dict):
     direction = None
     sl = tp = None
 
-    # ============================================
-    #  BUY Setup
-    # ============================================
+    # BUY
     if td_dir == "BULLISH" and htf_obs["bullish"]:
         ob = htf_obs["bullish"]
         in_ob = ob["low"] * 0.998 <= price <= ob["high"] * 1.002
@@ -411,10 +398,13 @@ def analyze_technical_topdown(data_dict):
                 sl = round(ob["low"] - buf, 6)
                 risk = price - sl
                 tp = round(price + risk * RISK_REWARD, 6)
+        else:
+            if not in_ob:
+                reasons.append("قیمت خارج از OB صعودی 4H")
+            if htf_pd["zone"] != "DISCOUNT":
+                reasons.append(f"ناحیه {htf_pd['zone']} (نیاز به Discount)")
 
-    # ============================================
-    #  SELL Setup
-    # ============================================
+    # SELL
     elif td_dir == "BEARISH" and htf_obs["bearish"]:
         ob = htf_obs["bearish"]
         in_ob = ob["low"] * 0.998 <= price <= ob["high"] * 1.002
@@ -442,19 +432,28 @@ def analyze_technical_topdown(data_dict):
                 sl = round(ob["high"] + buf, 6)
                 risk = sl - price
                 tp = round(price - risk * RISK_REWARD, 6)
+        else:
+            if not in_ob:
+                reasons.append("قیمت خارج از OB نزولی 4H")
+            if htf_pd["zone"] != "PREMIUM":
+                reasons.append(f"ناحیه {htf_pd['zone']} (نیاز به Premium)")
 
-    return {
+    else:
+        # روند داریم ولی OB مناسب نیست
+        if td_dir == "BULLISH" and not htf_obs["bullish"]:
+            reasons.append("OB صعودی 4H پیدا نشد")
+        elif td_dir == "BEARISH" and not htf_obs["bearish"]:
+            reasons.append("OB نزولی 4H پیدا نشد")
+
+    base.update({
         "score": round(score, 2),
         "direction": direction,
-        "price": price,
         "sl": sl,
         "tp": tp,
-        "trend": td_dir,
         "zone": htf_pd["zone"],
-        "atr": round(atr, 6),
         "reasons": reasons,
-        "blocked": False,
-    }
+    })
+    return base
 
 
 # ============================================================
@@ -463,15 +462,12 @@ def analyze_technical_topdown(data_dict):
 
 async def full_analysis(data_dict, symbol, news_safe=True,
                          news_reason="", news_sentiment=0.0):
-    """
-    تحلیل کامل با 4 لایه (Top-Down)
-    data_dict: {"1wk": [...], "1d": [...], "4h": [...], "1h": [...], "15m": [...]}
-    """
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
-    # لایه 1: تکنیکال Top-Down
     tech = analyze_technical_topdown(data_dict)
+
+    # اگه بلاک شده بود، فقط تکنیکال رو برگردون
     if tech.get("blocked"):
         return {
             "score": 0.0,
@@ -479,20 +475,15 @@ async def full_analysis(data_dict, symbol, news_safe=True,
             "current_price": tech.get("price"),
             "suggested_sl": None,
             "suggested_tp": None,
-            "htf_trend": tech.get("trend", "UNCLEAR"),
+            "htf_trend": tech.get("trend", "RANGING"),
             "zone": tech.get("zone", "-"),
             "atr": tech.get("atr", 0),
             "reasons": tech.get("reasons", []),
-            "summary": tech.get("reasons", ["در انتظار"])[0],
+            "summary": tech.get("reasons", ["در انتظار"])[0] if tech.get("reasons") else "در انتظار",
         }
 
-    # لایه 2: فاندامنتال
     fund = await calculate_fundamental_score(symbol)
-
-    # لایه 3: اخبار
     news_score = news_sentiment
-
-    # لایه 4: حافظه
     mem = calculate_memory_score(symbol)
 
     final_score = (
@@ -511,7 +502,6 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     elif final_score <= -MIN_SIGNAL_SCORE:
         direction = "SELL"
 
-    # هم‌جهتی با تکنیکال
     if tech["score"] > 0 and direction == "SELL":
         direction = None
     if tech["score"] < 0 and direction == "BUY":
