@@ -1,5 +1,5 @@
 /* ============================================================
-   SMC Forex Analyzer - Frontend Logic
+   Sina Quant - Frontend Logic
    ============================================================ */
 
 const API_BASE = '';
@@ -9,8 +9,9 @@ let currentTab = 'live';
 let currentFilter = 'all';
 let allSignals = [];
 let refreshInterval = null;
+let pricesInterval = null;
 
-// ---- Mapping نمادها به پرچم ----
+// ---- Symbol Flags ----
 const SYMBOL_FLAGS = {
   'EURUSD=X': '🇪🇺🇺🇸',
   'GBPUSD=X': '🇬🇧🇺🇸',
@@ -76,12 +77,16 @@ function trendLabel(trend) {
     'BEARISH': 'نزولی',
     'RANGING': 'رنج',
     'UNCLEAR': 'نامشخص',
+    'CONFLICT': 'تضاد',
+    'NEUTRAL': 'خنثی',
   };
-  return map[trend] || trend;
+  return map[trend] || trend || '-';
 }
 
 function zoneLabel(zone) {
-  return zone === 'PREMIUM' ? 'گرون' : 'ارزون';
+  if (zone === 'PREMIUM') return 'گرون';
+  if (zone === 'DISCOUNT') return 'ارزون';
+  return '-';
 }
 
 function timeAgo(isoStr) {
@@ -98,7 +103,69 @@ function timeAgo(isoStr) {
 }
 
 /* ============================================================
-   Tab Switching
+   📊 Live Prices Ticker
+   ============================================================ */
+
+async function loadPrices() {
+  const el = $('#tickerContent');
+  if (!el) return;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/prices`);
+    const data = await r.json();
+
+    if (!data.data || data.data.length === 0) {
+      el.innerHTML = '<div class="ticker-loading">قیمتی موجود نیست</div>';
+      return;
+    }
+
+    renderTicker(data.data);
+  } catch (e) {
+    console.error('خطا در دریافت قیمت‌ها:', e);
+    if (el.querySelector('.ticker-loading') === null && el.children.length === 0) {
+      el.innerHTML = '<div class="ticker-loading">خطا در دریافت قیمت</div>';
+    }
+  }
+}
+
+function renderTicker(prices) {
+  const el = $('#tickerContent');
+  if (!el) return;
+
+  el.innerHTML = prices.map(p => {
+    const flag = SYMBOL_FLAGS[p.symbol] || '💱';
+    const up = p.direction === 'up';
+    const arrow = up ? '▲' : '▼';
+    const cls = up ? 'up' : 'down';
+    const sign = p.change_pct >= 0 ? '+' : '';
+
+    return `
+      <div class="ticker-item" data-symbol="${p.symbol}">
+        <span class="ticker-flag">${flag}</span>
+        <span class="ticker-symbol">${p.name}</span>
+        <span class="ticker-price">${p.price}</span>
+        <span class="ticker-change ${cls}">${arrow} ${sign}${p.change_pct}%</span>
+      </div>
+    `;
+  }).join('');
+
+  // کلیک روی هر آیتم → اسکرول به کارت
+  el.querySelectorAll('.ticker-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const symbol = item.dataset.symbol;
+      const card = document.querySelector(`[data-card-symbol="${symbol}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'box-shadow 0.5s';
+        card.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+        setTimeout(() => { card.style.boxShadow = ''; }, 1500);
+      }
+    });
+  });
+}
+
+/* ============================================================
+   Tabs
    ============================================================ */
 
 function setupTabs() {
@@ -113,7 +180,6 @@ function setupTabs() {
       tab.classList.add('active');
       $(`#tab-${target}`).classList.add('active');
 
-      // Load data on tab switch
       if (target === 'signals') loadSignals();
       if (target === 'stats') loadStats();
     });
@@ -152,7 +218,7 @@ async function loadLive(showSpinner = true) {
 
     const lastUpdate = $('#lastUpdate');
     if (lastUpdate) {
-      lastUpdate.textContent = `آخرین بروزرسانی: ${new Date().toLocaleTimeString('fa-IR')}`;
+      lastUpdate.textContent = `بروزرسانی: ${new Date().toLocaleTimeString('fa-IR')}`;
     }
   } catch (e) {
     console.error('خطا در بارگذاری:', e);
@@ -161,7 +227,7 @@ async function loadLive(showSpinner = true) {
       cards.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">⚠️</div>
-          <div class="empty-state-text">خطا در دریافت داده<br>اتصال اینترنت رو چک کن</div>
+          <div class="empty-state-text">خطا در دریافت داده</div>
         </div>`;
     }
   }
@@ -170,7 +236,6 @@ async function loadLive(showSpinner = true) {
 function renderScanInfo(data) {
   const el = $('#scanInfo');
   if (!el) return;
-
   const count = data.count || 0;
   el.innerHTML = `
     <span class="badge-live">زنده</span>
@@ -189,7 +254,6 @@ function renderCards(scans) {
     return;
   }
 
-  // مرتب‌سازی: سیگنال‌ها اول، بعد بقیه
   const sorted = [...scans].sort((a, b) => {
     const aHas = a.direction ? 1 : 0;
     const bHas = b.direction ? 1 : 0;
@@ -223,11 +287,11 @@ function renderCard(s) {
     slTpBlock = `
       <div class="sl-tp-grid">
         <div class="sl-tp-box sl">
-          <div class="sl-tp-label">🛑 حد ضرر (SL)</div>
+          <div class="sl-tp-label">🛑 حد ضرر</div>
           <div class="sl-tp-value">${fmtPrice(s.suggested_sl, s.symbol)}</div>
         </div>
         <div class="sl-tp-box tp">
-          <div class="sl-tp-label">🎯 حد سود (TP)</div>
+          <div class="sl-tp-label">🎯 حد سود</div>
           <div class="sl-tp-value">${fmtPrice(s.suggested_tp, s.symbol)}</div>
         </div>
       </div>`;
@@ -245,7 +309,7 @@ function renderCard(s) {
   }
 
   return `
-    <div class="card ${cardClass}">
+    <div class="card ${cardClass}" data-card-symbol="${s.symbol}">
       <div class="card-head">
         <div class="card-symbol">
           <span class="symbol-flag">${flag}</span>
@@ -263,7 +327,7 @@ function renderCard(s) {
       </div>
 
       <div class="card-row">
-        <span class="label">📈 روند (HTF)</span>
+        <span class="label">📈 روند</span>
         <span class="${trendClass(trend)}">${trendLabel(trend)}</span>
       </div>
 
@@ -284,7 +348,7 @@ function renderCard(s) {
 }
 
 /* ============================================================
-   Signals Tab
+   Signals
    ============================================================ */
 
 function setupFilters() {
@@ -353,7 +417,7 @@ function renderSignalCard(s) {
   const pnlRow = s.pnl_pips !== null && s.pnl_pips !== undefined
     ? `<div class="card-row">
          <span class="label">📊 نتیجه</span>
-         <span class="value ${s.pnl_pips >= 0 ? 'green' : 'red'}">${s.pnl_pips > 0 ? '+' : ''}${s.pnl_pips.toFixed(1)} پیپ</span>
+         <span class="value ${s.pnl_pips >= 0 ? 'green' : 'red'}">${s.pnl_pips > 0 ? '+' : ''}${parseFloat(s.pnl_pips).toFixed(1)} پیپ</span>
        </div>` : '';
 
   const reasons = s.reasons
@@ -400,7 +464,7 @@ function renderSignalCard(s) {
 }
 
 /* ============================================================
-   Stats Tab
+   Stats
    ============================================================ */
 
 async function loadStats() {
@@ -458,7 +522,7 @@ function renderStats(s) {
       </div>
       <div class="stat-box">
         <div class="stat-value ${s.profit_factor >= s.min_profit_factor ? 'green' : 'yellow'}">
-          ${s.profit_factor.toFixed(2)}
+          ${parseFloat(s.profit_factor).toFixed(2)}
         </div>
         <div class="stat-label">Profit Factor</div>
       </div>
@@ -497,7 +561,7 @@ function renderStats(s) {
       </div>
 
       <div class="progress-row">
-        <span>Profit Factor (${s.profit_factor.toFixed(2)} / ${s.min_profit_factor})</span>
+        <span>Profit Factor (${parseFloat(s.profit_factor).toFixed(2)} / ${s.min_profit_factor})</span>
         <span class="val">${pfProgress.toFixed(0)}%</span>
       </div>
       <div class="progress-bar-bg">
@@ -533,6 +597,7 @@ function setupRefresh() {
     try {
       await fetch(`${API_BASE}/api/scan/force`, { method: 'POST' });
       await loadLive();
+      await loadPrices();
       showToast('✅ اسکن انجام شد', 'success');
     } catch (e) {
       showToast('⚠️ خطا در اسکن', 'error');
@@ -548,8 +613,6 @@ function setupRefresh() {
 
 function startAutoRefresh() {
   if (refreshInterval) clearInterval(refreshInterval);
-
-  // هر ۶۰ ثانیه، تب فعلی رو رفرش کن
   refreshInterval = setInterval(() => {
     if (currentTab === 'live') loadLive(false);
     else if (currentTab === 'signals') loadSignals();
@@ -557,22 +620,28 @@ function startAutoRefresh() {
   }, 60000);
 }
 
+function startPricesRefresh() {
+  if (pricesInterval) clearInterval(pricesInterval);
+  pricesInterval = setInterval(loadPrices, 30000);
+}
+
 /* ============================================================
    Init
    ============================================================ */
 
 function init() {
-  console.log('🚀 SMC Forex Analyzer - شروع');
+  console.log('🚀 Sina Quant - شروع');
   setupTabs();
   setupFilters();
   setupRefresh();
+  loadPrices();
   loadLive();
   startAutoRefresh();
+  startPricesRefresh();
 }
 
-// اجرا وقتی DOM آماده شد
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
-                   }
+                 }
