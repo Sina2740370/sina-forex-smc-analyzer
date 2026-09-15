@@ -1,5 +1,5 @@
 /* ============================================================
-   SMC Forex Analyzer - Dark Theme
+   Sina Quant - Dark Theme
    ============================================================ */
 
 :root {
@@ -34,9 +34,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html {
-  font-size: 15px;
-}
+html { font-size: 15px; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Vazirmatn', 'Tahoma', system-ui, sans-serif;
@@ -121,13 +119,98 @@ header h1 {
 }
 
 /* ============================================================
+   📊 Ticker Bar (قیمت‌های زنده)
+   ============================================================ */
+
+.ticker-bar {
+  position: sticky;
+  top: 71px;
+  z-index: 98;
+  background: linear-gradient(90deg, #0f1520 0%, #131a29 50%, #0f1520 100%);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ticker-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.ticker-content {
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.ticker-loading {
+  color: var(--muted);
+  font-size: 0.75rem;
+  padding: 4px 12px;
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(35, 48, 74, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ticker-item:active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--accent);
+}
+
+.ticker-flag {
+  font-size: 0.85rem;
+}
+
+.ticker-symbol {
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+
+.ticker-price {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ticker-change {
+  font-weight: 700;
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.ticker-change.up {
+  color: var(--green);
+  background: var(--green-bg);
+}
+
+.ticker-change.down {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+/* ============================================================
    Tabs
    ============================================================ */
 
 .tabs {
   position: sticky;
-  top: 71px;
-  z-index: 99;
+  top: 130px;
+  z-index: 97;
   display: flex;
   background: var(--bg-2);
   border-bottom: 1px solid var(--border);
@@ -192,7 +275,7 @@ main {
 }
 
 /* ============================================================
-   Loading Spinner
+   Loading
    ============================================================ */
 
 .spinner {
@@ -225,7 +308,7 @@ main {
 }
 
 /* ============================================================
-   Scan Info Banner
+   Scan Info
    ============================================================ */
 
 .scan-info {
@@ -318,9 +401,7 @@ main {
   gap: 8px;
 }
 
-.symbol-flag {
-  font-size: 1.2rem;
-}
+.symbol-flag { font-size: 1.2rem; }
 
 .symbol-name {
   font-size: 1rem;
@@ -379,7 +460,6 @@ main {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* Card rows */
 .card-row {
   display: flex;
   justify-content: space-between;
@@ -389,9 +469,7 @@ main {
   border-bottom: 1px solid rgba(35, 48, 74, 0.5);
 }
 
-.card-row:last-child {
-  border-bottom: none;
-}
+.card-row:last-child { border-bottom: none; }
 
 .card-row .label {
   color: var(--muted);
@@ -409,7 +487,6 @@ main {
 .value.red { color: var(--red); }
 .value.accent { color: var(--accent); }
 
-/* Zone badges */
 .zone-badge {
   padding: 3px 8px;
   border-radius: 6px;
@@ -427,28 +504,9 @@ main {
   color: var(--green);
 }
 
-/* Trend badge */
-.trend-bull {
-  color: var(--green);
-  font-weight: 700;
-}
-
-.trend-bear {
-  color: var(--red);
-  font-weight: 700;
-}
-
-.trend-range {
-  color: var(--yellow);
-  font-weight: 700;
-}
-
-/* Score bar */
-.score-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.trend-bull { color: var(--green); font-weight: 700; }
+.trend-bear { color: var(--red); font-weight: 700; }
+.trend-range { color: var(--yellow); font-weight: 700; }
 
 .score-value {
   font-weight: 700;
@@ -460,7 +518,6 @@ main {
 .score-value.neg { color: var(--red); }
 .score-value.zero { color: var(--muted); }
 
-/* Reasons */
 .reasons {
   margin-top: 12px;
   padding-top: 12px;
@@ -497,7 +554,6 @@ main {
   margin-left: 4px;
 }
 
-/* SL/TP row special */
 .sl-tp-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -607,7 +663,7 @@ main {
   color: transparent;
 }
 
-.stats-hero-value.good { 
+.stats-hero-value.good {
   background: linear-gradient(135deg, #22c55e, #16a34a);
   -webkit-background-clip: text;
   background-clip: text;
@@ -637,9 +693,7 @@ main {
   transition: transform 0.2s;
 }
 
-.stat-box:active {
-  transform: scale(0.97);
-}
+.stat-box:active { transform: scale(0.97); }
 
 .stat-value {
   font-size: 1.4rem;
@@ -659,7 +713,6 @@ main {
   font-weight: 600;
 }
 
-/* Progress bar */
 .progress-section {
   background: var(--card);
   border: 1px solid var(--border);
@@ -691,7 +744,6 @@ main {
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 6px;
   transition: width 0.6s ease;
-  position: relative;
 }
 
 .progress-bar-fill.good {
@@ -710,17 +762,12 @@ main {
   margin-bottom: 10px;
 }
 
-.progress-row:last-child {
-  margin-bottom: 0;
-}
-
 .progress-row .val {
   font-family: 'Courier New', monospace;
   font-weight: 700;
   color: var(--text);
 }
 
-/* Ready badge */
 .ready-badge {
   padding: 16px;
   border-radius: var(--radius);
@@ -797,7 +844,7 @@ footer {
 }
 
 /* ============================================================
-   Notifications (Toast)
+   Toast
    ============================================================ */
 
 .toast {
@@ -837,18 +884,11 @@ footer {
 }
 
 /* ============================================================
-   Scrollbar (custom)
+   Scrollbar
    ============================================================ */
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-2);
   border-radius: 3px;
@@ -862,5 +902,4 @@ footer {
   html { font-size: 16px; }
   main { padding: 20px; }
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
-  .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  }
+   }
