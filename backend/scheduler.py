@@ -2,6 +2,7 @@
 زمان‌بند خودکار با Notification
 """
 import logging
+import time
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -26,20 +27,25 @@ _scan_stats = {
     "errors": 0,
     "timeframes": TIMEFRAMES,
 }
-_notified_startup = False
+
+# آخرین زمان پیام startup (برای جلوگیری از تکرار)
+_last_startup_notified = 0
+STARTUP_COOLDOWN_SECONDS = 6 * 3600  # 6 ساعت
 
 
 async def scan_market():
-    global _notified_startup
+    global _last_startup_notified
 
     logger.info("=" * 55)
     logger.info("🔍 شروع اسکن Top-Down...")
     start_time = datetime.now(timezone.utc)
 
-    if not _notified_startup:
+    # پیام startup فقط هر ۶ ساعت یه بار
+    now = time.time()
+    if now - _last_startup_notified > STARTUP_COOLDOWN_SECONDS:
         try:
             await notify_startup()
-            _notified_startup = True
+            _last_startup_notified = now
         except Exception as e:
             logger.error(f"خطا در پیام شروع: {e}")
 
@@ -124,7 +130,6 @@ async def scan_market():
 
 
 async def check_open_signals_and_notify():
-    """رصد سیگنال‌ها + نوتیف بسته شدن"""
     from .database import get_open_signals, get_all_signals
     from .notifier import notify_signal_closed
 
