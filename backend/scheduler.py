@@ -1,8 +1,10 @@
 """
-زمان‌بند خودکار با Notification
+زمان‌بند خودکار - نسخه 2.2
+با فیکس باگ تکرار + Startup cooldown + In-Memory tracking
 """
 import logging
 import time
+import json
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 _scheduler = None
 _last_scan = {}
+
 _scan_stats = {
     "total_scans": 0,
     "last_scan_time": None,
@@ -28,9 +31,33 @@ _scan_stats = {
     "timeframes": TIMEFRAMES,
 }
 
-# آخرین زمان پیام startup (برای جلوگیری از تکرار)
+# ============================================================
+#  کش درون‌حافظه‌ای برای جلوگیری از تکرار
+# ============================================================
+_recent_signals = {}  # {symbol:direction: timestamp}
+DUPLICATE_COOLDOWN_SECONDS = 4 * 3600  # 4 ساعت
+
+# ============================================================
+#  Startup cooldown (جلوگیری از پیام‌های تکراری)
+# ============================================================
 _last_startup_notified = 0
 STARTUP_COOLDOWN_SECONDS = 6 * 3600  # 6 ساعت
+
+
+def _is_duplicate_in_memory(symbol: str, direction: str) -> bool:
+    """چک تکرار با کش درون‌حافظه‌ای"""
+    key = f"{symbol}:{direction}"
+    if key in _recent_signals:
+        elapsed = time.time() - _recent_signals[key]
+        if elapsed < DUPLICATE_COOLDOWN_SECONDS:
+            logger.info(f"⏭ تکرار in-memory: {symbol} {direction} ({elapsed/60:.1f} دقیقه پیش)")
+            return True
+    return False
+
+
+def _mark_signal_sent(symbol: str, direction: str):
+    """ثبت زمان آخرین سیگنال"""
+    _recent_signals[f"{symbol}:{direction}"] = time.time()
 
 
 async def scan_market():
@@ -40,12 +67,12 @@ async def scan_market():
     logger.info("🔍 شروع اسکن Top-Down...")
     start_time = datetime.now(timezone.utc)
 
-    # پیام startup فقط هر ۶ ساعت یه بار
     now = time.time()
     if now - _last_startup_notified > STARTUP_COOLDOWN_SECONDS:
         try:
             await notify_startup()
             _last_startup_notified = now
+            logger.info("📤 پیام startup ارسال شد")
         except Exception as e:
             logger.error(f"خطا در پیام شروع: {e}")
 
@@ -55,6 +82,7 @@ async def scan_market():
     signals_created = 0
     errors = 0
     blocked = 0
+    duplicates = 0
 
     for symbol, name in SYMBOLS.items():
         try:
@@ -65,39 +93,50 @@ async def scan_market():
             _last_scan[symbol] = result
 
             if result.get("direction"):
-                if not is_duplicate_signal(symbol, result["direction"], hours=4):
-                    insert_signal(
+                direction = result["direction"]
+
+                if _is_duplicate_in_memory(symbol, direction):
+                    duplicates += 1
+                    continue
+
+                if is_duplicate_signal(symbol, direction, hours=4):
+                    duplicates += 1
+                    logger.info(f"⏭ تکرار in-database: {name} {direction}")
+                    continue
+
+                _mark_signal_sent(symbol, direction)
+                insert_signal(
+                    symbol=symbol,
+                    name=name,
+                    direction=direction,
+                    entry=result["current_price"],
+                    sl=result["suggested_sl"],
+                    tp=result["suggested_tp"],
+                    score=result["score"],
+                    reasons=result.get("reasons", []),
+                )
+                signals_created += 1
+
+                logger.info(
+                    f"✅ سیگنال: {name} {direction} "
+                    f"@ {result['current_price']} | امتیاز {result['score']}"
+                )
+
+                try:
+                    await notify_new_signal(
                         symbol=symbol,
                         name=name,
-                        direction=result["direction"],
+                        direction=direction,
                         entry=result["current_price"],
                         sl=result["suggested_sl"],
                         tp=result["suggested_tp"],
                         score=result["score"],
                         reasons=result.get("reasons", []),
+                        trend=result.get("htf_trend", "-"),
+                        zone=result.get("zone", "-"),
                     )
-                    signals_created += 1
-
-                    logger.info(
-                        f"✅ سیگنال: {name} {result['direction']} "
-                        f"@ {result['current_price']} | امتیاز {result['score']}"
-                    )
-
-                    try:
-                        await notify_new_signal(
-                            symbol=symbol,
-                            name=name,
-                            direction=result["direction"],
-                            entry=result["current_price"],
-                            sl=result["suggested_sl"],
-                            tp=result["suggested_tp"],
-                            score=result["score"],
-                            reasons=result.get("reasons", []),
-                            trend=result.get("htf_trend", "-"),
-                            zone=result.get("zone", "-"),
-                        )
-                    except Exception as e:
-                        logger.error(f"خطا در ارسال نوتیف: {e}")
+                except Exception as e:
+                    logger.error(f"خطا در ارسال نوتیف: {e}")
             else:
                 if result.get("htf_trend") == "CONFLICT":
                     blocked += 1
@@ -122,6 +161,7 @@ async def scan_market():
     logger.info(
         f"✔️ اسکن تمام شد ({elapsed:.1f}s) | "
         f"سیگنال: {signals_created} | "
+        f"تکراری: {duplicates} | "
         f"بلاک‌شده: {blocked} | "
         f"خطا: {errors} | "
         f"کش: {cache['size']}"
@@ -143,17 +183,20 @@ async def check_open_signals_and_notify():
 
     all_signals = get_all_signals(limit=50)
     for sig in all_signals:
-        if sig["id"] in closed_ids and sig["status"] in ("WIN", "LOSS"):
+        if sig["id"] in closed_ids and sig["status"] in ("WIN", "LOSS", "EXPIRED"):
             try:
-                await notify_signal_closed(
-                    symbol=sig["symbol"],
-                    name=sig.get("name", sig["symbol"]),
-                    direction=sig["direction"],
-                    status=sig["status"],
-                    pnl_pips=sig.get("pnl_pips") or 0,
-                    entry=sig["entry"],
-                    exit_price=sig.get("exit_price") or sig["entry"],
-                )
+                if sig["status"] == "EXPIRED":
+                    logger.info(f"⏰ سیگنال منقضی: {sig['symbol']}")
+                else:
+                    await notify_signal_closed(
+                        symbol=sig["symbol"],
+                        name=sig.get("name", sig["symbol"]),
+                        direction=sig["direction"],
+                        status=sig["status"],
+                        pnl_pips=sig.get("pnl_pips") or 0,
+                        entry=sig["entry"],
+                        exit_price=sig.get("exit_price") or sig["entry"],
+                    )
             except Exception as e:
                 logger.error(f"خطا در نوتیف بسته شدن: {e}")
 
