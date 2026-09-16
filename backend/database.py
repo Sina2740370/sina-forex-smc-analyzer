@@ -1,8 +1,10 @@
 """
 مدیریت دیتابیس SQLite برای ذخیره سیگنال‌ها
+با فیکس جداکننده Reasons (JSON به جای |)
 """
 import sqlite3
 import logging
+import json
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from .config import DB_PATH
@@ -31,15 +33,6 @@ def init_db():
             pnl_pips REAL
         );
 
-        CREATE TABLE IF NOT EXISTS news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            currency TEXT,
-            impact TEXT,
-            event_time TEXT,
-            fetched_at TEXT
-        );
-
         CREATE INDEX IF NOT EXISTS idx_signals_symbol ON signals(symbol);
         CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
         CREATE INDEX IF NOT EXISTS idx_signals_created ON signals(created_at);
@@ -64,7 +57,13 @@ def get_conn():
 
 
 def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
-    """ثبت سیگنال جدید"""
+    """ثبت سیگنال جدید - Reasons به صورت JSON"""
+    # تبدیل به JSON (به جای | )
+    if isinstance(reasons, list):
+        reasons_json = json.dumps(reasons, ensure_ascii=False)
+    else:
+        reasons_json = json.dumps([str(reasons)], ensure_ascii=False)
+
     with get_conn() as conn:
         cur = conn.execute("""
             INSERT INTO signals
@@ -72,10 +71,26 @@ def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol, name, direction, entry, sl, tp, score,
-            "|".join(reasons) if isinstance(reasons, list) else reasons,
+            reasons_json,
             datetime.utcnow().isoformat()
         ))
         return cur.lastrowid
+
+
+def _parse_reasons(reasons_str):
+    """تبدیل Reasons از JSON به لیست"""
+    if not reasons_str:
+        return []
+    try:
+        parsed = json.loads(reasons_str)
+        if isinstance(parsed, list):
+            return parsed
+        return [str(parsed)]
+    except (json.JSONDecodeError, TypeError):
+        # عقب‌گرد: اگه داده قدیمی بود، با | جدا کن
+        if "|" in str(reasons_str):
+            return [r.strip() for r in str(reasons_str).split("|") if r.strip()]
+        return [str(reasons_str)]
 
 
 def get_open_signals():
@@ -84,21 +99,29 @@ def get_open_signals():
         rows = conn.execute(
             "SELECT * FROM signals WHERE status = 'OPEN' ORDER BY created_at DESC"
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_row_to_dict(r) for r in rows]
 
 
 def get_all_signals(limit: int = 200):
-    """همه سیگنال‌ها (برای نمایش در اپ)"""
+    """همه سیگنال‌ها"""
     with get_conn() as conn:
         rows = conn.execute(
             "SELECT * FROM signals ORDER BY created_at DESC LIMIT ?",
             (limit,)
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_row_to_dict(r) for r in rows]
+
+
+def _row_to_dict(row):
+    """تبدیل row به dict با پارس کردن JSON"""
+    d = dict(row)
+    if "reasons" in d:
+        d["reasons"] = _parse_reasons(d["reasons"])
+    return d
 
 
 def close_signal(signal_id, exit_price, pnl_pips, status):
-    """بستن سیگنال با WIN یا LOSS"""
+    """بستن سیگنال با WIN یا LOSS یا EXPIRED"""
     with get_conn() as conn:
         conn.execute("""
             UPDATE signals
@@ -111,7 +134,7 @@ def close_signal(signal_id, exit_price, pnl_pips, status):
 
 
 def get_stats_summary():
-    """آمار کلی برای نمایش در اپ - نسخه اصلاح‌شده"""
+    """آمار کلی"""
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT status, pnl_pips FROM signals
@@ -125,6 +148,10 @@ def get_stats_summary():
             "SELECT COUNT(*) as c FROM signals WHERE status = 'OPEN'"
         ).fetchone()["c"]
 
+        expired_count = conn.execute(
+            "SELECT COUNT(*) as c FROM signals WHERE status = 'EXPIRED'"
+        ).fetchone()["c"]
+
     if total == 0:
         return {
             "total": 0,
@@ -134,9 +161,9 @@ def get_stats_summary():
             "profit_factor": 0.0,
             "total_pips": 0.0,
             "open_signals": open_count,
+            "expired_signals": expired_count,
         }
 
-    # جدا کردن برد و باخت - بدون فیلتر اشتباه
     wins_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "WIN"]
     losses_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "LOSS"]
 
@@ -155,15 +182,16 @@ def get_stats_summary():
         "profit_factor": round(pf, 2),
         "total_pips": round(sum(wins_list) + sum(losses_list), 1),
         "open_signals": open_count,
+        "expired_signals": expired_count,
     }
 
 
 def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
-    """سیگنال‌های اخیر یه نماد (برای جلوگیری از تکرار)"""
+    """سیگنال‌های اخیر یه نماد"""
     cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT * FROM signals
             WHERE symbol = ? AND created_at > ?
         """, (symbol, cutoff)).fetchall()
-        return [dict(r) for r in rows]
+        return [_row_to_dict(r) for r in rows]
