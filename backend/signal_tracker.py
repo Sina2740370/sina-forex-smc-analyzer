@@ -1,9 +1,10 @@
 """
 رصد خودکار سیگنال‌ها: چک کردن TP و SL
-وقتی قیمت به TP یا SL رسید، سیگنال رو WIN یا LOSS می‌کنه
++ Timeout برای سیگنال‌های گیر افتاده
++ فرمت صحیح طلا
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from .config import PIP_SIZE, SPREAD
 from .data_fetcher import fetch_ohlcv
@@ -15,6 +16,18 @@ from .database import (
 
 logger = logging.getLogger(__name__)
 
+# حداکثر عمر سیگنال (ساعت) - بعدش EXPIRED می‌شه
+MAX_SIGNAL_LIFETIME_HOURS = 72
+
+
+def _parse_dt(t):
+    """تبدیل هر فرمت زمانی به naive UTC datetime"""
+    if isinstance(t, str):
+        t = datetime.fromisoformat(t.replace("Z", "+00:00"))
+    if t.tzinfo is not None:
+        t = t.astimezone(timezone.utc).replace(tzinfo=None)
+    return t
+
 
 def _to_pips(symbol: str, price_diff: float) -> float:
     """تبدیل اختلاف قیمت به پیپ"""
@@ -25,13 +38,7 @@ def _to_pips(symbol: str, price_diff: float) -> float:
 
 
 def _apply_spread(symbol: str, price: float, direction: str) -> float:
-    """
-    اسپرد رو روی قیمت اعمال می‌کنه (برای شبیه‌سازی واقعی)
-
-    در واقعیت:
-    - BUY با قیمت Ask باز می‌شه (بالاتر)
-    - SELL با قیمت Bid باز می‌شه (پایین‌تر)
-    """
+    """اسپرد رو روی قیمت اعمال می‌کنه (شبیه‌سازی واقعی)"""
     spread_pips = SPREAD.get(symbol, 1.0)
     pip = PIP_SIZE.get(symbol, 0.0001)
     spread_price = spread_pips * pip
@@ -43,9 +50,10 @@ def _apply_spread(symbol: str, price: float, direction: str) -> float:
 
 def check_open_signals():
     """
-    همه سیگنال‌های باز رو چک می‌کنه:
-    - اگه TP خورد → WIN
-    - اگه SL خورد → LOSS
+    همه سیگنال‌های باز رو چک می‌کنه
+    - TP خورد؟ → WIN
+    - SL خورد؟ → LOSS
+    - عمرش تموم شد؟ → EXPIRED
     """
     open_signals = get_open_signals()
     if not open_signals:
@@ -53,31 +61,56 @@ def check_open_signals():
 
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
-    # گروه‌بندی بر اساس نماد (برای کم کردن درخواست‌ها)
+    # ۱) چک سیگنال‌های منقضی
+    _check_expired_signals(open_signals)
+
+    # ۲) گروه‌بندی بر اساس نماد
     by_symbol = {}
     for sig in open_signals:
         by_symbol.setdefault(sig["symbol"], []).append(sig)
 
     for symbol, signals in by_symbol.items():
         try:
-            candles = fetch_ohlcv(symbol, "15m", limit=10)
+            candles = fetch_ohlcv(symbol, "15m", limit=200)
             if not candles:
+                logger.warning(f"داده‌ای برای {symbol} موجود نیست")
                 continue
 
-            # بالاترین high و پایین‌ترین low در کندل‌های اخیر
-            recent_high = max(c["high"] for c in candles)
-            recent_low = min(c["low"] for c in candles)
-
             for sig in signals:
-                _check_signal(sig, recent_high, recent_low, candles)
+                _check_signal(sig, candles)
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
 
 
-def _check_signal(sig: dict, recent_high: float,
-                   recent_low: float, candles: list):
-    """چک کردن یک سیگنال"""
+def _check_expired_signals(signals: list):
+    """سیگنال‌های قدیمی رو EXPIRED می‌کنه"""
+    now = datetime.utcnow()
+    threshold = now - timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
+
+    for sig in signals:
+        try:
+            created = _parse_dt(sig["created_at"])
+            if created < threshold:
+                close_signal(
+                    sig["id"],
+                    sig["entry"],
+                    0.0,
+                    "EXPIRED",
+                )
+                logger.info(
+                    f"⏰ EXPIRED: {sig['symbol']} "
+                    f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
+                )
+        except Exception as e:
+            logger.error(f"خطا در چک EXPIRED {sig['id']}: {e}")
+
+
+def _check_signal(sig: dict, candles: list):
+    """
+    بررسی یک سیگنال با فیلتر زمان
+    فقط کندل‌های بعد از created_at بررسی می‌شن
+    """
     symbol = sig["symbol"]
     direction = sig["direction"]
     entry = sig["entry"]
@@ -85,42 +118,55 @@ def _check_signal(sig: dict, recent_high: float,
     tp = sig["tp"]
     sig_id = sig["id"]
 
-    # اسپرد رو روی entry اعمال کن (برای شبیه‌سازی واقعی)
+    # زمان ساخته شدن
+    try:
+        created_at = _parse_dt(sig["created_at"])
+    except Exception as e:
+        logger.error(f"خطا در پارس زمان سیگنال {sig_id}: {e}")
+        return
+
+    # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
 
-    if direction == "BUY":
-        # بررسی SL اول (چون اگه SL بخوره، ضرره)
-        if recent_low <= sl:
-            pnl_price = sl - effective_entry
-            pnl_pips = _to_pips(symbol, pnl_price)
-            close_signal(sig_id, sl, pnl_pips, "LOSS")
-            logger.info(f"❌ LOSS: {symbol} {pnl_pips:+.1f} pips")
-            return
+    # مرور کندل‌ها
+    for c in candles:
+        try:
+            candle_time = _parse_dt(c["time"])
+        except Exception:
+            continue
 
-        # بررسی TP
-        if recent_high >= tp:
-            pnl_price = tp - effective_entry
-            pnl_pips = _to_pips(symbol, pnl_price)
-            close_signal(sig_id, tp, pnl_pips, "WIN")
-            logger.info(f"✅ WIN: {symbol} {pnl_pips:+.1f} pips")
-            return
+        # فقط کندل‌های بعد از ساخته شدن سیگنال
+        if candle_time <= created_at:
+            continue
 
-    elif direction == "SELL":
-        # بررسی SL اول
-        if recent_high >= sl:
-            pnl_price = effective_entry - sl
-            pnl_pips = _to_pips(symbol, pnl_price)
-            close_signal(sig_id, sl, pnl_pips, "LOSS")
-            logger.info(f"❌ LOSS: {symbol} {pnl_pips:+.1f} pips")
-            return
+        high = c["high"]
+        low = c["low"]
 
-        # بررسی TP
-        if recent_low <= tp:
-            pnl_price = effective_entry - tp
-            pnl_pips = _to_pips(symbol, pnl_price)
-            close_signal(sig_id, tp, pnl_pips, "WIN")
-            logger.info(f"✅ WIN: {symbol} {pnl_pips:+.1f} pips")
-            return
+        if direction == "BUY":
+            # اول SL (محافظه‌کارانه)
+            if low <= sl:
+                pnl = _to_pips(symbol, sl - effective_entry)
+                close_signal(sig_id, sl, pnl, "LOSS")
+                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
+                return
+            if high >= tp:
+                pnl = _to_pips(symbol, tp - effective_entry)
+                close_signal(sig_id, tp, pnl, "WIN")
+                logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
+                return
+
+        elif direction == "SELL":
+            # اول SL
+            if high >= sl:
+                pnl = _to_pips(symbol, effective_entry - sl)
+                close_signal(sig_id, sl, pnl, "LOSS")
+                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
+                return
+            if low <= tp:
+                pnl = _to_pips(symbol, effective_entry - tp)
+                close_signal(sig_id, tp, pnl, "WIN")
+                logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
+                return
 
 
 def is_duplicate_signal(symbol: str, direction: str,
