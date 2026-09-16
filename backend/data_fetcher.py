@@ -1,11 +1,13 @@
 """
-دریافت داده OHLCV با کش هوشمند 5 تایم‌فریم
+دریافت داده OHLCV با کش هوشمند + فایل‌بک دیسک
 Top-Down: 1wk → 1d → 4h → 1h → 15m
 + قیمت‌های زنده
 """
 import warnings
 import logging
 import time
+import json
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -17,8 +19,11 @@ from .config import CANDLE_LIMIT, MIN_CANDLES, CACHE_TTL, SYMBOLS
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
+# مسیر کش دیسک
+CACHE_FILE = os.getenv("CACHE_FILE", "data_cache.json")
+
 # ============================================================
-#  کش هوشمند
+#  کش هوشمند (in-memory)
 # ============================================================
 _cache = {}
 
@@ -40,8 +45,48 @@ def _get_cached(key: str) -> Optional[list]:
     return None
 
 
-def _set_cache(key: str, data):
+def _set_cache(key: str, data: list):
     _cache[key] = {"data": data, "ts": time.time()}
+
+
+# ============================================================
+#  کش دیسک (مقاوم به ری‌استارت)
+# ============================================================
+
+def _save_cache_to_disk():
+    """ذخیره کش توی فایل"""
+    try:
+        serializable = {}
+        for k, v in _cache.items():
+            serializable[k] = v
+        with open(CACHE_FILE, "w") as f:
+            json.dump(serializable, f)
+    except Exception as e:
+        logger.debug(f"خطا در ذخیره کش دیسک: {e}")
+
+
+def _load_cache_from_disk():
+    """بارگذاری کش از فایل"""
+    global _cache
+    if not os.path.exists(CACHE_FILE):
+        return
+    try:
+        with open(CACHE_FILE, "r") as f:
+            _cache = json.load(f)
+        # پاک کردن کش‌های خیلی قدیمی (بیشتر از 24 ساعت)
+        now = time.time()
+        _cache = {
+            k: v for k, v in _cache.items()
+            if (now - v.get("ts", 0)) < 86400
+        }
+        logger.info(f"📦 کش از دیسک بارگذاری شد ({len(_cache)} آیتم)")
+    except Exception as e:
+        logger.warning(f"خطا در بارگذاری کش دیسک: {e}")
+        _cache = {}
+
+
+# بارگذاری در import
+_load_cache_from_disk()
 
 
 # ============================================================
@@ -75,10 +120,6 @@ def _clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     return df[cols].dropna()
 
-
-# ============================================================
-#  تبدیل تایم‌فریم
-# ============================================================
 
 YF_INTERVAL_MAP = {
     "15m": ("15m", "5d"),
@@ -138,6 +179,7 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
         } for _, row in df.iterrows()]
 
         _set_cache(key, records)
+        _save_cache_to_disk()
         return records
 
     except Exception as e:
@@ -184,7 +226,7 @@ def fetch_topdown(symbol: str) -> dict:
 
 
 # ============================================================
-#  قیمت‌های زنده (تیکر)
+#  قیمت‌های زنده
 # ============================================================
 
 _prices_cache = {"data": {}, "ts": 0}
@@ -192,13 +234,8 @@ PRICES_TTL_SECONDS = 30
 
 
 def fetch_live_prices(use_cache: bool = True) -> dict:
-    """
-    دریافت قیمت لحظه‌ای همه نمادها
-    با کش 30 ثانیه‌ای
-    """
     global _prices_cache
 
-    # چک کش
     if use_cache and _prices_cache["data"]:
         elapsed = time.time() - _prices_cache["ts"]
         if elapsed < PRICES_TTL_SECONDS:
@@ -208,7 +245,6 @@ def fetch_live_prices(use_cache: bool = True) -> dict:
 
     for symbol, name in SYMBOLS.items():
         try:
-            # روش سریع: 1d با 5m interval
             df = yf.download(
                 symbol, period="1d", interval="5m",
                 progress=False, auto_adjust=False, threads=False,
@@ -256,7 +292,7 @@ def fetch_live_prices(use_cache: bool = True) -> dict:
 
 
 # ============================================================
-#  سازگاری با کد قبلی
+#  سازگاری
 # ============================================================
 
 def fetch_multi_timeframe(symbol: str, htf: str = "4h",
@@ -276,4 +312,5 @@ def get_cache_stats() -> dict:
     return {
         "size": len(_cache),
         "prices_cached": len(_prices_cache["data"]) > 0,
-}
+        "disk_cache": os.path.exists(CACHE_FILE),
+    }
