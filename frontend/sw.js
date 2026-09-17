@@ -2,7 +2,7 @@
    SMC Forex Analyzer - Service Worker (PWA)
    ============================================================ */
 
-const CACHE_NAME = 'smc-forex-v2';
+const CACHE_NAME = 'smc-forex-v1';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
