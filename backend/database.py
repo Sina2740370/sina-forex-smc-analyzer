@@ -1,21 +1,118 @@
 """
-مدیریت دیتابیس SQLite برای ذخیره سیگنال‌ها
-با فیکس جداکننده Reasons (JSON به جای |)
+مدیریت دیتابیس - پشتیبانی از PostgreSQL + SQLite
+اگر DATABASE_URL ست شده باشه → PostgreSQL
+وگرنه → SQLite (محلی)
 """
-import sqlite3
+import os
 import logging
 import json
 from datetime import datetime, timedelta
 from contextlib import contextmanager
+
 from .config import DB_PATH
 
 logger = logging.getLogger(__name__)
 
+# ============================================================
+#  انتخاب نوع دیتابیس
+# ============================================================
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
+USE_POSTGRES = DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://")
+
+if USE_POSTGRES:
+    try:
+        import psycopg2
+        import psycopg2.extras
+        logger.info("🐘 استفاده از PostgreSQL")
+    except ImportError:
+        logger.error("❌ psycopg2 نصب نیست → fallback به SQLite")
+        USE_POSTGRES = False
+else:
+    import sqlite3
+    logger.info("📁 استفاده از SQLite")
+
+
+# ============================================================
+#  تبدیل Placeholder
+# ============================================================
+def _q(query: str) -> str:
+    """تبدیل ? به %s برای PostgreSQL"""
+    if USE_POSTGRES:
+        return query.replace("?", "%s")
+    return query
+
+
+# ============================================================
+#  اتصال به دیتابیس
+# ============================================================
+@contextmanager
+def get_conn():
+    if USE_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL)
+        try:
+            yield conn
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"خطا در دیتابیس: {e}")
+            raise
+        finally:
+            conn.close()
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"خطا در دیتابیس: {e}")
+            raise
+        finally:
+            conn.close()
+
+
+def _execute(conn, query: str, params: tuple = None):
+    """اجرای کوئری با placeholder مناسب"""
+    cur = conn.cursor()
+    if params:
+        cur.execute(_q(query), params)
+    else:
+        cur.execute(_q(query))
+    return cur
+
+
+# ============================================================
+#  ساخت جداول
+# ============================================================
 def init_db():
     """ساخت جداول در اولین اجرا"""
-    with get_conn() as conn:
-        conn.executescript("""
+
+    if USE_POSTGRES:
+        schema = """
+        CREATE TABLE IF NOT EXISTS signals (
+            id SERIAL PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            name TEXT,
+            direction TEXT NOT NULL,
+            entry DOUBLE PRECISION NOT NULL,
+            sl DOUBLE PRECISION NOT NULL,
+            tp DOUBLE PRECISION NOT NULL,
+            score DOUBLE PRECISION NOT NULL,
+            reasons TEXT,
+            created_at TEXT NOT NULL,
+            closed_at TEXT,
+            status TEXT DEFAULT 'OPEN',
+            exit_price DOUBLE PRECISION,
+            pnl_pips DOUBLE PRECISION
+        );
+        CREATE INDEX IF NOT EXISTS idx_signals_symbol ON signals(symbol);
+        CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
+        CREATE INDEX IF NOT EXISTS idx_signals_created ON signals(created_at);
+        """
+    else:
+        schema = """
         CREATE TABLE IF NOT EXISTS signals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT NOT NULL,
@@ -32,49 +129,42 @@ def init_db():
             exit_price REAL,
             pnl_pips REAL
         );
-
         CREATE INDEX IF NOT EXISTS idx_signals_symbol ON signals(symbol);
         CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
         CREATE INDEX IF NOT EXISTS idx_signals_created ON signals(created_at);
-        """)
-    logger.info("✅ دیتابیس آماده شد")
-
-
-@contextmanager
-def get_conn():
-    """اتصال به دیتابیس با auto-commit/rollback"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        logger.error(f"خطا در دیتابیس: {e}")
-        raise
-    finally:
-        conn.close()
-
-
-def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
-    """ثبت سیگنال جدید - Reasons به صورت JSON"""
-    # تبدیل به JSON (به جای | )
-    if isinstance(reasons, list):
-        reasons_json = json.dumps(reasons, ensure_ascii=False)
-    else:
-        reasons_json = json.dumps([str(reasons)], ensure_ascii=False)
+        """
 
     with get_conn() as conn:
-        cur = conn.execute("""
-            INSERT INTO signals
-            (symbol, name, direction, entry, sl, tp, score, reasons, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            symbol, name, direction, entry, sl, tp, score,
-            reasons_json,
-            datetime.utcnow().isoformat()
-        ))
-        return cur.lastrowid
+        cur = conn.cursor()
+        # برای PostgreSQL، هر دستور باید جدا اجرا شه
+        if USE_POSTGRES:
+            for stmt in schema.split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    cur.execute(stmt)
+        else:
+            cur.executescript(schema)
+
+    logger.info(f"✅ دیتابیس آماده شد ({'PostgreSQL' if USE_POSTGRES else 'SQLite'})")
+
+
+# ============================================================
+#  ردیف به Dict
+# ============================================================
+def _row_to_dict(row, description=None):
+    """تبدیل row به dict"""
+    if row is None:
+        return None
+
+    if USE_POSTGRES:
+        if description is None:
+            return dict(row)
+        return {description[i][0]: row[i] for i in range(len(row))}
+    else:
+        d = dict(row)
+        if "reasons" in d:
+            d["reasons"] = _parse_reasons(d["reasons"])
+        return d
 
 
 def _parse_reasons(reasons_str):
@@ -87,43 +177,86 @@ def _parse_reasons(reasons_str):
             return parsed
         return [str(parsed)]
     except (json.JSONDecodeError, TypeError):
-        # عقب‌گرد: اگه داده قدیمی بود، با | جدا کن
         if "|" in str(reasons_str):
             return [r.strip() for r in str(reasons_str).split("|") if r.strip()]
         return [str(reasons_str)]
 
 
+def _process_rows(cur) -> list:
+    """پردازش همه ردیف‌ها"""
+    if USE_POSTGRES:
+        columns = [desc[0] for desc in cur.description]
+        results = []
+        for row in cur.fetchall():
+            d = {columns[i]: row[i] for i in range(len(columns))}
+            if "reasons" in d:
+                d["reasons"] = _parse_reasons(d["reasons"])
+            results.append(d)
+        return results
+    else:
+        results = []
+        for row in cur.fetchall():
+            d = dict(row)
+            if "reasons" in d:
+                d["reasons"] = _parse_reasons(d["reasons"])
+            results.append(d)
+        return results
+
+
+# ============================================================
+#  عملیات‌ها
+# ============================================================
+def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
+    """ثبت سیگنال جدید"""
+    if isinstance(reasons, list):
+        reasons_json = json.dumps(reasons, ensure_ascii=False)
+    else:
+        reasons_json = json.dumps([str(reasons)], ensure_ascii=False)
+
+    with get_conn() as conn:
+        cur = _execute(conn, """
+            INSERT INTO signals
+            (symbol, name, direction, entry, sl, tp, score, reasons, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            symbol, name, direction, entry, sl, tp, score,
+            reasons_json,
+            datetime.utcnow().isoformat()
+        ))
+
+        if USE_POSTGRES:
+            try:
+                cur.execute("SELECT LASTVAL()")
+                return cur.fetchone()[0]
+            except Exception:
+                return None
+        else:
+            return cur.lastrowid
+
+
 def get_open_signals():
     """همه سیگنال‌های باز"""
     with get_conn() as conn:
-        rows = conn.execute(
+        cur = _execute(conn,
             "SELECT * FROM signals WHERE status = 'OPEN' ORDER BY created_at DESC"
-        ).fetchall()
-        return [_row_to_dict(r) for r in rows]
+        )
+        return _process_rows(cur)
 
 
 def get_all_signals(limit: int = 200):
     """همه سیگنال‌ها"""
     with get_conn() as conn:
-        rows = conn.execute(
+        cur = _execute(conn,
             "SELECT * FROM signals ORDER BY created_at DESC LIMIT ?",
             (limit,)
-        ).fetchall()
-        return [_row_to_dict(r) for r in rows]
-
-
-def _row_to_dict(row):
-    """تبدیل row به dict با پارس کردن JSON"""
-    d = dict(row)
-    if "reasons" in d:
-        d["reasons"] = _parse_reasons(d["reasons"])
-    return d
+        )
+        return _process_rows(cur)
 
 
 def close_signal(signal_id, exit_price, pnl_pips, status):
-    """بستن سیگنال با WIN یا LOSS یا EXPIRED"""
+    """بستن سیگنال"""
     with get_conn() as conn:
-        conn.execute("""
+        _execute(conn, """
             UPDATE signals
             SET status = ?, exit_price = ?, pnl_pips = ?, closed_at = ?
             WHERE id = ?
@@ -136,21 +269,24 @@ def close_signal(signal_id, exit_price, pnl_pips, status):
 def get_stats_summary():
     """آمار کلی"""
     with get_conn() as conn:
-        rows = conn.execute("""
+        cur = _execute(conn, """
             SELECT status, pnl_pips FROM signals
             WHERE status IN ('WIN', 'LOSS')
-        """).fetchall()
+        """)
+
+        if USE_POSTGRES:
+            rows = cur.fetchall()
+            rows = [{"status": r[0], "pnl_pips": r[1]} for r in rows]
+        else:
+            rows = [dict(r) for r in cur.fetchall()]
+
+        cur2 = _execute(conn, "SELECT COUNT(*) FROM signals WHERE status = 'OPEN'")
+        open_count = cur2.fetchone()[0]
+
+        cur3 = _execute(conn, "SELECT COUNT(*) FROM signals WHERE status = 'EXPIRED'")
+        expired_count = cur3.fetchone()[0]
 
     total = len(rows)
-
-    with get_conn() as conn:
-        open_count = conn.execute(
-            "SELECT COUNT(*) as c FROM signals WHERE status = 'OPEN'"
-        ).fetchone()["c"]
-
-        expired_count = conn.execute(
-            "SELECT COUNT(*) as c FROM signals WHERE status = 'EXPIRED'"
-        ).fetchone()["c"]
 
     if total == 0:
         return {
@@ -190,8 +326,8 @@ def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
     """سیگنال‌های اخیر یه نماد"""
     cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
     with get_conn() as conn:
-        rows = conn.execute("""
+        cur = _execute(conn, """
             SELECT * FROM signals
             WHERE symbol = ? AND created_at > ?
-        """, (symbol, cutoff)).fetchall()
-        return [_row_to_dict(r) for r in rows]
+        """, (symbol, cutoff))
+        return _process_rows(cur)
