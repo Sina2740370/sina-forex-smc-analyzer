@@ -4,14 +4,12 @@
 
 const API_BASE = '';
 
-// ---- State ----
 let currentTab = 'live';
 let currentFilter = 'all';
 let allSignals = [];
 let refreshInterval = null;
 let pricesInterval = null;
 
-// ---- Symbol Flags ----
 const SYMBOL_FLAGS = {
   'EURUSD=X': '🇪🇺🇺🇸',
   'GBPUSD=X': '🇬🇧🇺🇸',
@@ -103,7 +101,7 @@ function timeAgo(isoStr) {
 }
 
 /* ============================================================
-   📊 Live Prices Ticker
+   📊 Ticker
    ============================================================ */
 
 async function loadPrices() {
@@ -121,10 +119,7 @@ async function loadPrices() {
 
     renderTicker(data.data);
   } catch (e) {
-    console.error('خطا در دریافت قیمت‌ها:', e);
-    if (el.querySelector('.ticker-loading') === null && el.children.length === 0) {
-      el.innerHTML = '<div class="ticker-loading">خطا در دریافت قیمت</div>';
-    }
+    console.error('خطا در قیمت‌ها:', e);
   }
 }
 
@@ -149,7 +144,6 @@ function renderTicker(prices) {
     `;
   }).join('');
 
-  // کلیک روی هر آیتم → اسکرول به کارت
   el.querySelectorAll('.ticker-item').forEach(item => {
     item.addEventListener('click', () => {
       const symbol = item.dataset.symbol;
@@ -208,7 +202,7 @@ async function loadLive(showSpinner = true) {
       cards.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">⏳</div>
-          <div class="empty-state-text">اولین اسکن در حال اجراست...<br>لطفاً چند لحظه صبر کن</div>
+          <div class="empty-state-text">اولین اسکن در حال اجراست...</div>
         </div>`;
       return;
     }
@@ -297,13 +291,21 @@ function renderCard(s) {
       </div>`;
   }
 
+  // ✅ فیکس: reasons ممکنه آرایه یا رشته باشه
+  let reasonsArr = [];
+  if (Array.isArray(s.reasons)) {
+    reasonsArr = s.reasons;
+  } else if (typeof s.reasons === 'string') {
+    reasonsArr = s.reasons.split('|').filter(Boolean);
+  }
+
   let reasonsBlock = '';
-  if (s.reasons && s.reasons.length > 0) {
+  if (reasonsArr.length > 0) {
     reasonsBlock = `
       <div class="reasons">
         <div class="reasons-title">دلایل تحلیل:</div>
         <ul>
-          ${s.reasons.map(r => `<li>${r}</li>`).join('')}
+          ${reasonsArr.map(r => `<li>${r}</li>`).join('')}
         </ul>
       </div>`;
   }
@@ -371,6 +373,7 @@ async function loadSignals() {
     allSignals = await r.json();
     renderSignals();
   } catch (e) {
+    console.error('خطا در سیگنال‌ها:', e);
     el.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
@@ -410,6 +413,7 @@ function renderSignalCard(s) {
   let statusBadge = '<span class="badge wait">باز</span>';
   if (s.status === 'WIN') statusBadge = '<span class="badge win">✓ سود</span>';
   if (s.status === 'LOSS') statusBadge = '<span class="badge loss">✗ ضرر</span>';
+  if (s.status === 'EXPIRED') statusBadge = '<span class="badge wait">⏰ منقضی</span>';
 
   const dirClass = direction === 'BUY' ? 'buy' : 'sell';
   const dirLabel = direction === 'BUY' ? '▲ خرید' : '▼ فروش';
@@ -420,9 +424,18 @@ function renderSignalCard(s) {
          <span class="value ${s.pnl_pips >= 0 ? 'green' : 'red'}">${s.pnl_pips > 0 ? '+' : ''}${parseFloat(s.pnl_pips).toFixed(1)} پیپ</span>
        </div>` : '';
 
-  const reasons = s.reasons
-    ? `<div class="reasons"><div class="reasons-title">دلایل:</div><ul>${s.reasons.split('|').filter(Boolean).map(r => `<li>${r}</li>`).join('')}</ul></div>`
-    : '';
+  // ✅ فیکس اصلی: reasons ممکنه آرایه باشه
+  let reasonsArr = [];
+  if (Array.isArray(s.reasons)) {
+    reasonsArr = s.reasons;
+  } else if (typeof s.reasons === 'string') {
+    reasonsArr = s.reasons.split('|').filter(Boolean);
+  }
+
+  let reasons = '';
+  if (reasonsArr.length > 0) {
+    reasons = `<div class="reasons"><div class="reasons-title">دلایل:</div><ul>${reasonsArr.map(r => `<li>${r}</li>`).join('')}</ul></div>`;
+  }
 
   return `
     <div class="card">
@@ -476,6 +489,7 @@ async function loadStats() {
     const s = await r.json();
     renderStats(s);
   } catch (e) {
+    console.error('خطا در آمار:', e);
     el.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
@@ -583,7 +597,7 @@ function renderStats(s) {
 }
 
 /* ============================================================
-   Refresh Button
+   Refresh
    ============================================================ */
 
 function setupRefresh() {
@@ -592,7 +606,7 @@ function setupRefresh() {
 
   btn.addEventListener('click', async () => {
     btn.classList.add('spinning');
-    showToast('در حال اسکن مجدد بازار...', 'success');
+    showToast('در حال اسکن مجدد...', 'success');
 
     try {
       await fetch(`${API_BASE}/api/scan/force`, { method: 'POST' });
@@ -642,6 +656,3 @@ function init() {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-                 }
