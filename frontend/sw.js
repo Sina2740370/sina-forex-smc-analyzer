@@ -1,8 +1,9 @@
 /* ============================================================
-   SMC Forex Analyzer - Service Worker (PWA)
+   Sina Quant - Service Worker v3
+   استراتژی: Network-First برای فایل‌های اصلی
    ============================================================ */
 
-const CACHE_NAME = 'smc-forex-v1';
+const CACHE_NAME = 'sina-quant-v3';
 const STATIC_ASSETS = [
   '/',
   '/static/style.css',
@@ -12,88 +13,87 @@ const STATIC_ASSETS = [
 
 /* ---- Install ---- */
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker: نصب');
+  console.log('🔧 SW نصب شد (v3)');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });
 
-/* ---- Activate ---- */
+/* ---- Activate: پاک کردن کش‌های قدیمی ---- */
 self.addEventListener('activate', (event) => {
-  console.log('✅ Service Worker: فعال');
+  console.log('✅ SW فعال شد (v3)');
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k !== CACHE_NAME)
-            .map((k) => caches.delete(k))
+        keys
+          .filter((k) => k !== CACHE_NAME)
+          .map((k) => {
+            console.log('🗑 پاک کردن کش:', k);
+            return caches.delete(k);
+          })
       )
     ).then(() => self.clients.claim())
   );
 });
 
-/* ---- Fetch: Stale-While-Revalidate برای API + Cache-First برای static ---- */
+/* ---- Fetch ---- */
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // فقط GET رو کش کن
+  // فقط GET
   if (request.method !== 'GET') return;
 
-  // API: همیشه از شبکه (بعد آپدیت کش)
+  // API: همیشه از شبکه (بدون کش)
   if (url.pathname.startsWith('/api/')) {
+    return; // به مرورگر اجازه بده طبیعی درخواست بزنه
+  }
+
+  // HTML و JS و CSS: Network-First (همیشه آخرین نسخه)
+  if (
+    url.pathname === '/' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/sw.js' ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.html')
+  ) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          // ذخیره در کش برای بار بعد
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => {
+          // آفلاین: از کش استفاده کن
+          return caches.match(request).then((cached) => {
+            if (cached) return cached;
+            if (request.mode === 'navigate') {
+              return caches.match('/');
+            }
+          });
+        })
     );
     return;
   }
 
-  // Static: اول کش، بعد شبکه
+  // بقیه: Cache-First
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((response) => {
-        // فقط پاسخ‌های موفق رو کش کن
         if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      }).catch(() => {
-        // اگه صفحه اصلی بود، آفلاین نشون بده
-        if (request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      });
+      }).catch(() => caches.match('/'));
     })
   );
-});
-
-/* ---- Push Notifications (آماده برای آینده) ---- */
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'سیگنال جدید', {
-      body: data.body || 'سیگنال معاملاتی جدیدی صادر شد',
-      icon: '/static/icon-192.png',
-      badge: '/static/icon-192.png',
-      dir: 'rtl',
-      lang: 'fa',
-      tag: 'signal',
-      data: data.url || '/',
-    })
-  );
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data || '/'));
 });
