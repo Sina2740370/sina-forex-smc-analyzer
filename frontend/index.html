@@ -7,8 +7,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Sina Quant">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/static/style.css">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="manifest" href="/manifest.json?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=3">
   <title>Sina Quant</title>
 </head>
 <body>
@@ -23,7 +26,6 @@
   </button>
 </header>
 
-<!-- 📊 تیکر قیمت زنده -->
 <section id="tickerBar" class="ticker-bar">
   <div id="tickerContent" class="ticker-content">
     <div class="ticker-loading">در حال دریافت قیمت‌ها...</div>
@@ -46,7 +48,6 @@
 </nav>
 
 <main>
-
   <section id="tab-live" class="tab-content active">
     <div id="scanInfo" class="scan-info"></div>
     <div id="loading" class="spinner">
@@ -71,26 +72,49 @@
   <section id="tab-stats" class="tab-content">
     <div id="statsContent"></div>
   </section>
-
 </main>
 
 <footer>
   <div class="footer-info">
-    <span>Sina Quant v2.1</span>
+    <span>Sina Quant v3.0</span>
     <span id="lastUpdate">-</span>
   </div>
 </footer>
 
-<script src="/static/app.js"></script>
 <script>
+  // 🔥 مهم: پاک کردن همه Service Workerهای قدیمی
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('✅ SW ثبت شد'))
-        .catch(err => console.log('❌ خطای SW:', err));
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      if (registrations.length > 0) {
+        console.log('🗑 پاک کردن ' + registrations.length + ' Service Worker قدیمی');
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+        // بعد از پاک کردن، صفحه رو یه بار رفرش کن
+        setTimeout(function() {
+          if (!sessionStorage.getItem('sw_cleared')) {
+            sessionStorage.setItem('sw_cleared', '1');
+            window.location.reload(true);
+          }
+        }, 500);
+      }
+    });
+  }
+
+  // پاک کردن کش‌های قدیمی
+  if ('caches' in window) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(key) {
+        if (key !== 'sina-quant-v3') {
+          console.log('🗑 پاک کردن کش: ' + key);
+          caches.delete(key);
+        }
+      });
     });
   }
 </script>
 
+<script src="/static/app.js?v=3"></script>
+
 </body>
-    </html>
+</html>
