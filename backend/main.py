@@ -2,6 +2,7 @@
 FastAPI Backend - Sina Quant
 """
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from .scheduler import (
     scan_market,
 )
 from .data_fetcher import fetch_live_prices
+from . import database
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sina Quant",
     description="Quantitative Forex Analysis with SMC/ICT",
-    version="2.1.0",
+    version="2.3.0",
     lifespan=lifespan,
 )
 
@@ -58,12 +60,27 @@ app = FastAPI(
 #  API Endpoints
 # ============================================================
 
+@app.get("/api/db-status")
+def db_status():
+    """چک کردن نوع دیتابیس فعال - برای دیباگ"""
+    url = os.getenv("DATABASE_URL", "").strip()
+    return {
+        "database_url_set": bool(url),
+        "url_prefix": url[:30] if url else "NOT SET",
+        "url_length": len(url),
+        "use_postgres": database.USE_POSTGRES,
+        "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
+    }
+
+
 @app.get("/api/health")
 def health():
     stats = get_scan_stats()
     return {
         "status": "ok",
         "app": "Sina Quant",
+        "version": "2.3.0",
+        "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
         "scans": stats.get("total_scans", 0),
         "last_scan": stats.get("last_scan_time"),
         "timeframes": stats.get("timeframes", []),
@@ -88,7 +105,7 @@ def get_config():
 
 @app.get("/api/prices")
 def get_prices():
-    """قیمت‌های زنده همه نمادها"""
+    """قیمت‌های زنده"""
     prices = fetch_live_prices()
     return {
         "status": "ok",
