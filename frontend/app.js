@@ -1,8 +1,10 @@
 /* ============================================================
-   Sina Quant - Frontend Logic
+   Sina Quant - Frontend Logic v3
+   با timeout + error handling بهتر
    ============================================================ */
 
 const API_BASE = '';
+const FETCH_TIMEOUT = 60000; // 60 ثانیه
 
 let currentTab = 'live';
 let currentFilter = 'all';
@@ -30,6 +32,20 @@ const SYMBOL_FLAGS = {
 
 function $(sel) { return document.querySelector(sel); }
 function $$(sel) { return document.querySelectorAll(sel); }
+
+// ✅ fetch با timeout
+async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
 
 function showToast(msg, type = 'success') {
   let toast = $('#toast');
@@ -109,7 +125,7 @@ async function loadPrices() {
   if (!el) return;
 
   try {
-    const r = await fetch(`${API_BASE}/api/prices`);
+    const r = await fetchWithTimeout(`${API_BASE}/api/prices`, {}, 30000);
     const data = await r.json();
 
     if (!data.data || data.data.length === 0) {
@@ -120,6 +136,10 @@ async function loadPrices() {
     renderTicker(data.data);
   } catch (e) {
     console.error('خطا در قیمت‌ها:', e);
+    // اگه قبلاً داده داشتیم، پاک نکن
+    if (el.children.length === 0 || el.querySelector('.ticker-loading')) {
+      el.innerHTML = '<div class="ticker-loading">خطا در دریافت قیمت</div>';
+    }
   }
 }
 
@@ -193,7 +213,7 @@ async function loadLive(showSpinner = true) {
   }
 
   try {
-    const r = await fetch(`${API_BASE}/api/scan`);
+    const r = await fetchWithTimeout(`${API_BASE}/api/scan`);
     const data = await r.json();
 
     loading.style.display = 'none';
@@ -217,11 +237,16 @@ async function loadLive(showSpinner = true) {
   } catch (e) {
     console.error('خطا در بارگذاری:', e);
     loading.style.display = 'none';
+
+    // فقط اگه واقعاً خالی بود → خطا نشون بده
     if (cards.children.length === 0) {
       cards.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">⚠️</div>
-          <div class="empty-state-text">خطا در دریافت داده</div>
+          <div class="empty-state-icon">⏳</div>
+          <div class="empty-state-text">
+            سرور در حال بیدار شدن...<br>
+            <small>چند لحظه صبر کن و Refresh کن</small>
+          </div>
         </div>`;
     }
   }
@@ -291,7 +316,7 @@ function renderCard(s) {
       </div>`;
   }
 
-  // ✅ فیکس: reasons ممکنه آرایه یا رشته باشه
+  // reasons آرایه یا رشته
   let reasonsArr = [];
   if (Array.isArray(s.reasons)) {
     reasonsArr = s.reasons;
@@ -369,15 +394,15 @@ async function loadSignals() {
   el.innerHTML = `<div class="spinner" style="display:block"><p>در حال بارگذاری...</p></div>`;
 
   try {
-    const r = await fetch(`${API_BASE}/api/signals`);
+    const r = await fetchWithTimeout(`${API_BASE}/api/signals`);
     allSignals = await r.json();
     renderSignals();
   } catch (e) {
     console.error('خطا در سیگنال‌ها:', e);
     el.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <div class="empty-state-text">خطا در دریافت سیگنال‌ها</div>
+        <div class="empty-state-icon">⏳</div>
+        <div class="empty-state-text">سرور در حال بیدار شدن...<br><small>دوباره تلاش کن</small></div>
       </div>`;
   }
 }
@@ -424,7 +449,6 @@ function renderSignalCard(s) {
          <span class="value ${s.pnl_pips >= 0 ? 'green' : 'red'}">${s.pnl_pips > 0 ? '+' : ''}${parseFloat(s.pnl_pips).toFixed(1)} پیپ</span>
        </div>` : '';
 
-  // ✅ فیکس اصلی: reasons ممکنه آرایه باشه
   let reasonsArr = [];
   if (Array.isArray(s.reasons)) {
     reasonsArr = s.reasons;
@@ -485,15 +509,15 @@ async function loadStats() {
   el.innerHTML = `<div class="spinner" style="display:block"><p>در حال بارگذاری...</p></div>`;
 
   try {
-    const r = await fetch(`${API_BASE}/api/stats`);
+    const r = await fetchWithTimeout(`${API_BASE}/api/stats`);
     const s = await r.json();
     renderStats(s);
   } catch (e) {
     console.error('خطا در آمار:', e);
     el.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <div class="empty-state-text">خطا در دریافت آمار</div>
+        <div class="empty-state-icon">⏳</div>
+        <div class="empty-state-text">سرور در حال بیدار شدن...<br><small>دوباره تلاش کن</small></div>
       </div>`;
   }
 }
@@ -609,7 +633,7 @@ function setupRefresh() {
     showToast('در حال اسکن مجدد...', 'success');
 
     try {
-      await fetch(`${API_BASE}/api/scan/force`, { method: 'POST' });
+      await fetchWithTimeout(`${API_BASE}/api/scan/force`, { method: 'POST' }, 90000);
       await loadLive();
       await loadPrices();
       showToast('✅ اسکن انجام شد', 'success');
@@ -623,36 +647,4 @@ function setupRefresh() {
 
 /* ============================================================
    Auto Refresh
-   ============================================================ */
-
-function startAutoRefresh() {
-  if (refreshInterval) clearInterval(refreshInterval);
-  refreshInterval = setInterval(() => {
-    if (currentTab === 'live') loadLive(false);
-    else if (currentTab === 'signals') loadSignals();
-    else if (currentTab === 'stats') loadStats();
-  }, 60000);
-}
-
-function startPricesRefresh() {
-  if (pricesInterval) clearInterval(pricesInterval);
-  pricesInterval = setInterval(loadPrices, 30000);
-}
-
-/* ============================================================
-   Init
-   ============================================================ */
-
-function init() {
-  console.log('🚀 Sina Quant - شروع');
-  setupTabs();
-  setupFilters();
-  setupRefresh();
-  loadPrices();
-  loadLive();
-  startAutoRefresh();
-  startPricesRefresh();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+   ==============================
