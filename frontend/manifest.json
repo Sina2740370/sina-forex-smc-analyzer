@@ -1,7 +1,7 @@
 {
   "name": "Sina Quant",
   "short_name": "Sina Quant",
-  "description": "Quantitative Forex Analysis with SMC/ICT",
+  "description": "Quantitative Forex Analysis",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,7 +10,6 @@
   "theme_color": "#0a0e17",
   "lang": "fa",
   "dir": "rtl",
-  "categories": ["finance", "business"],
   "icons": [
     {
       "src": "/static/icon.svg",
