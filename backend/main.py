@@ -1,5 +1,5 @@
 """
-FastAPI Backend - Sina Quant
+FastAPI Backend - Sina Quant v3.1
 """
 import logging
 import os
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sina Quant",
     description="Quantitative Forex Analysis with SMC/ICT",
-    version="3.0.0",
+    version="3.1.0",
     lifespan=lifespan,
 )
 
@@ -79,7 +79,7 @@ def health():
     return {
         "status": "ok",
         "app": "Sina Quant",
-        "version": "3.0.0",
+        "version": "3.1.0",
         "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
         "scans": stats.get("total_scans", 0),
         "last_scan": stats.get("last_scan_time"),
@@ -180,7 +180,7 @@ else:
 
 @app.get("/")
 def serve_index():
-    """صفحه اصلی - با هدر Clear-Site-Data برای پاک کردن کش"""
+    """صفحه اصلی - بدون Clear-Site-Data (که باعث reload loop می‌شد)"""
     index = FRONTEND_DIR / "index.html"
     if not index.exists():
         return JSONResponse(
@@ -188,11 +188,7 @@ def serve_index():
             status_code=404,
         )
     response = FileResponse(index)
-    # 🔥 پاک کردن cache, cookies, storage, Service Workerها
-    response.headers["Clear-Site-Data"] = '"cache", "cookies", "storage", "executionContexts"'
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
 
@@ -208,16 +204,12 @@ def serve_manifest():
 
 @app.get("/sw.js")
 def serve_sw():
-    """Service Worker - همیشه نسخه جدید"""
+    """Service Worker - نسخه ساده بدون cache loop"""
     sw = FRONTEND_DIR / "sw.js"
     if not sw.exists():
         raise HTTPException(status_code=404)
     response = FileResponse(sw, media_type="application/javascript")
-    # 🔥 Service Worker همیشه باید fresh باشه
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    # 🔥 غیرفعال کردن SW (کاملاً پاک کن)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Service-Worker-Allowed"] = "/"
     return response
 
