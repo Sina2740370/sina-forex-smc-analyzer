@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debug - Sina Quant</title>
+<style>
+  body { font-family: monospace; background: #0a0e17; color: #e6edf5; padding: 12px; font-size: 13px; }
+  .section { background: #151b28; border: 1px solid #23304a; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  .title { color: #60a5fa; font-weight: bold; margin-bottom: 8px; font-size: 15px; }
+  .ok { color: #22c55e; }
+  .error { color: #ef4444; }
+  .warning { color: #f59e0b; }
+  pre { white-space: pre-wrap; word-break: break-all; margin: 4px 0; }
+  button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; margin: 4px; }
+</style>
+</head>
+<body>
+
+<h2>🔍 Debug Panel</h2>
+
+<button onclick="testHealth()">تست /api/health</button>
+<button onclick="testScan()">تست /api/scan</button>
+<button onclick="testPrices()">تست /api/prices</button>
+<button onclick="testAppJs()">تست app.js</button>
+
+<div id="output"></div>
+
+<script>
+const API = 'https://sina-forex-smc-analyzer.onrender.com';
+
+function log(title, content, type = 'ok') {
+  const out = document.getElementById('output');
+  const div = document.createElement('div');
+  div.className = 'section';
+  div.innerHTML = `<div class="title">${title}</div><pre class="${type}">${content}</pre>`;
+  out.appendChild(div);
+}
+
+async function testHealth() {
+  log('🔍 /api/health', 'در حال تست...', 'warning');
+  try {
+    const r = await fetch(API + '/api/health');
+    const d = await r.json();
+    log('✅ /api/health - موفق', JSON.stringify(d, null, 2), 'ok');
+  } catch (e) {
+    log('❌ /api/health - خطا', e.message, 'error');
+  }
+}
+
+async function testScan() {
+  log('🔍 /api/scan', 'در حال تست...', 'warning');
+  try {
+    const r = await fetch(API + '/api/scan');
+    const d = await r.json();
+    const preview = d.data ? `تعداد: ${d.count}\nاولین: ${JSON.stringify(d.data[0], null, 2).slice(0, 500)}` : JSON.stringify(d);
+    log('✅ /api/scan - موفق', preview, 'ok');
+  } catch (e) {
+    log('❌ /api/scan - خطا', e.message, 'error');
+  }
+}
+
+async function testPrices() {
+  log('🔍 /api/prices', 'در حال تست...', 'warning');
+  try {
+    const r = await fetch(API + '/api/prices');
+    const d = await r.json();
+    log('✅ /api/prices - موفق', `تعداد: ${d.count}\nاولین: ${JSON.stringify(d.data[0], null, 2)}`, 'ok');
+  } catch (e) {
+    log('❌ /api/prices - خطا', e.message, 'error');
+  }
+}
+
+async function testAppJs() {
+  log('🔍 app.js', 'در حال تست...', 'warning');
+  try {
+    const r = await fetch(API + '/static/app.js?v=3');
+    const text = await r.text();
+    const firstLine = text.split('\n').slice(0, 3).join('\n');
+    log('✅ app.js - دریافت شد', `طول: ${text.length} کاراکتر\n${firstLine}`, 'ok');
+  } catch (e) {
+    log('❌ app.js - خطا', e.message, 'error');
+  }
+}
+
+// اجرای خودکار در بارگذاری
+window.addEventListener('load', () => {
+  log('🚀 صفحه لود شد', 'نسخه: ' + new Date().toISOString(), 'ok');
+  testHealth();
+});
+</script>
+
+</body>
+  </html>
