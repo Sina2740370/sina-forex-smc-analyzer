@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sina Quant",
     description="Quantitative Forex Analysis with SMC/ICT",
-    version="2.3.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
@@ -62,7 +62,7 @@ app = FastAPI(
 
 @app.get("/api/db-status")
 def db_status():
-    """چک کردن نوع دیتابیس فعال - برای دیباگ"""
+    """چک کردن نوع دیتابیس فعال"""
     url = os.getenv("DATABASE_URL", "").strip()
     return {
         "database_url_set": bool(url),
@@ -79,7 +79,7 @@ def health():
     return {
         "status": "ok",
         "app": "Sina Quant",
-        "version": "2.3.0",
+        "version": "3.0.0",
         "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
         "scans": stats.get("total_scans", 0),
         "last_scan": stats.get("last_scan_time"),
@@ -180,13 +180,20 @@ else:
 
 @app.get("/")
 def serve_index():
+    """صفحه اصلی - با هدر Clear-Site-Data برای پاک کردن کش"""
     index = FRONTEND_DIR / "index.html"
     if not index.exists():
         return JSONResponse(
             content={"error": "index.html یافت نشد"},
             status_code=404,
         )
-    return FileResponse(index)
+    response = FileResponse(index)
+    # 🔥 پاک کردن cache, cookies, storage, Service Workerها
+    response.headers["Clear-Site-Data"] = '"cache", "cookies", "storage", "executionContexts"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.get("/manifest.json")
@@ -194,15 +201,25 @@ def serve_manifest():
     manifest = FRONTEND_DIR / "manifest.json"
     if not manifest.exists():
         raise HTTPException(status_code=404)
-    return FileResponse(manifest, media_type="application/manifest+json")
+    response = FileResponse(manifest, media_type="application/manifest+json")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 @app.get("/sw.js")
 def serve_sw():
+    """Service Worker - همیشه نسخه جدید"""
     sw = FRONTEND_DIR / "sw.js"
     if not sw.exists():
         raise HTTPException(status_code=404)
-    return FileResponse(sw, media_type="application/javascript")
+    response = FileResponse(sw, media_type="application/javascript")
+    # 🔥 Service Worker همیشه باید fresh باشه
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    # 🔥 غیرفعال کردن SW (کاملاً پاک کن)
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
 
 
 @app.get("/favicon.ico")
