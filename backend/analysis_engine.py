@@ -98,10 +98,12 @@ def find_order_blocks(df, lookback=80):
     for i in range(len(w) - 3, 1, -1):
         cur, nxt = w.iloc[i], w.iloc[i + 1]
         body = abs(nxt["close"] - nxt["open"])
+        later = w.iloc[i + 2:]
 
         if (cur["close"] < cur["open"]
                 and nxt["close"] > cur["high"]
                 and body > avg_body * 1.5
+                and (later.empty or not (later["close"] < cur["low"]).any())
                 and bull is None):
             bull = {"high": float(cur["high"]), "low": float(cur["low"]),
                     "mid": float((cur["high"] + cur["low"]) / 2)}
@@ -109,6 +111,7 @@ def find_order_blocks(df, lookback=80):
         if (cur["close"] > cur["open"]
                 and nxt["close"] < cur["low"]
                 and body > avg_body * 1.5
+                and (later.empty or not (later["close"] > cur["high"]).any())
                 and bear is None):
             bear = {"high": float(cur["high"]), "low": float(cur["low"]),
                     "mid": float((cur["high"] + cur["low"]) / 2)}
@@ -280,6 +283,19 @@ def top_down_filter(data_dict):
 #  لایه تکنیکال (Top-Down + Unicorn)
 # ============================================================
 
+def _drop_forming(df, minutes):
+    """کندل ناقص (در حال تشکیل) رو حذف می‌کنه تا سیگنال repaint نشه"""
+    try:
+        if df is None or len(df) < 2:
+            return df
+        t = pd.to_datetime(df["time"].iloc[-1], utc=True)
+        if t + pd.Timedelta(minutes=minutes) > pd.Timestamp.now(tz="UTC"):
+            return df.iloc[:-1].reset_index(drop=True)
+    except Exception:
+        pass
+    return df
+
+
 def analyze_technical_topdown(data_dict):
     """
     تحلیل تکنیکال با 5 تایم‌فریم
@@ -359,6 +375,8 @@ def analyze_technical_topdown(data_dict):
         return base
 
     # تحلیل
+    df_1h = _drop_forming(df_1h, 60)
+    df_15m = _drop_forming(df_15m, 15)
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
@@ -373,7 +391,8 @@ def analyze_technical_topdown(data_dict):
     # BUY
     if td_dir == "BULLISH" and htf_obs["bullish"]:
         ob = htf_obs["bullish"]
-        in_ob = ob["low"] * 0.998 <= price <= ob["high"] * 1.002
+        _tol = (ob["high"] - ob["low"]) * 0.1
+        in_ob = ob["low"] <= price <= ob["high"] + _tol
 
         if in_ob and htf_pd["zone"] == "DISCOUNT":
             score += 0.5
@@ -397,7 +416,12 @@ def analyze_technical_topdown(data_dict):
                 buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["low"] - buf, 6)
                 risk = price - sl
-                tp = round(price + risk * RISK_REWARD, 6)
+                if risk <= 0:
+                    direction = None
+                    sl = None
+                    reasons.append("ریسک نامعتبر (SL بالاتر از قیمت)")
+                else:
+                    tp = round(price + risk * RISK_REWARD, 6)
         else:
             if not in_ob:
                 reasons.append("قیمت خارج از OB صعودی 4H")
@@ -407,7 +431,8 @@ def analyze_technical_topdown(data_dict):
     # SELL
     elif td_dir == "BEARISH" and htf_obs["bearish"]:
         ob = htf_obs["bearish"]
-        in_ob = ob["low"] * 0.998 <= price <= ob["high"] * 1.002
+        _tol = (ob["high"] - ob["low"]) * 0.1
+        in_ob = ob["low"] - _tol <= price <= ob["high"]
 
         if in_ob and htf_pd["zone"] == "PREMIUM":
             score -= 0.5
@@ -431,7 +456,12 @@ def analyze_technical_topdown(data_dict):
                 buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["high"] + buf, 6)
                 risk = sl - price
-                tp = round(price - risk * RISK_REWARD, 6)
+                if risk <= 0:
+                    direction = None
+                    sl = None
+                    reasons.append("ریسک نامعتبر (SL پایین‌تر از قیمت)")
+                else:
+                    tp = round(price - risk * RISK_REWARD, 6)
         else:
             if not in_ob:
                 reasons.append("قیمت خارج از OB نزولی 4H")
@@ -505,6 +535,8 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     if tech["score"] > 0 and direction == "SELL":
         direction = None
     if tech["score"] < 0 and direction == "BUY":
+        direction = None
+    if direction and (tech["sl"] is None or tech["tp"] is None):
         direction = None
 
     all_reasons = [f"📈 تکنیکال: {tech['score']:+.2f}"]
