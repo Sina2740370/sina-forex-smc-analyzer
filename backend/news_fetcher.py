@@ -49,7 +49,8 @@ async def fetch_news(force: bool = False) -> list:
 
 
 def upcoming_high_impact(news: list,
-                          within_minutes: int = 30) -> list:
+                          within_minutes: int = 30,
+                          after_minutes: int = None) -> list:
     """
     اخبار High Impact که در بازه‌ی مشخصی (قبل/بعد) هستن
     """
@@ -57,7 +58,8 @@ def upcoming_high_impact(news: list,
         return []
 
     now = datetime.now(timezone.utc)
-    start = now - timedelta(minutes=within_minutes)
+    after = within_minutes if after_minutes is None else after_minutes
+    start = now - timedelta(minutes=after)
     end = now + timedelta(minutes=within_minutes)
     result = []
 
@@ -80,7 +82,7 @@ def upcoming_high_impact(news: list,
                 result.append({
                     "title": item.get("title", ""),
                     "country": item.get("country", ""),
-                    "currency": item.get("currency", ""),
+                    "currency": item.get("country") or item.get("currency", ""),
                     "impact": item.get("impact", ""),
                     "time": event_time.isoformat(),
                 })
@@ -115,7 +117,9 @@ def is_news_safe(news: list, symbol: str,
     if not currencies:
         return True, ""
 
-    events = upcoming_high_impact(news, within_minutes=buffer_min)
+    events = upcoming_high_impact(
+        news, within_minutes=buffer_min, after_minutes=buffer_min * 2
+    )
 
     for ev in events:
         ev_currency = ev.get("currency", "")
