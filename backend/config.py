@@ -107,3 +107,12 @@ WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.10))
 # ============================================================
 RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", 0.01))   # ۱٪ ریسک هر معامله (برای محاسبه دراودان)
 MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "0") == "1"    # لایه حافظه؛ تو دوره تست خاموش
+
+# ============================================================
+#  حساب و بروکر (برای پیام تلگرام)
+# ============================================================
+ACCOUNT_BALANCE = float(os.getenv("ACCOUNT_BALANCE", 1000))    # موجودی حساب (دلار)
+LOT_RISK_PCT = float(os.getenv("LOT_RISK_PCT", 0.5))           # درصد ریسک هر معامله
+BROKER_SUFFIX = os.getenv("BROKER_SUFFIX", "")                 # پسوند نماد تو MT5 (مثلاً ".m")
+GOLD_SYMBOL = os.getenv("GOLD_SYMBOL", "XAUUSD")               # اسم طلا تو MT5 (مثلاً "GOLD")
+MAX_ENTRY_SLIP_R = float(os.getenv("MAX_ENTRY_SLIP_R", 0.3))   # حداکثر فاصله ورود، نسبت به فاصله SL

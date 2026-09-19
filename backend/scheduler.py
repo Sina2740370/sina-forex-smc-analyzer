@@ -135,6 +135,7 @@ async def scan_market():
                         reasons=result.get("reasons", []),
                         trend=result.get("htf_trend", "-"),
                         zone=result.get("zone", "-"),
+                        rates={k: v.get("current_price") for k, v in _last_scan.items()},
                     )
                 except Exception as e:
                     logger.error(f"خطا در ارسال نوتیف: {e}")
