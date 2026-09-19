@@ -82,6 +82,9 @@ def get_session_performance() -> dict:
 
 def calculate_memory_score(symbol: str) -> dict:
     """امتیاز مبتنی بر حافظه برای یه نماد"""
+    from .config import MEMORY_ENABLED
+    if not MEMORY_ENABLED:
+        return {"score": 0.0, "reasons": [], "enabled": False}
     perf = get_symbol_performance()
     total_trades = sum(d["total"] for d in perf.values())
 

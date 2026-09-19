@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
-from .config import DB_PATH
+from .config import DB_PATH, PIP_SIZE, RISK_PER_TRADE
 
 logger = logging.getLogger(__name__)
 
@@ -267,58 +267,62 @@ def close_signal(signal_id, exit_price, pnl_pips, status):
 
 
 def get_stats_summary():
-    """آمار کلی"""
+    """آمار کلی: بر حسب R-multiple، EXPIRED تو مخرج، با دراودان"""
     with get_conn() as conn:
         cur = _execute(conn, """
-            SELECT status, pnl_pips FROM signals
-            WHERE status IN ('WIN', 'LOSS')
+            SELECT symbol, status, entry, sl, pnl_pips FROM signals
+            WHERE status IN ('WIN', 'LOSS', 'EXPIRED')
+            ORDER BY closed_at ASC
         """)
-
-        if USE_POSTGRES:
-            rows = cur.fetchall()
-            rows = [{"status": r[0], "pnl_pips": r[1]} for r in rows]
-        else:
-            rows = [dict(r) for r in cur.fetchall()]
-
+        rows = cur.fetchall()
         cur2 = _execute(conn, "SELECT COUNT(*) FROM signals WHERE status = 'OPEN'")
         open_count = cur2.fetchone()[0]
 
-        cur3 = _execute(conn, "SELECT COUNT(*) FROM signals WHERE status = 'EXPIRED'")
-        expired_count = cur3.fetchone()[0]
+    wins = losses = expired = 0
+    gross_r_win = gross_r_loss = 0.0
+    total_pips = 0.0
+    cum = peak = max_dd = 0.0
 
-    total = len(rows)
+    for sym, status, entry, sl, pnl in rows:
+        pnl = pnl or 0.0
+        pip = PIP_SIZE.get(sym, 0.0001)
+        risk_pips = abs(entry - sl) / pip if (sl is not None and pip) else 0.0
+        r = pnl / risk_pips if risk_pips > 0 else 0.0
 
-    if total == 0:
-        return {
-            "total": 0,
-            "wins": 0,
-            "losses": 0,
-            "win_rate": 0.0,
-            "profit_factor": 0.0,
-            "total_pips": 0.0,
-            "open_signals": open_count,
-            "expired_signals": expired_count,
-        }
+        if status == "WIN":
+            wins += 1
+            gross_r_win += max(r, 0.0)
+            total_pips += pnl
+        elif status == "LOSS":
+            losses += 1
+            gross_r_loss += abs(min(r, 0.0))
+            total_pips += pnl
+        else:
+            expired += 1
+            r = 0.0
 
-    wins_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "WIN"]
-    losses_list = [r["pnl_pips"] or 0 for r in rows if r["status"] == "LOSS"]
+        cum += r
+        peak = max(peak, cum)
+        max_dd = max(max_dd, peak - cum)
 
-    wins_count = len(wins_list)
-    losses_count = len(losses_list)
-
-    gross_profit = sum(p for p in wins_list if p > 0)
-    gross_loss = abs(sum(p for p in losses_list if p < 0))
-    pf = gross_profit / gross_loss if gross_loss > 0 else 0.0
+    total = wins + losses + expired
+    if gross_r_loss > 0:
+        pf = gross_r_win / gross_r_loss
+    else:
+        pf = 99.0 if gross_r_win > 0 else 0.0
 
     return {
         "total": total,
-        "wins": wins_count,
-        "losses": losses_count,
-        "win_rate": round(wins_count / total, 4) if total else 0.0,
-        "profit_factor": round(pf, 2),
-        "total_pips": round(sum(wins_list) + sum(losses_list), 1),
+        "wins": wins,
+        "losses": losses,
+        "win_rate": round(wins / total, 4) if total else 0.0,
+        "profit_factor": round(min(pf, 99.0), 2),
+        "total_pips": round(total_pips, 1),
+        "total_r": round(cum, 2),
+        "max_drawdown_r": round(max_dd, 2),
+        "max_drawdown_pct": round(max_dd * RISK_PER_TRADE, 4),
         "open_signals": open_count,
-        "expired_signals": expired_count,
+        "expired_signals": expired,
     }
 
 

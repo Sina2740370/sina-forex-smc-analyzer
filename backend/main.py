@@ -156,6 +156,7 @@ def get_stats():
         stats["total"] >= MIN_TRADES
         and stats["win_rate"] >= MIN_WIN_RATE
         and stats["profit_factor"] >= MIN_PROFIT_FACTOR
+        and stats["max_drawdown_pct"] <= MAX_DRAWDOWN
     )
     return {
         **stats,

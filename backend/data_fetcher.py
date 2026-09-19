@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # مسیر کش دیسک
 CACHE_FILE = os.getenv("CACHE_FILE", "data_cache.json")
+MAX_STORE = 500  # حداکثر کندل ذخیره‌شده در کش
 
 # ============================================================
 #  کش هوشمند (in-memory)
@@ -144,7 +145,7 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
     if use_cache and _is_cache_valid(key, ttl):
         cached = _get_cached(key)
         if cached:
-            return cached
+            return cached[-limit:]
 
     if timeframe not in YF_INTERVAL_MAP:
         logger.warning(f"تایم‌فریم نامعتبر: {timeframe}")
@@ -166,7 +167,7 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
         if timeframe == "4h" and yf_interval == "1h":
             df = _resample_to_4h(df)
 
-        df = df.tail(limit)
+        df = df.tail(MAX_STORE)
 
         records = [{
             "time": row["time"].isoformat() if hasattr(row["time"], "isoformat")
@@ -180,13 +181,13 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
 
         _set_cache(key, records)
         _save_cache_to_disk()
-        return records
+        return records[-limit:]
 
     except Exception as e:
         logger.error(f"❌ خطا fetch {symbol} {timeframe}: {e}")
         old = _get_cached(key)
         if old:
-            return old
+            return old[-limit:]
         return []
 
 

@@ -71,7 +71,7 @@ def check_open_signals():
 
     for symbol, signals in by_symbol.items():
         try:
-            candles = fetch_ohlcv(symbol, "15m", limit=200)
+            candles = fetch_ohlcv(symbol, "15m", limit=500)
             if not candles:
                 logger.warning(f"داده‌ای برای {symbol} موجود نیست")
                 continue

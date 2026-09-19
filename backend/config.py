@@ -101,3 +101,9 @@ WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.60))
 WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.15))
 WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.15))
 WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.10))
+
+# ============================================================
+#  ریسک و حافظه (اضافه‌شده)
+# ============================================================
+RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", 0.01))   # ۱٪ ریسک هر معامله (برای محاسبه دراودان)
+MEMORY_ENABLED = os.getenv("MEMORY_ENABLED", "0") == "1"    # لایه حافظه؛ تو دوره تست خاموش
