@@ -3,105 +3,825 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0e17">
+<meta name="theme-color" content="#080b12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sina Quant">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="./manifest.json">
 <title>Sina Quant</title>
+
 <style>
+/* ============================================================
+   SINA QUANT — MODERN BLACK / GRAPHITE UI
+   ============================================================ */
+
 :root{
-  --bg:#0a0e17;--card:#151b28;--border:#23304a;--text:#e6edf5;
-  --muted:#64748b;--green:#22c55e;--red:#ef4444;--accent:#3b82f6;
+  --bg:#080b12;
+  --bg2:#0d111a;
+  --card:#111722;
+  --card2:#151c28;
+  --card3:#192131;
+  --border:#222c3d;
+  --border2:#2b3850;
+  --text:#edf2f7;
+  --muted:#718096;
+  --muted2:#94a3b8;
+  --green:#22c55e;
+  --green2:#16a34a;
+  --red:#ef4444;
+  --red2:#dc2626;
+  --yellow:#f59e0b;
+  --blue:#3b82f6;
+  --blue2:#60a5fa;
+  --purple:#8b5cf6;
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+  --radius:16px;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:linear-gradient(180deg,#0f1520,#0a0e17);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
-h1{font-size:1.1rem;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.refresh{background:var(--card);border:1px solid var(--border);border-radius:50%;width:42px;height:42px;font-size:18px;color:var(--text);cursor:pointer}
-.tabs{display:flex;background:#0f1520;border-bottom:1px solid var(--border);position:sticky;top:71px;z-index:9}
-.tab{flex:1;background:none;border:none;color:var(--muted);font-size:.85rem;font-weight:600;padding:14px 8px;cursor:pointer;border-bottom:2.5px solid transparent;font-family:inherit}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-main{padding:14px;max-width:720px;margin:0 auto}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.ticker{background:#0f1520;border-bottom:1px solid var(--border);overflow-x:auto;white-space:nowrap;padding:8px 0;scrollbar-width:none}
-.ticker::-webkit-scrollbar{display:none}
-.ticker-inner{display:inline-flex;gap:8px;padding:0 10px}
-.t-item{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(35,48,74,.4);border:1px solid var(--border);border-radius:8px;font-size:.72rem;font-family:'Courier New',monospace}
-.t-up{color:var(--green)}.t-down{color:var(--red)}
-.card{background:linear-gradient(160deg,#151b28,#1a2130);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
-.card.buy::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#22c55e,transparent)}
-.card.sell::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#ef4444,transparent)}
-.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.name{font-size:1rem;font-weight:700}
-.code{font-size:.68rem;color:var(--muted);font-family:monospace}
-.badge{padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:800}
-.badge.buy{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
-.badge.sell{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.badge.wait{background:rgba(100,116,139,.15);color:var(--muted);border:1px solid rgba(100,116,139,.3)}
-.row{display:flex;justify-content:space-between;padding:8px 0;font-size:.85rem;border-bottom:1px solid rgba(35,48,74,.5)}
-.row:last-child{border-bottom:none}
-.row .lbl{color:var(--muted);font-size:.78rem}
-.row .val{font-weight:600;font-family:monospace}
-.green{color:var(--green)}.red{color:var(--red)}.yellow{color:#f59e0b}
-.empty{text-align:center;padding:60px 20px;color:var(--muted)}
-.empty-icon{font-size:48px;opacity:.4;margin-bottom:16px}
-.spin{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin:0 4px;animation:b 1.4s infinite ease-in-out both}
-.spin:nth-child(2){animation-delay:-.16s}.spin:nth-child(3){animation-delay:-.32s}
-@keyframes b{0%,80%,100%{transform:scale(.6);opacity:.5}40%{transform:scale(1);opacity:1}}
-.stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
-.stat-val{font-size:1.4rem;font-weight:800;font-family:monospace}
-.stat-lbl{font-size:.72rem;color:var(--muted);margin-top:4px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.hero{background:linear-gradient(160deg,#1a2130,#151b28);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;margin-bottom:12px}
-.hero-val{font-size:2rem;font-weight:800;font-family:monospace}
-footer{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;background:linear-gradient(0deg,#0f1520 60%,transparent);text-align:center;font-size:.65rem;color:var(--muted);pointer-events:none;display:flex;justify-content:space-between}
-.err-box{background:#7f1d1d;color:#fecaca;padding:12px;border-radius:8px;margin:10px 0;font-size:.8rem;white-space:pre-wrap;word-break:break-all}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html{
+  scroll-behavior:smooth;
+  background:var(--bg);
+}
+
+body{
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Tahoma,
+    Arial,
+    sans-serif;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(59,130,246,.08),transparent 32%),
+    radial-gradient(circle at 90% 15%,rgba(139,92,246,.06),transparent 28%),
+    linear-gradient(180deg,#080b12 0%,#0b0f17 55%,#080b12 100%);
+  color:var(--text);
+  min-height:100vh;
+  padding-bottom:68px;
+  overflow-x:hidden;
+}
+
+/* ---------- HEADER ---------- */
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 16px;
+  background:rgba(8,11,18,.94);
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  z-index:50;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+
+.logo-icon{
+  width:40px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:
+    linear-gradient(145deg,#182337,#0d131e);
+  border:1px solid var(--border2);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 5px 18px rgba(0,0,0,.25);
+  font-size:20px;
+}
+
+header h1,
+h1{
+  font-size:1.08rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  background:linear-gradient(135deg,#f8fafc,#94a3b8);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.icon-btn,
+.refresh{
+  width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(145deg,#151d2b,#0e141f);
+  border:1px solid var(--border2);
+  border-radius:12px;
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.icon-btn:active,
+.refresh:active{
+  transform:scale(.94);
+}
+
+/* ---------- TICKER ---------- */
+
+.ticker{
+  background:rgba(10,14,22,.96);
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;
+  white-space:nowrap;
+  padding:9px 0;
+  scrollbar-width:none;
+}
+
+.ticker::-webkit-scrollbar{
+  display:none;
+}
+
+.ticker-inner{
+  display:inline-flex;
+  gap:8px;
+  padding:0 12px;
+}
+
+.ticker-item,
+.t-item{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 11px;
+  background:linear-gradient(
+    145deg,
+    rgba(25,33,47,.85),
+    rgba(15,21,31,.85)
+  );
+  border:1px solid var(--border);
+  border-radius:9px;
+  font-size:.72rem;
+  font-family:"Courier New",monospace;
+  color:var(--text);
+}
+
+.t-up{
+  color:var(--green);
+  font-weight:700;
+}
+
+.t-down{
+  color:var(--red);
+  font-weight:700;
+}
+
+/* ---------- TABS ---------- */
+
+.tabs{
+  display:flex;
+  background:rgba(10,14,22,.96);
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:70px;
+  z-index:40;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+.tab{
+  flex:1;
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:.82rem;
+  font-weight:700;
+  padding:14px 8px;
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  font-family:inherit;
+  transition:.2s ease;
+  position:relative;
+}
+
+.tab.active{
+  color:#e2e8f0;
+  border-bottom-color:var(--blue);
+  background:linear-gradient(
+    180deg,
+    rgba(59,130,246,.07),
+    transparent
+  );
+}
+
+.tab:active{
+  transform:scale(.98);
+}
+
+/* ---------- MAIN ---------- */
+
+main{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+  padding:15px;
+}
+
+.tab-content{
+  display:none;
+}
+
+.tab-content.active{
+  display:block;
+  animation:fadeIn .25s ease;
+}
+
+@keyframes fadeIn{
+  from{
+    opacity:0;
+    transform:translateY(5px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+/* ---------- LOADING ---------- */
+
+.spin{
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:var(--blue);
+  margin:0 3px;
+  animation:pulse 1.4s infinite ease-in-out both;
+  box-shadow:0 0 10px rgba(59,130,246,.4);
+}
+
+.spin:nth-child(2){
+  animation-delay:-.16s;
+}
+
+.spin:nth-child(3){
+  animation-delay:-.32s;
+}
+
+@keyframes pulse{
+  0%,80%,100%{
+    transform:scale(.55);
+    opacity:.4;
+  }
+  40%{
+    transform:scale(1);
+    opacity:1;
+  }
+}
+
+/* ---------- SCAN INFO ---------- */
+
+.scan-info{
+  background:
+    linear-gradient(145deg,#141c29,#0f151f);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:11px 14px;
+  margin-bottom:12px;
+  font-size:.78rem;
+  box-shadow:var(--shadow);
+}
+
+/* ---------- CARDS ---------- */
+
+.card{
+  background:
+    linear-gradient(145deg,
+      rgba(21,28,40,.98),
+      rgba(14,19,29,.98)
+    );
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-bottom:12px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:
+    0 8px 25px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.025);
+  transition:
+    transform .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease;
+}
+
+.card:hover{
+  border-color:var(--border2);
+  box-shadow:0 12px 32px rgba(0,0,0,.25);
+}
+
+.card.buy::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--green),
+      transparent
+    );
+}
+
+.card.sell::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--red),
+      transparent
+    );
+}
+
+.card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.name{
+  font-size:.98rem;
+  font-weight:800;
+  color:#f1f5f9;
+}
+
+.code{
+  font-size:.67rem;
+  color:var(--muted);
+  font-family:"Courier New",monospace;
+  margin-top:2px;
+}
+
+/* ---------- BADGES ---------- */
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 9px;
+  border-radius:8px;
+  font-size:.7rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.badge.buy{
+  background:rgba(34,197,94,.10);
+  color:#4ade80;
+  border:1px solid rgba(34,197,94,.25);
+}
+
+.badge.sell{
+  background:rgba(239,68,68,.10);
+  color:#f87171;
+  border:1px solid rgba(239,68,68,.25);
+}
+
+.badge.wait{
+  background:rgba(100,116,139,.10);
+  color:#94a3b8;
+  border:1px solid rgba(100,116,139,.25);
+}
+
+/* ---------- ROWS ---------- */
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:9px 0;
+  font-size:.82rem;
+  border-bottom:1px solid rgba(43,56,80,.42);
+}
+
+.row:last-child{
+  border-bottom:none;
+}
+
+.row .lbl{
+  color:var(--muted);
+  font-size:.76rem;
+}
+
+.row .val{
+  font-weight:700;
+  font-family:"Courier New",monospace;
+  color:#dbe4ef;
+  text-align:left;
+}
+
+.green{
+  color:var(--green)!important;
+}
+
+.red{
+  color:var(--red)!important;
+}
+
+.yellow{
+  color:var(--yellow)!important;
+}
+
+/* ---------- SL TP ---------- */
+
+.sltp{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px dashed var(--border);
+}
+
+.sltp-box{
+  background:rgba(8,11,18,.7);
+  border:1px solid rgba(43,56,80,.5);
+  border-radius:10px;
+  padding:10px;
+  text-align:center;
+}
+
+.sltp-label{
+  font-size:.68rem;
+  color:var(--muted);
+  margin-bottom:5px;
+}
+
+/* ---------- REASONS ---------- */
+
+.reasons{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px dashed var(--border);
+}
+
+.reasons-title{
+  font-size:.74rem;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+
+.reason{
+  font-size:.76rem;
+  color:#aeb9c8;
+  padding:7px 10px;
+  background:rgba(59,130,246,.035);
+  border-right:2px solid rgba(59,130,246,.7);
+  border-radius:5px;
+  margin-bottom:4px;
+}
+
+/* ---------- EMPTY ---------- */
+
+.empty{
+  text-align:center;
+  padding:65px 20px;
+  color:var(--muted);
+  font-size:.85rem;
+}
+
+.empty-icon{
+  font-size:46px;
+  opacity:.35;
+  margin-bottom:15px;
+}
+
+/* ---------- STATS ---------- */
+
+.hero{
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(59,130,246,.12),
+      transparent 55%
+    ),
+    linear-gradient(145deg,#172131,#101620);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:23px 20px;
+  text-align:center;
+  margin-bottom:12px;
+  box-shadow:var(--shadow);
+}
+
+.hero-val{
+  font-size:2.15rem;
+  font-weight:900;
+  font-family:"Courier New",monospace;
+  letter-spacing:-1px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-bottom:12px;
+}
+
+.stat-box{
+  background:
+    linear-gradient(145deg,#151d2a,#101620);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:15px 10px;
+  text-align:center;
+  box-shadow:0 5px 18px rgba(0,0,0,.16);
+}
+
+.stat-val{
+  font-size:1.35rem;
+  font-weight:900;
+  font-family:"Courier New",monospace;
+}
+
+.stat-lbl{
+  font-size:.68rem;
+  color:var(--muted);
+  margin-top:5px;
+}
+
+.stats-info{
+  background:
+    linear-gradient(145deg,#141c29,#0f151f);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:16px;
+  font-size:.78rem;
+  line-height:2.15;
+  color:#a7b3c3;
+}
+
+/* ---------- ERROR ---------- */
+
+.err-box{
+  background:
+    linear-gradient(
+      145deg,
+      rgba(127,29,29,.72),
+      rgba(69,10,10,.72)
+    );
+  color:#fecaca;
+  border:1px solid rgba(239,68,68,.25);
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+  font-size:.76rem;
+  white-space:pre-wrap;
+  word-break:break-all;
+}
+
+/* ---------- FOOTER ---------- */
+
+footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  min-height:52px;
+  padding:10px 16px;
+  background:
+    linear-gradient(
+      0deg,
+      rgba(8,11,18,.98) 55%,
+      rgba(8,11,18,.82) 75%,
+      transparent
+    );
+  text-align:center;
+  font-size:.63rem;
+  color:var(--muted);
+  pointer-events:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  z-index:30;
+}
+
+/* ---------- SCROLLBAR ---------- */
+
+::-webkit-scrollbar{
+  width:5px;
+  height:5px;
+}
+
+::-webkit-scrollbar-track{
+  background:#090c12;
+}
+
+::-webkit-scrollbar-thumb{
+  background:#263248;
+  border-radius:10px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+  background:#34445f;
+}
+
+/* ---------- MOBILE ---------- */
+
+@media(max-width:520px){
+
+  main{
+    padding:12px;
+  }
+
+  header{
+    padding:12px 13px;
+  }
+
+  .logo-icon{
+    width:38px;
+    height:38px;
+  }
+
+  header h1{
+    font-size:1rem;
+  }
+
+  .tab{
+    padding:13px 5px;
+    font-size:.76rem;
+  }
+
+  .card{
+    padding:14px;
+    border-radius:14px;
+  }
+
+  .hero{
+    padding:20px 15px;
+  }
+
+  .hero-val{
+    font-size:2rem;
+  }
+
+  .row{
+    padding:8px 0;
+  }
+
+  footer{
+    font-size:.59rem;
+  }
+}
+
+/* ---------- SMALL PHONES ---------- */
+
+@media(max-width:360px){
+
+  main{
+    padding:9px;
+  }
+
+  .card{
+    padding:12px;
+  }
+
+  .name{
+    font-size:.9rem;
+  }
+
+  .badge{
+    font-size:.64rem;
+    padding:4px 7px;
+  }
+
+  .tab{
+    font-size:.7rem;
+  }
+}
+
+/* ---------- REDUCED MOTION ---------- */
+
+@media(prefers-reduced-motion:reduce){
+
+  *,
+  *::before,
+  *::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
 </style>
 </head>
+
 <body>
 
 <header>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="font-size:22px">📊</span>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
     <h1>Sina Quant</h1>
   </div>
-  <button class="refresh" onclick="manualRefresh()">🔄</button>
+
+  <button class="icon-btn refresh" onclick="manualRefresh()" aria-label="Refresh">
+    🔄
+  </button>
 </header>
 
 <div class="ticker">
   <div class="ticker-inner" id="ticker">
-    <div style="color:#64748b;font-size:.75rem;padding:6px 10px">در حال دریافت...</div>
+    <div style="color:#64748b;font-size:.75rem;padding:6px 10px">
+      در حال دریافت...
+    </div>
   </div>
 </div>
 
 <nav class="tabs">
-  <button class="tab active" onclick="showTab('live',this)">📈 لحظه‌ای</button>
-  <button class="tab" onclick="showTab('signals',this)">🎯 سیگنال‌ها</button>
-  <button class="tab" onclick="showTab('stats',this)">📊 آمار</button>
+  <button class="tab active" onclick="showTab('live',this)">
+    📈 لحظه‌ای
+  </button>
+
+  <button class="tab" onclick="showTab('signals',this)">
+    🎯 سیگنال‌ها
+  </button>
+
+  <button class="tab" onclick="showTab('stats',this)">
+    📊 آمار
+  </button>
 </nav>
 
 <main>
+
   <div id="errorBox"></div>
 
   <section id="tab-live" class="tab-content active">
+
     <div id="scanInfo"></div>
+
     <div id="cards">
+
       <div class="empty">
-        <div><span class="spin"></span><span class="spin"></span><span class="spin"></span></div>
-        <div style="margin-top:16px">در حال دریافت تحلیل...</div>
+
+        <div>
+          <span class="spin"></span>
+          <span class="spin"></span>
+          <span class="spin"></span>
+        </div>
+
+        <div style="margin-top:16px">
+          در حال دریافت تحلیل...
+        </div>
+
       </div>
+
     </div>
+
   </section>
 
   <section id="tab-signals" class="tab-content">
-    <div id="signalsList"><div class="empty">در حال بارگذاری...</div></div>
+
+    <div id="signalsList">
+      <div class="empty">
+        در حال بارگذاری...
+      </div>
+    </div>
+
   </section>
 
   <section id="tab-stats" class="tab-content">
-    <div id="statsContent"><div class="empty">در حال بارگذاری...</div></div>
+
+    <div id="statsContent">
+      <div class="empty">
+        در حال بارگذاری...
+      </div>
+    </div>
+
   </section>
+
 </main>
 
 <footer>
@@ -110,203 +830,434 @@ footer{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;background:linea
 </footer>
 
 <script>
-window.onerror = function(msg, url, line) {
+
+window.onerror = function(msg,url,line){
   const eb = document.getElementById('errorBox');
-  eb.innerHTML = '<div class="err-box">❌ JS Error: ' + msg + '\nخط: ' + line + '</div>';
+
+  if(eb){
+    eb.innerHTML =
+      '<div class="err-box">' +
+      '❌ JS Error: ' +
+      msg +
+      '\nخط: ' +
+      line +
+      '</div>';
+  }
 };
 
-const API = 'https://sina-forex-smc-analyzer.onrender.com';
+const API =
+  'https://sina-forex-smc-analyzer.onrender.com';
+
 const FLAGS = {
-  'EURUSD=X':'🇪🇺🇺🇸','GBPUSD=X':'🇬🇧🇺🇸','USDJPY=X':'🇺🇸🇯🇵',
-  'AUDUSD=X':'🇦🇺🇺🇸','USDCAD=X':'🇺🇸🇨🇦','NZDUSD=X':'🇳🇿🇺🇸',
-  'USDCHF=X':'🇺🇸🇨🇭','EURGBP=X':'🇪🇺🇬🇧','EURJPY=X':'🇪🇺🇯🇵',
-  'GBPJPY=X':'🇬🇧🇯🇵','GC=F':'🥇'
+
+  'EURUSD=X':'🇪🇺🇺🇸',
+  'GBPUSD=X':'🇬🇧🇺🇸',
+  'USDJPY=X':'🇺🇸🇯🇵',
+  'AUDUSD=X':'🇦🇺🇺🇸',
+  'USDCAD=X':'🇺🇸🇨🇦',
+  'NZDUSD=X':'🇳🇿🇺🇸',
+  'USDCHF=X':'🇺🇸🇨🇭',
+  'EURGBP=X':'🇪🇺🇬🇧',
+  'EURJPY=X':'🇪🇺🇯🇵',
+  'GBPJPY=X':'🇬🇧🇯🇵',
+  'GC=F':'🥇'
+
 };
 
-function showTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+function showTab(name,btn){
+
+  document
+    .querySelectorAll('.tab')
+    .forEach(t => t.classList.remove('active'));
+
+  document
+    .querySelectorAll('.tab-content')
+    .forEach(t => t.classList.remove('active'));
+
   btn.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'signals') loadSignals();
-  if (name === 'stats') loadStats();
+
+  document
+    .getElementById('tab-' + name)
+    .classList.add('active');
+
+  if(name === 'signals'){
+    loadSignals();
+  }
+
+  if(name === 'stats'){
+    loadStats();
+  }
+
 }
 
-async function fx(url, timeout = 90000) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), timeout);
-  try {
-    const r = await fetch(url, { signal: ctrl.signal });
+async function fx(url,timeout=90000){
+
+  const ctrl =
+    new AbortController();
+
+  const id =
+    setTimeout(
+      () => ctrl.abort(),
+      timeout
+    );
+
+  try{
+
+    const r =
+      await fetch(
+        url,
+        {signal:ctrl.signal}
+      );
+
     clearTimeout(id);
+
+    if(!r.ok){
+      throw new Error(
+        'HTTP ' + r.status
+      );
+    }
+
     return await r.json();
-  } catch(e) {
+
+  }catch(e){
+
     clearTimeout(id);
     throw e;
+
   }
+
 }
 
-function fmtP(p, s) {
-  if (p == null) return '-';
-  return s === 'GC=F' ? p.toFixed(2) : p.toFixed(5);
-}
-function fmtS(v) {
-  if (v == null) return '0.00';
-  return (v >= 0 ? '+' : '') + parseFloat(v).toFixed(2);
-}
-function trendFa(t) {
-  return {'BULLISH':'صعودی','BEARISH':'نزولی','RANGING':'رنج',
-    'UNCLEAR':'نامشخص','CONFLICT':'تضاد','NEUTRAL':'خنثی'}[t] || t || '-';
-}
-function zoneFa(z) {
-  return z === 'PREMIUM' ? 'گرون' : z === 'DISCOUNT' ? 'ارزون' : '-';
-}
-function timeAgo(iso) {
-  try {
-    const d = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (d < 60) return 'همین الان';
-    if (d < 3600) return Math.floor(d/60) + ' دقیقه پیش';
-    if (d < 86400) return Math.floor(d/3600) + ' ساعت پیش';
-    return Math.floor(d/86400) + ' روز پیش';
-  } catch { return '-'; }
+function fmtP(p,s){
+
+  if(p == null){
+    return '-';
+  }
+
+  const n =
+    parseFloat(p);
+
+  if(Number.isNaN(n)){
+    return '-';
+  }
+
+  return s === 'GC=F'
+    ? n.toFixed(2)
+    : n.toFixed(5);
+
 }
 
-async function loadPrices() {
-  try {
-    const d = await fx(API + '/api/prices', 30000);
-    if (!d.data || !d.data.length) return;
-    document.getElementById('ticker').innerHTML = d.data.map(p => {
-      const f = FLAGS[p.symbol] || '💱';
-      const up = p.direction === 'up';
-      const s = p.change_pct >= 0 ? '+' : '';
-      return '<div class="t-item"><span>' + f + '</span><span style="color:#a0aec0">' + p.name + '</span><span>' + p.price + '</span><span class="' + (up ? 't-up' : 't-down') + '">' + (up ? '▲' : '▼') + ' ' + s + p.change_pct + '%</span></div>';
-    }).join('');
-  } catch(e) { console.error('prices', e); }
+function fmtS(v){
+
+  if(v == null){
+    return '0.00';
+  }
+
+  const n =
+    parseFloat(v);
+
+  if(Number.isNaN(n)){
+    return '0.00';
+  }
+
+  return (
+    n >= 0 ? '+' : ''
+  ) + n.toFixed(2);
+
 }
 
-async function loadLive() {
-  try {
-    const d = await fx(API + '/api/scan');
-    if (d.status === 'waiting' || !d.data) {
-      document.getElementById('cards').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div>اولین اسکن در حال اجراست</div></div>';
+function trendFa(t){
+
+  return {
+
+    'BULLISH':'صعودی',
+    'BEARISH':'نزولی',
+    'RANGING':'رنج',
+    'UNCLEAR':'نامشخص',
+    'CONFLICT':'تضاد',
+    'NEUTRAL':'خنثی'
+
+  }[t] || t || '-';
+
+}
+
+function zoneFa(z){
+
+  if(z === 'PREMIUM'){
+    return 'گرون';
+  }
+
+  if(z === 'DISCOUNT'){
+    return 'ارزون';
+  }
+
+  return '-';
+
+}
+
+function timeAgo(iso){
+
+  try{
+
+    const d =
+      (Date.now() -
+       new Date(iso).getTime()) / 1000;
+
+    if(d < 60){
+      return 'همین الان';
+    }
+
+    if(d < 3600){
+      return Math.floor(d/60) +
+        ' دقیقه پیش';
+    }
+
+    if(d < 86400){
+      return Math.floor(d/3600) +
+        ' ساعت پیش';
+    }
+
+    return Math.floor(d/86400) +
+      ' روز پیش';
+
+  }catch{
+
+    return '-';
+
+  }
+
+}
+
+async function loadPrices(){
+
+  try{
+
+    const d =
+      await fx(
+        API + '/api/prices',
+        30000
+      );
+
+    if(!d.data || !d.data.length){
       return;
     }
+
+    document.getElementById('ticker').innerHTML =
+      d.data.map(p => {
+
+        const f =
+          FLAGS[p.symbol] || '💱';
+
+        const up =
+          p.direction === 'up';
+
+        const change =
+          parseFloat(p.change_pct || 0);
+
+        const sign =
+          change >= 0 ? '+' : '';
+
+        return (
+
+          '<div class="t-item">' +
+
+          '<span>' +
+          f +
+          '</span>' +
+
+          '<span style="color:#a0aec0">' +
+          (p.name || p.symbol) +
+          '</span>' +
+
+          '<span>' +
+          p.price +
+          '</span>' +
+
+          '<span class="' +
+          (up ? 't-up' : 't-down') +
+          '">' +
+
+          (up ? '▲' : '▼') +
+          ' ' +
+          sign +
+          change +
+          '%' +
+
+          '</span>' +
+
+          '</div>'
+
+        );
+
+      }).join('');
+
+  }catch(e){
+
+    console.error('prices',e);
+
+  }
+
+}
+
+async function loadLive(){
+
+  try{
+
+    const d =
+      await fx(
+        API + '/api/scan'
+      );
+
+    if(
+      d.status === 'waiting' ||
+      !d.data
+    ){
+
+      document.getElementById('cards').innerHTML =
+
+        '<div class="empty">' +
+
+        '<div class="empty-icon">⏳</div>' +
+
+        '<div>اولین اسکن در حال اجراست</div>' +
+
+        '</div>';
+
+      return;
+
+    }
+
     renderCards(d.data);
-    document.getElementById('scanInfo').innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:.8rem;color:#a0aec0;display:flex;justify-content:space-between"><span style="color:var(--green);font-weight:700">● زنده</span><span>' + d.count + ' جفت‌ارز در حال رصد</span></div>';
-    document.getElementById('lastUpdate').textContent = 'بروزرسانی: ' + new Date().toLocaleTimeString('fa-IR');
-  } catch(e) {
-    document.getElementById('cards').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div>سرور در حال بیدار شدن...<br><small>چند لحظه صبر کن و Refresh بزن</small></div></div>';
-  }
-}
 
-function renderCards(scans) {
-  const sorted = [...scans].sort((a,b) => {
-    const ah = a.direction ? 1 : 0, bh = b.direction ? 1 : 0;
-    if (ah !== bh) return bh - ah;
-    return Math.abs(b.score||0) - Math.abs(a.score||0);
-  });
-  document.getElementById('cards').innerHTML = sorted.map(s => {
-    const f = FLAGS[s.symbol] || '💱';
-    let badge = '<span class="badge wait">⏳ انتظار</span>';
-    let cls = '';
-    if (s.direction === 'BUY') { badge = '<span class="badge buy">▲ خرید</span>'; cls = 'buy'; }
-    if (s.direction === 'SELL') { badge = '<span class="badge sell">▼ فروش</span>'; cls = 'sell'; }
-    const zc = s.zone === 'PREMIUM' ? 'red' : 'green';
-    let sltp = '';
-    if (s.direction && s.suggested_sl && s.suggested_tp) {
-      sltp = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">' +
-        '<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center"><div style="font-size:.7rem;color:var(--muted)">🛑 حد ضرر</div><div style="color:var(--red);font-family:monospace;font-weight:700">' + fmtP(s.suggested_sl, s.symbol) + '</div></div>' +
-        '<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center"><div style="font-size:.7rem;color:var(--muted)">🎯 حد سود</div><div style="color:var(--green);font-family:monospace;font-weight:700">' + fmtP(s.suggested_tp, s.symbol) + '</div></div>' +
-      '</div>';
-    }
-    let reasonsArr = Array.isArray(s.reasons) ? s.reasons : (typeof s.reasons === 'string' ? s.reasons.split('|').filter(Boolean) : []);
-    let reasonsBlock = reasonsArr.length ? '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)"><div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">دلایل تحلیل:</div>' + reasonsArr.map(r => '<div style="font-size:.78rem;color:#a0aec0;padding:6px 10px;background:rgba(59,130,246,.05);border-right:2px solid var(--accent);border-radius:4px;margin-bottom:4px">✓ ' + r + '</div>').join('') + '</div>' : '';
-    const sc = s.score > 0 ? 'green' : s.score < 0 ? 'red' : '';
-    return '<div class="card ' + cls + '">' +
-      '<div class="card-head"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.3rem">' + f + '</span><div><div class="name">' + (s.name || s.symbol) + '</div><div class="code">' + s.symbol + '</div></div></div>' + badge + '</div>' +
-      '<div class="row"><span class="lbl">💰 قیمت</span><span class="val">' + fmtP(s.current_price, s.symbol) + '</span></div>' +
-      '<div class="row"><span class="lbl">📈 روند</span><span class="val" style="color:' + (s.htf_trend === 'BULLISH' ? 'var(--green)' : s.htf_trend === 'BEARISH' ? 'var(--red)' : 'var(--muted)') + '">' + trendFa(s.htf_trend) + '</span></div>' +
-      '<div class="row"><span class="lbl">📍 ناحیه</span><span class="val ' + zc + '">' + zoneFa(s.zone) + '</span></div>' +
-      '<div class="row"><span class="lbl">🎯 امتیاز</span><span class="val ' + sc + '">' + fmtS(s.score) + '</span></div>' +
-      sltp + reasonsBlock + '</div>';
-  }).join('');
-}
+    document.getElementById('scanInfo').innerHTML =
 
-async function loadSignals() {
-  try {
-    const arr = await fx(API + '/api/signals');
-    if (!arr || !arr.length) {
-      document.getElementById('signalsList').innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>هنوز سیگنالی ثبت نشده</div></div>';
-      return;
-    }
-    document.getElementById('signalsList').innerHTML = arr.map(s => {
-      const f = FLAGS[s.symbol] || '💱';
-      let sb = '<span class="badge wait">باز</span>';
-      if (s.status === 'WIN') sb = '<span class="badge buy">✓ سود</span>';
-      if (s.status === 'LOSS') sb = '<span class="badge sell">✗ ضرر</span>';
-      if (s.status === 'EXPIRED') sb = '<span class="badge wait">⏰ منقضی</span>';
-      const dc = s.direction === 'BUY' ? 'buy' : 'sell';
-      const dl = s.direction === 'BUY' ? '▲ خرید' : '▼ فروش';
-      let pnl = '';
-      if (s.pnl_pips != null) pnl = '<div class="row"><span class="lbl">📊 نتیجه</span><span class="val ' + (s.pnl_pips >= 0 ? 'green' : 'red') + '">' + (s.pnl_pips > 0 ? '+' : '') + parseFloat(s.pnl_pips).toFixed(1) + ' پیپ</span></div>';
-      let reasonsArr = Array.isArray(s.reasons) ? s.reasons : (typeof s.reasons === 'string' ? s.reasons.split('|').filter(Boolean) : []);
-      let reasons = reasonsArr.length ? '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)"><div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">دلایل:</div>' + reasonsArr.map(r => '<div style="font-size:.78rem;color:#a0aec0;padding:6px 10px;background:rgba(59,130,246,.05);border-right:2px solid var(--accent);border-radius:4px;margin-bottom:4px">✓ ' + r + '</div>').join('') + '</div>' : '';
-      return '<div class="card"><div class="card-head"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.3rem">' + f + '</span><div><div class="name">' + (s.name||s.symbol) + '</div><span class="badge ' + dc + '" style="margin-top:4px">' + dl + '</span></div></div>' + sb + '</div>' +
-        '<div class="row"><span class="lbl">💰 ورود</span><span class="val">' + fmtP(s.entry, s.symbol) + '</span></div>' +
-        '<div class="row"><span class="lbl">🛑 SL</span><span class="val red">' + fmtP(s.sl, s.symbol) + '</span></div>' +
-        '<div class="row"><span class="lbl">🎯 TP</span><span class="val green">' + fmtP(s.tp, s.symbol) + '</span></div>' +
-        '<div class="row"><span class="lbl">📊 امتیاز</span><span class="val">' + fmtS(s.score) + '</span></div>' + pnl +
-        '<div class="row"><span class="lbl">🕐 زمان</span><span class="val">' + timeAgo(s.created_at) + '</span></div>' + reasons + '</div>';
-    }).join('');
-  } catch(e) {
-    document.getElementById('signalsList').innerHTML = '<div class="empty">خطا در بارگذاری</div>';
-  }
-}
+      '<div class="scan-info">' +
 
-async function loadStats() {
-  try {
-    const s = await fx(API + '/api/stats');
-    const wr = (s.win_rate || 0) * 100;
-    document.getElementById('statsContent').innerHTML =
-      '<div class="hero"><div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">وین ریت</div><div class="hero-val" style="color:' + (wr >= (s.min_win_rate*100) ? 'var(--green)' : 'var(--red)') + '">' + wr.toFixed(1) + '%</div></div>' +
-      '<div class="grid2">' +
-      '<div class="stat-box"><div class="stat-val" style="color:var(--accent)">' + s.total + '</div><div class="stat-lbl">کل معاملات</div></div>' +
-      '<div class="stat-box"><div class="stat-val green">' + s.wins + '</div><div class="stat-lbl">برد</div></div>' +
-      '<div class="stat-box"><div class="stat-val red">' + s.losses + '</div><div class="stat-lbl">باخت</div></div>' +
-      '<div class="stat-box"><div class="stat-val yellow">' + parseFloat(s.profit_factor).toFixed(2) + '</div><div class="stat-lbl">Profit Factor</div></div>' +
-      '<div class="stat-box"><div class="stat-val ' + (s.total_pips >= 0 ? 'green' : 'red') + '">' + (s.total_pips > 0 ? '+' : '') + s.total_pips + '</div><div class="stat-lbl">پیپ کل</div></div>' +
-      '<div class="stat-box"><div class="stat-val" style="color:var(--accent)">' + s.open_signals + '</div><div class="stat-lbl">سیگنال باز</div></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+
+      '<span style="color:var(--green);font-weight:800">' +
+      '● زنده' +
+      '</span>' +
+
+      '<span>' +
+      (d.count || d.data.length || 0) +
+      ' جفت‌ارز در حال رصد' +
+      '</span>' +
+
       '</div>' +
-      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:.8rem;line-height:2;color:#a0aec0">' +
-      '<div>🎯 حداقل معاملات: <b style="color:#fff">' + s.min_trades + '</b></div>' +
-      '<div>🎯 حداقل وین ریت: <b style="color:#fff">' + (s.min_win_rate*100).toFixed(0) + '%</b></div>' +
-      '<div>🎯 حداقل PF: <b style="color:#fff">' + s.min_profit_factor + '</b></div>' +
-      '<div>🎯 مدت تست: <b style="color:#fff">' + s.test_duration_days + ' روز</b></div>' +
+
       '</div>';
-  } catch(e) {
-    document.getElementById('statsContent').innerHTML = '<div class="empty">خطا در بارگذاری</div>';
+
+    document.getElementById('lastUpdate').textContent =
+      'بروزرسانی: ' +
+      new Date().toLocaleTimeString('fa-IR');
+
+  }catch(e){
+
+    document.getElementById('cards').innerHTML =
+
+      '<div class="empty">' +
+
+      '<div class="empty-icon">⏳</div>' +
+
+      '<div>' +
+
+      'سرور در حال بیدار شدن...' +
+
+      '<br>' +
+
+      '<small>' +
+      'چند لحظه صبر کن و Refresh بزن' +
+      '</small>' +
+
+      '</div>' +
+
+      '</div>';
+
   }
+
 }
 
-function manualRefresh() {
-  loadPrices();
-  loadLive();
-  loadSignals();
-  loadStats();
-}
+function renderCards(scans){
 
-loadPrices();
-loadLive();
-setInterval(loadPrices, 30000);
-setInterval(loadLive, 60000);
+  const sorted =
+    [...scans].sort((a,b) => {
 
-// ثبت Service Worker برای PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(reg => console.log('✅ SW ثبت شد'))
-      .catch(err => console.log('❌ SW:', err));
-  });
-}
-</script>
-</body>
-</html>
+      const ah =
+        a.direction ? 1 : 0;
+
+      const bh =
+        b.direction ? 1 : 0;
+
+      if(ah !== bh){
+        return bh - ah;
+      }
+
+      return (
+        Math.abs(b.score || 0) -
+        Math.abs(a.score || 0)
+      );
+
+    });
+
+  document.getElementById('cards').innerHTML =
+
+    sorted.map(s => {
+
+      const f =
+        FLAGS[s.symbol] || '💱';
+
+      let badge =
+        '<span class="badge wait">⏳ انتظار</span>';
+
+      let cls = '';
+
+      if(s.direction === 'BUY'){
+
+        badge =
+          '<span class="badge buy">▲ خرید</span>';
+
+        cls = 'buy';
+
+      }
+
+      if(s.direction === 'SELL'){
+
+        badge =
+          '<span class="badge sell">▼ فروش</span>';
+
+        cls = 'sell';
+
+      }
+
+      const zc =
+        s.zone === 'PREMIUM'
+          ? 'red'
+          : 'green';
+
+      let sltp = '';
+
+      if(
+        s.direction &&
+        s.suggested_sl != null &&
+        s.suggested_tp != null
+      ){
+
+        sltp =
+
+          '<div class="sltp">' +
+
+          '<div class="sltp-box">' +
+
+          '<div class="sltp-label">' +
+          '🛑 حد ضرر' +
+          '</div>' +
+
+          '<div style="color:var(--red);font-family:monospace;font-weight:800">' +
+          fmtP(
+            s.suggested_sl,
+            s.symbol
+          ) +
+          '</div>' +
+
+          
