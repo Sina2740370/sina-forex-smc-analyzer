@@ -8,6 +8,7 @@ import logging
 import time
 import json
 import os
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -21,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 # مسیر کش دیسک
 CACHE_FILE = os.getenv("CACHE_FILE", "data_cache.json")
-MAX_STORE = 500  # حداکثر کندل ذخیره‌شده در کش
+MAX_STORE = 500
+_YF_LOCK = threading.Lock()  # حداکثر کندل ذخیره‌شده در کش
 
 # ============================================================
 #  کش هوشمند (in-memory)
@@ -154,10 +156,11 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
     yf_interval, period = YF_INTERVAL_MAP[timeframe]
 
     try:
-        df = yf.download(
-            symbol, interval=yf_interval, period=period,
-            progress=False, auto_adjust=False, threads=False,
-        )
+        with _YF_LOCK:
+            df = yf.download(
+                symbol, interval=yf_interval, period=period,
+                progress=False, auto_adjust=False, threads=False,
+            )
 
         if df is None or df.empty:
             return []
@@ -246,10 +249,11 @@ def fetch_live_prices(use_cache: bool = True) -> dict:
 
     for symbol, name in SYMBOLS.items():
         try:
-            df = yf.download(
-                symbol, period="1d", interval="5m",
-                progress=False, auto_adjust=False, threads=False,
-            )
+            with _YF_LOCK:
+                df = yf.download(
+                    symbol, period="1d", interval="5m",
+                    progress=False, auto_adjust=False, threads=False,
+                )
 
             if df is None or df.empty:
                 continue

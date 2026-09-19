@@ -2,6 +2,7 @@
 زمان‌بند خودکار - نسخه 2.2
 با فیکس باگ تکرار + Startup cooldown + In-Memory tracking
 """
+import asyncio
 import logging
 import time
 import json
@@ -174,7 +175,7 @@ async def check_open_signals_and_notify():
     from .notifier import notify_signal_closed
 
     before = {s["id"] for s in get_open_signals()}
-    check_open_signals()
+    await asyncio.to_thread(check_open_signals)
     after_open = {s["id"] for s in get_open_signals()}
     closed_ids = before - after_open
 
@@ -202,7 +203,7 @@ async def check_open_signals_and_notify():
 
 
 async def _scan_symbol(symbol, name, news):
-    data = fetch_topdown(symbol)
+    data = await asyncio.to_thread(fetch_topdown, symbol)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None
