@@ -767,5 +767,13 @@ if ('serviceWorker' in navigator) {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+<script>
+function initTg() {
+  var w = window.Telegram && window.Telegram.WebApp;
+  if (!w) return;
+  try { w.ready(); w.expand(); w.setHeaderColor('#07090d'); w.setBackgroundColor('#07090d'); } catch (e) {}
+}
+</script>
+<script async src="https://telegram.org/js/telegram-web-app.js" onload="initTg()"></script>
 </body>
 </html>
