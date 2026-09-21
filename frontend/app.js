@@ -1,16 +1,22 @@
 /* ============================================================
-   Sina Quant - Frontend Logic v3
-   با timeout + error handling بهتر
+   Sina Quant - Frontend Logic v3.1
+   - دکمه رفرش دیگه /api/scan/force رو صدا نمی‌زنه (بدون کلید ادمین)
+   - خروجی سرور escape می‌شه
+   - تجزیه امتیاز (تکنیکال / فاندامنتال / خبر / حافظه) نمایش داده می‌شه
    ============================================================ */
 
 const API_BASE = '';
-const FETCH_TIMEOUT = 60000; // 60 ثانیه
+const FETCH_TIMEOUT = 60000;      // 60 ثانیه
+const LIVE_REFRESH_MS = 60000;    // رفرش خودکار اسکن
+const PRICES_REFRESH_MS = 30000;  // رفرش خودکار قیمت‌ها
 
 let currentTab = 'live';
 let currentFilter = 'all';
 let allSignals = [];
 let refreshInterval = null;
 let pricesInterval = null;
+let liveLoading = false;   // جلوگیری از درخواست‌های هم‌زمان
+let liveRetries = 0;       // تلاش مجدد وقتی سرور Render خوابه
 
 const SYMBOL_FLAGS = {
   'EURUSD=X': '🇪🇺🇺🇸',
@@ -33,7 +39,14 @@ const SYMBOL_FLAGS = {
 function $(sel) { return document.querySelector(sel); }
 function $$(sel) { return document.querySelectorAll(sel); }
 
-// ✅ fetch با timeout
+// escape برای هر متنی که از سرور میاد و تو innerHTML می‌ره
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+// fetch با timeout
 async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
@@ -63,13 +76,16 @@ function showToast(msg, type = 'success') {
 
 function fmtPrice(price, symbol) {
   if (price === null || price === undefined) return '-';
-  if (symbol === 'GC=F') return price.toFixed(2);
-  return price.toFixed(5);
+  const p = Number(price);
+  if (Number.isNaN(p)) return '-';
+  if (symbol === 'GC=F') return p.toFixed(2);
+  return p.toFixed(5);
 }
 
 function fmtScore(score) {
   if (score === null || score === undefined) return '0.00';
   const s = parseFloat(score);
+  if (Number.isNaN(s)) return '0.00';
   return (s >= 0 ? '+' : '') + s.toFixed(2);
 }
 
@@ -107,6 +123,7 @@ function timeAgo(isoStr) {
   try {
     const t = new Date(isoStr);
     const diff = (Date.now() - t.getTime()) / 1000;
+    if (Number.isNaN(diff)) return '-';
     if (diff < 60) return 'همین الان';
     if (diff < 3600) return `${Math.floor(diff / 60)} دقیقه پیش`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} ساعت پیش`;
@@ -116,8 +133,14 @@ function timeAgo(isoStr) {
   }
 }
 
+function toReasonsArray(reasons) {
+  if (Array.isArray(reasons)) return reasons;
+  if (typeof reasons === 'string') return reasons.split('|').filter(Boolean);
+  return [];
+}
+
 /* ============================================================
-   📊 Ticker
+   Ticker
    ============================================================ */
 
 async function loadPrices() {
@@ -126,6 +149,7 @@ async function loadPrices() {
 
   try {
     const r = await fetchWithTimeout(`${API_BASE}/api/prices`, {}, 30000);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
 
     if (!data.data || data.data.length === 0) {
@@ -155,11 +179,11 @@ function renderTicker(prices) {
     const sign = p.change_pct >= 0 ? '+' : '';
 
     return `
-      <div class="ticker-item" data-symbol="${p.symbol}">
+      <div class="ticker-item" data-symbol="${esc(p.symbol)}">
         <span class="ticker-flag">${flag}</span>
-        <span class="ticker-symbol">${p.name}</span>
-        <span class="ticker-price">${p.price}</span>
-        <span class="ticker-change ${cls}">${arrow} ${sign}${p.change_pct}%</span>
+        <span class="ticker-symbol">${esc(p.name)}</span>
+        <span class="ticker-price">${esc(p.price)}</span>
+        <span class="ticker-change ${cls}">${arrow} ${sign}${esc(p.change_pct)}%</span>
       </div>
     `;
   }).join('');
@@ -167,7 +191,8 @@ function renderTicker(prices) {
   el.querySelectorAll('.ticker-item').forEach(item => {
     item.addEventListener('click', () => {
       const symbol = item.dataset.symbol;
-      const card = document.querySelector(`[data-card-symbol="${symbol}"]`);
+      const card = Array.from($$('[data-card-symbol]'))
+        .find(c => c.dataset.cardSymbol === symbol);
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         card.style.transition = 'box-shadow 0.5s';
@@ -192,7 +217,8 @@ function setupTabs() {
       $$('.tab-content').forEach(c => c.classList.remove('active'));
 
       tab.classList.add('active');
-      $(`#tab-${target}`).classList.add('active');
+      const content = $(`#tab-${target}`);
+      if (content) content.classList.add('active');
 
       if (target === 'signals') loadSignals();
       if (target === 'stats') loadStats();
@@ -204,19 +230,29 @@ function setupTabs() {
    Live Scan
    ============================================================ */
 
+function scheduleLiveRetry() {
+  if (liveRetries >= 6) return;
+  liveRetries += 1;
+  setTimeout(() => loadLive(false), 8000);
+}
+
 async function loadLive(showSpinner = true) {
   const loading = $('#loading');
   const cards = $('#cards');
+  if (!cards) return;
+  if (liveLoading) return;
+  liveLoading = true;
 
-  if (showSpinner && cards.children.length === 0) {
+  if (showSpinner && loading && cards.children.length === 0) {
     loading.style.display = 'block';
   }
 
   try {
     const r = await fetchWithTimeout(`${API_BASE}/api/scan`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
 
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
 
     if (data.status === 'waiting' || !data.data) {
       cards.innerHTML = `
@@ -224,9 +260,11 @@ async function loadLive(showSpinner = true) {
           <div class="empty-state-icon">⏳</div>
           <div class="empty-state-text">اولین اسکن در حال اجراست...</div>
         </div>`;
+      scheduleLiveRetry();
       return;
     }
 
+    liveRetries = 0;
     renderCards(data.data);
     renderScanInfo(data);
 
@@ -236,9 +274,9 @@ async function loadLive(showSpinner = true) {
     }
   } catch (e) {
     console.error('خطا در بارگذاری:', e);
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
 
-    // فقط اگه واقعاً خالی بود → خطا نشون بده
+    // فقط اگه واقعاً خالی بود، خطا نشون بده
     if (cards.children.length === 0) {
       cards.innerHTML = `
         <div class="empty-state">
@@ -248,7 +286,10 @@ async function loadLive(showSpinner = true) {
             <small>چند لحظه صبر کن و Refresh کن</small>
           </div>
         </div>`;
+      scheduleLiveRetry();
     }
+  } finally {
+    liveLoading = false;
   }
 }
 
@@ -256,14 +297,25 @@ function renderScanInfo(data) {
   const el = $('#scanInfo');
   if (!el) return;
   const count = data.count || 0;
+
+  // جدیدترین زمان اسکن بین همه جفت‌ارزها
+  let latest = null;
+  (data.data || []).forEach(s => {
+    const t = s.scanned_at ? new Date(s.scanned_at).getTime() : NaN;
+    if (!Number.isNaN(t) && (latest === null || t > latest)) latest = t;
+  });
+  const ago = latest ? ` · آخرین اسکن ${timeAgo(new Date(latest).toISOString())}` : '';
+
   el.innerHTML = `
     <span class="badge-live">زنده</span>
-    <span>${count} جفت‌ارز در حال رصد</span>
+    <span>${count} جفت‌ارز در حال رصد${ago}</span>
   `;
 }
 
 function renderCards(scans) {
   const el = $('#cards');
+  if (!el) return;
+
   if (!scans || scans.length === 0) {
     el.innerHTML = `
       <div class="empty-state">
@@ -281,6 +333,25 @@ function renderCards(scans) {
   });
 
   el.innerHTML = sorted.map(s => renderCard(s)).join('');
+}
+
+// تجزیه امتیاز: تکنیکال / فاندامنتال / خبر / حافظه (فقط اگه سرور فرستاده باشه)
+function renderScoreBreakdown(s) {
+  const parts = [
+    ['تکنیکال', s.technical_score],
+    ['فاندامنتال', s.fundamental_score],
+    ['خبر', s.news_score],
+    ['حافظه', s.memory_score],
+  ].filter(([, v]) => v !== undefined && v !== null);
+
+  if (parts.length === 0) return '';
+
+  const text = parts.map(([label, v]) => `${label} ${fmtScore(v)}`).join(' · ');
+  return `
+    <div class="card-row">
+      <span class="label">🧮 تجزیه امتیاز</span>
+      <span class="value" style="font-size:0.75rem">${esc(text)}</span>
+    </div>`;
 }
 
 function renderCard(s) {
@@ -316,33 +387,32 @@ function renderCard(s) {
       </div>`;
   }
 
-  // reasons آرایه یا رشته
-  let reasonsArr = [];
-  if (Array.isArray(s.reasons)) {
-    reasonsArr = s.reasons;
-  } else if (typeof s.reasons === 'string') {
-    reasonsArr = s.reasons.split('|').filter(Boolean);
-  }
-
+  const reasonsArr = toReasonsArray(s.reasons);
   let reasonsBlock = '';
   if (reasonsArr.length > 0) {
     reasonsBlock = `
       <div class="reasons">
         <div class="reasons-title">دلایل تحلیل:</div>
         <ul>
-          ${reasonsArr.map(r => `<li>${r}</li>`).join('')}
+          ${reasonsArr.map(r => `<li>${esc(r)}</li>`).join('')}
         </ul>
       </div>`;
   }
 
+  const scannedRow = s.scanned_at ? `
+      <div class="card-row">
+        <span class="label">🕐 زمان اسکن</span>
+        <span class="value">${timeAgo(s.scanned_at)}</span>
+      </div>` : '';
+
   return `
-    <div class="card ${cardClass}" data-card-symbol="${s.symbol}">
+    <div class="card ${cardClass}" data-card-symbol="${esc(s.symbol)}">
       <div class="card-head">
         <div class="card-symbol">
           <span class="symbol-flag">${flag}</span>
           <div>
-            <div class="symbol-name">${s.name || s.symbol}</div>
-            <div class="symbol-code">${s.symbol}</div>
+            <div class="symbol-name">${esc(s.name || s.symbol)}</div>
+            <div class="symbol-code">${esc(s.symbol)}</div>
           </div>
         </div>
         ${badge}
@@ -368,6 +438,8 @@ function renderCard(s) {
         <span class="score-value ${scoreClass(s.score)}">${fmtScore(s.score)}</span>
       </div>
 
+      ${renderScoreBreakdown(s)}
+      ${scannedRow}
       ${slTpBlock}
       ${reasonsBlock}
     </div>
@@ -391,11 +463,14 @@ function setupFilters() {
 
 async function loadSignals() {
   const el = $('#signalsList');
+  if (!el) return;
   el.innerHTML = `<div class="spinner" style="display:block"><p>در حال بارگذاری...</p></div>`;
 
   try {
-    const r = await fetchWithTimeout(`${API_BASE}/api/signals`);
-    allSignals = await r.json();
+    const r = await fetchWithTimeout(`${API_BASE}/api/signals?limit=100`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    allSignals = Array.isArray(data) ? data : [];
     renderSignals();
   } catch (e) {
     console.error('خطا در سیگنال‌ها:', e);
@@ -409,6 +484,7 @@ async function loadSignals() {
 
 function renderSignals() {
   const el = $('#signalsList');
+  if (!el) return;
 
   let filtered = allSignals;
   if (currentFilter !== 'all') {
@@ -449,16 +525,10 @@ function renderSignalCard(s) {
          <span class="value ${s.pnl_pips >= 0 ? 'green' : 'red'}">${s.pnl_pips > 0 ? '+' : ''}${parseFloat(s.pnl_pips).toFixed(1)} پیپ</span>
        </div>` : '';
 
-  let reasonsArr = [];
-  if (Array.isArray(s.reasons)) {
-    reasonsArr = s.reasons;
-  } else if (typeof s.reasons === 'string') {
-    reasonsArr = s.reasons.split('|').filter(Boolean);
-  }
-
+  const reasonsArr = toReasonsArray(s.reasons);
   let reasons = '';
   if (reasonsArr.length > 0) {
-    reasons = `<div class="reasons"><div class="reasons-title">دلایل:</div><ul>${reasonsArr.map(r => `<li>${r}</li>`).join('')}</ul></div>`;
+    reasons = `<div class="reasons"><div class="reasons-title">دلایل:</div><ul>${reasonsArr.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
   }
 
   return `
@@ -467,7 +537,7 @@ function renderSignalCard(s) {
         <div class="card-symbol">
           <span class="symbol-flag">${flag}</span>
           <div>
-            <div class="symbol-name">${s.name || s.symbol}</div>
+            <div class="symbol-name">${esc(s.name || s.symbol)}</div>
             <span class="badge ${dirClass}" style="margin-top:4px">${dirLabel}</span>
           </div>
         </div>
@@ -506,10 +576,12 @@ function renderSignalCard(s) {
 
 async function loadStats() {
   const el = $('#statsContent');
+  if (!el) return;
   el.innerHTML = `<div class="spinner" style="display:block"><p>در حال بارگذاری...</p></div>`;
 
   try {
     const r = await fetchWithTimeout(`${API_BASE}/api/stats`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const s = await r.json();
     renderStats(s);
   } catch (e) {
@@ -524,6 +596,7 @@ async function loadStats() {
 
 function renderStats(s) {
   const el = $('#statsContent');
+  if (!el) return;
 
   const winRate = (s.win_rate || 0) * 100;
   const winRateGood = winRate >= (s.min_win_rate * 100);
@@ -621,7 +694,7 @@ function renderStats(s) {
 }
 
 /* ============================================================
-   Refresh
+   Refresh (دستی): فقط داده جدید رو می‌خونه، اسکن اجباری نمی‌زنه
    ============================================================ */
 
 function setupRefresh() {
@@ -630,15 +703,14 @@ function setupRefresh() {
 
   btn.addEventListener('click', async () => {
     btn.classList.add('spinning');
-    showToast('در حال اسکن مجدد...', 'success');
+    showToast('در حال بروزرسانی...', 'success');
 
     try {
-      await fetchWithTimeout(`${API_BASE}/api/scan/force`, { method: 'POST' }, 90000);
       await loadLive();
       await loadPrices();
-      showToast('✅ اسکن انجام شد', 'success');
+      showToast('✅ بروزرسانی شد', 'success');
     } catch (e) {
-      showToast('⚠️ خطا در اسکن', 'error');
+      showToast('⚠️ خطا در بروزرسانی', 'error');
     }
 
     setTimeout(() => btn.classList.remove('spinning'), 800);
@@ -647,4 +719,55 @@ function setupRefresh() {
 
 /* ============================================================
    Auto Refresh
-   ==============================
+   ============================================================ */
+
+function stopAutoRefresh() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (pricesInterval) clearInterval(pricesInterval);
+  refreshInterval = null;
+  pricesInterval = null;
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+
+  refreshInterval = setInterval(() => {
+    if (document.hidden) return;
+    if (currentTab === 'live') loadLive(false);
+  }, LIVE_REFRESH_MS);
+
+  pricesInterval = setInterval(() => {
+    if (document.hidden) return;
+    loadPrices();
+  }, PRICES_REFRESH_MS);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  loadPrices();
+  if (currentTab === 'live') loadLive(false);
+});
+
+/* ============================================================
+   Init
+   ============================================================ */
+
+function init() {
+  setupTabs();
+  setupFilters();
+  setupRefresh();
+
+  loadLive();
+  loadPrices();
+  startAutoRefresh();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
