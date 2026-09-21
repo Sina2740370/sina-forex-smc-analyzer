@@ -4,10 +4,13 @@ FastAPI Backend - Sina Quant v3.1.1 (security patch)
 import logging
 import os
 import secrets
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -36,7 +39,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-VERSION = "3.1.1"
+VERSION = "3.1.2"
 
 # کلید ادمین: فقط از متغیر محیطی Render خوانده می‌شود (هرگز داخل کد نگذار)
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
@@ -75,6 +78,44 @@ app = FastAPI(
     redoc_url=None,
     openapi_url="/openapi.json" if ENABLE_DOCS else None,
 )
+
+
+# فشرده‌سازی پاسخ‌ها (سریع‌تر روی موبایل و اینترنت ضعیف)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def basic_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    return response
+
+
+# کش کوتاه‌مدت قیمت‌ها: چند کلاینت/تب هر ۳۰ ثانیه صدا می‌زنن،
+# ولی به منبع داده (yfinance) بیشتر از هر ۱۵ ثانیه یک‌بار درخواست نمی‌ره
+_PRICES_TTL = 15
+_prices_cache = {"ts": 0.0, "data": {}}
+_prices_lock = threading.Lock()
+
+
+def _cached_prices():
+    now = time.monotonic()
+    with _prices_lock:
+        if _prices_cache["data"] and now - _prices_cache["ts"] < _PRICES_TTL:
+            return _prices_cache["data"]
+    try:
+        data = fetch_live_prices()
+    except Exception:
+        logger.exception("خطا در دریافت قیمت‌ها")
+        data = None
+    with _prices_lock:
+        if data:
+            _prices_cache["data"] = data
+            _prices_cache["ts"] = now
+        # اگه دریافت شکست خورد، آخرین قیمت خوب رو برگردون
+        return _prices_cache["data"]
 
 
 # ============================================================
@@ -125,7 +166,7 @@ def get_config():
 @app.get("/api/prices")
 def get_prices():
     """قیمت‌های زنده"""
-    prices = fetch_live_prices()
+    prices = _cached_prices()
     return {
         "status": "ok",
         "data": list(prices.values()),
