@@ -2,6 +2,7 @@
 دریافت اخبار اقتصادی از ForexFactory
 برای فیلتر کردن معاملات در زمان اخبار مهم
 """
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 import httpx
@@ -12,40 +13,94 @@ logger = logging.getLogger(__name__)
 FF_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 
 # کش ساده برای جلوگیری از درخواست زیاد
-_cache = {"data": [], "fetched_at": None}
-CACHE_MINUTES = 60  # هر ۱ ساعت یک بار
+_cache = {"data": [], "fetched_at": None, "ok": False}
+CACHE_MINUTES = 60  # هر ۱ ساعت یک بار از منبع بخواه
+MAX_RETRIES = 3
+BASE_BACKOFF_SEC = 8  # بعد از ۴۲۹ کمی صبر کن
 
 
 async def fetch_news(force: bool = False) -> list:
     """
     دریافت تقویم اقتصادی این هفته
-    با کش ۱ ساعته
+    با کش ۱ ساعته، retry بعد از ۴۲۹، و برگشت به آخرین دادهٔ سالم
     """
     now = datetime.now(timezone.utc)
 
     # چک کش
     if not force and _cache["fetched_at"]:
         elapsed = (now - _cache["fetched_at"]).total_seconds() / 60
-        if elapsed < CACHE_MINUTES:
+        if elapsed < CACHE_MINUTES and (_cache["ok"] or _cache["data"]):
+            logger.info(
+                f"📰 خبر از کش ({len(_cache['data'])} مورد، "
+                f"{elapsed:.0f} دقیقه پیش)"
+            )
             return _cache["data"]
 
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(
-                FF_URL,
-                headers={"User-Agent": "Mozilla/5.0 ForexSMCBot/1.0"}
-            )
-            r.raise_for_status()
-            data = r.json()
+    last_error = None
+    data = None
 
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get(
+                    FF_URL,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 ForexSMCBot/1.0",
+                        "Accept": "application/json",
+                    },
+                )
+
+                if r.status_code == 429:
+                    retry_after = r.headers.get("Retry-After")
+                    try:
+                        wait = float(retry_after) if retry_after else BASE_BACKOFF_SEC * attempt
+                    except ValueError:
+                        wait = BASE_BACKOFF_SEC * attempt
+                    wait = min(max(wait, BASE_BACKOFF_SEC), 60)
+                    logger.warning(
+                        f"منبع خبر ۴۲۹ داد (تلاش {attempt}/{MAX_RETRIES})؛ "
+                        f"{wait:.0f} ثانیه صبر"
+                    )
+                    last_error = httpx.HTTPStatusError(
+                        "429 Too Many Requests",
+                        request=r.request,
+                        response=r,
+                    )
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(wait)
+                    continue
+
+                r.raise_for_status()
+                data = r.json()
+                if not isinstance(data, list):
+                    raise ValueError(f"فرمت غیرمنتظره خبر: {type(data)}")
+                break
+
+        except Exception as e:
+            last_error = e
+            logger.warning(f"خطا در دریافت اخبار (تلاش {attempt}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(BASE_BACKOFF_SEC * attempt)
+
+    if data is not None:
         _cache["data"] = data
         _cache["fetched_at"] = now
+        _cache["ok"] = True
         logger.info(f"✅ {len(data)} خبر دریافت شد")
         return data
 
-    except Exception as e:
-        logger.error(f"خطا در دریافت اخبار: {e}")
-        return _cache["data"]  # از کش قدیمی استفاده کن
+    # دریافت شکست خورد — آخرین اخبار سالم را نگه دار تا امتیاز خبر صفر نشود
+    if _cache["data"]:
+        logger.error(
+            f"خطا در دریافت اخبار: {last_error} — "
+            f"استفاده از کش قبلی ({len(_cache['data'])} خبر)"
+        )
+        return _cache["data"]
+
+    logger.error(f"خطا در دریافت اخبار و کش خالی است: {last_error}")
+    _cache["fetched_at"] = now  # تا هر اسکن دوباره به منبع نکوبیم
+    _cache["ok"] = False
+    return []
 
 
 def upcoming_high_impact(news: list,
@@ -64,7 +119,7 @@ def upcoming_high_impact(news: list,
     result = []
 
     for item in news:
-        # فقط High Impact
+        # فقط High / Medium Impact
         if item.get("impact", "").lower() not in ("high", "medium"):
             continue
 
