@@ -1,12 +1,13 @@
 """
-FastAPI Backend - Sina Quant v3.1
+FastAPI Backend - Sina Quant v3.1.1 (security patch)
 """
 import logging
 import os
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -35,11 +36,28 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
+VERSION = "3.1.1"
+
+# کلید ادمین: فقط از متغیر محیطی Render خوانده می‌شود (هرگز داخل کد نگذار)
+ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
+# صفحه /docs به‌صورت پیش‌فرض خاموش است؛ برای روشن کردن ENABLE_DOCS=1 بگذار
+ENABLE_DOCS = os.getenv("ENABLE_DOCS", "0").strip() == "1"
+
+
+def require_admin(x_admin_key: str = Header(default="")):
+    """احراز هویت ادمین با هدر X-Admin-Key (اگر ADMIN_KEY ست نباشد، مسیر بسته است)"""
+    if not ADMIN_KEY:
+        raise HTTPException(status_code=503, detail="Admin endpoint disabled")
+    if not secrets.compare_digest(x_admin_key.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("=" * 50)
     logger.info("🚀 راه‌اندازی Sina Quant...")
+    if not ADMIN_KEY:
+        logger.warning("⚠️ ADMIN_KEY ست نشده؛ /api/scan/force غیرفعال است")
     init_db()
     start_scheduler()
     logger.info("✅ اپ آماده است")
@@ -51,8 +69,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Sina Quant",
     description="Quantitative Forex Analysis with SMC/ICT",
-    version="3.1.0",
+    version=VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if ENABLE_DOCS else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if ENABLE_DOCS else None,
 )
 
 
@@ -62,12 +83,10 @@ app = FastAPI(
 
 @app.get("/api/db-status")
 def db_status():
-    """چک کردن نوع دیتابیس فعال"""
+    """چک کردن نوع دیتابیس فعال (بدون نشان دادن هیچ بخشی از آدرس/پسورد)"""
     url = os.getenv("DATABASE_URL", "").strip()
     return {
         "database_url_set": bool(url),
-        "url_prefix": url[:30] if url else "NOT SET",
-        "url_length": len(url),
         "use_postgres": database.USE_POSTGRES,
         "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
     }
@@ -79,7 +98,7 @@ def health():
     return {
         "status": "ok",
         "app": "Sina Quant",
-        "version": "3.1.0",
+        "version": VERSION,
         "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
         "scans": stats.get("total_scans", 0),
         "last_scan": stats.get("last_scan_time"),
@@ -129,18 +148,20 @@ def get_scan():
     }
 
 
-@app.post("/api/scan/force")
+@app.post("/api/scan/force", dependencies=[Depends(require_admin)])
 async def force_scan():
+    """اسکن اجباری - فقط با هدر X-Admin-Key"""
     try:
         await scan_market()
         return {"ok": True, "message": "اسکن انجام شد"}
-    except Exception as e:
+    except Exception:
+        # جزئیات خطا فقط در لاگ سرور، نه در پاسخ به کلاینت
         logger.exception("خطا در اسکن اجباری")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Scan failed")
 
 
 @app.get("/api/signals")
-def get_signals(limit: int = 200):
+def get_signals(limit: int = Query(200, ge=1, le=500)):
     return get_all_signals(limit=limit)
 
 
