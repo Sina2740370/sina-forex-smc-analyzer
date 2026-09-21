@@ -1,6 +1,13 @@
 """
-موتور تحلیل Top-Down SMC/ICT - نسخه 4.1
-5 تایم‌فریم + ICT Unicorn + 4 لایه امتیازدهی
+موتور تحلیل Top-Down SMC/ICT - نسخه 4.3
+بر اساس جمع‌بندی استراتژی بهترین تریدرهای حرفه‌ای دنیا (ICT/SMC + اصول Paul Tudor Jones)
+
+اصول اعمال‌شده:
+1. Higher Timeframe Bias اولویت مطلق دارد
+2. بهترین ستاپ = Liquidity Sweep → Structure Shift (CHOCH) → Entry در FVG/OB
+3. Premium/Discount به صورت فیلتر نرم
+4. کیفیت و confluence مهم‌تر از تعداد سیگنال
+5. ریسک نامتقارن و محافظه‌کارانه حفظ شده
 """
 import logging
 import pandas as pd
@@ -224,6 +231,7 @@ def find_breaker_block(df, lookback=40):
 
 
 def detect_unicorn_setup(df_4h, df_1h, df_15m):
+    """ستاپ کلاسیک ICT: Sweep + CHOCH + (Breaker/FVG)"""
     sweep = detect_liquidity_sweep(df_15m, lookback=30)
     if not sweep:
         return None
@@ -243,20 +251,31 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
     }
 
 
+def _distance_to_ob(price: float, ob: dict, atr: float) -> float:
+    """فاصله نرمال‌شده تا Order Block (بر حسب ATR)"""
+    if ob is None:
+        return 999.0
+    if ob["low"] <= price <= ob["high"]:
+        return 0.0
+    if price < ob["low"]:
+        return (ob["low"] - price) / atr if atr > 0 else 999.0
+    return (price - ob["high"]) / atr if atr > 0 else 999.0
+
+
 # ============================================================
-#  فیلتر Top-Down
+#  فیلتر Top-Down (نسخه حرفه‌ای)
 # ============================================================
 
 def top_down_filter(data_dict):
     """
-    Returns: (direction, reason, wk_trend, d_trend)
-    direction: BULLISH, BEARISH, CONFLICT, NEUTRAL
+    Returns: (direction, reason, wk_trend, d_trend, soft)
+    soft=True یعنی اجازه ادامه با جریمه
     """
     try:
         df_wk = pd.DataFrame(data_dict["1wk"])
         df_d = pd.DataFrame(data_dict["1d"])
     except (KeyError, Exception):
-        return "NEUTRAL", "داده کافی برای فیلتر", "-", "-"
+        return "NEUTRAL", "داده کافی برای فیلتر", "-", "-", False
 
     wk_struct = detect_structure(df_wk)
     d_struct = detect_structure(df_d)
@@ -270,21 +289,38 @@ def top_down_filter(data_dict):
     elif wk_trend == "BEARISH" and wk_ema == "BULLISH":
         wk_trend = "RANGING"
 
+    # هم‌راستایی کامل → بهترین حالت
     if wk_trend == "BULLISH" and d_trend == "BULLISH":
-        return "BULLISH", "هفتگی و روزانه صعودی ✅", wk_trend, d_trend
+        return "BULLISH", "هفتگی و روزانه صعودی ✅", wk_trend, d_trend, False
     if wk_trend == "BEARISH" and d_trend == "BEARISH":
-        return "BEARISH", "هفتگی و روزانه نزولی ✅", wk_trend, d_trend
-    if wk_trend != d_trend:
-        return "CONFLICT", f"تضاد: هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend
-    return "NEUTRAL", f"هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend
+        return "BEARISH", "هفتگی و روزانه نزولی ✅", wk_trend, d_trend, False
+
+    # هفتگی رنج + روزانه واضح → اجازه با جریمه (رایج در بازار واقعی)
+    if wk_trend == "RANGING" and d_trend == "BULLISH":
+        return "BULLISH", "هفتگی رنج / روزانه صعودی (نیمه‌قوی)", wk_trend, d_trend, True
+    if wk_trend == "RANGING" and d_trend == "BEARISH":
+        return "BEARISH", "هفتگی رنج / روزانه نزولی (نیمه‌قوی)", wk_trend, d_trend, True
+
+    # روزانه رنج + هفتگی واضح
+    if d_trend == "RANGING" and wk_trend == "BULLISH":
+        return "BULLISH", "هفتگی صعودی / روزانه رنج (ضعیف)", wk_trend, d_trend, True
+    if d_trend == "RANGING" and wk_trend == "BEARISH":
+        return "BEARISH", "هفتگی نزولی / روزانه رنج (ضعیف)", wk_trend, d_trend, True
+
+    # تضاد مستقیم → بلاک سخت (اصل ICT: با HTF نجنگ)
+    if (wk_trend == "BULLISH" and d_trend == "BEARISH") or \
+       (wk_trend == "BEARISH" and d_trend == "BULLISH"):
+        return "CONFLICT", f"تضاد مستقیم: هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend, False
+
+    return "NEUTRAL", f"هفتگی {wk_trend} / روزانه {d_trend}", wk_trend, d_trend, False
 
 
 # ============================================================
-#  لایه تکنیکال (Top-Down + Unicorn)
+#  لایه تکنیکال (نسخه ۴.۳ - مبتنی بر بهترین روش‌های دنیا)
 # ============================================================
 
 def _drop_forming(df, minutes):
-    """کندل ناقص (در حال تشکیل) رو حذف می‌کنه تا سیگنال repaint نشه"""
+    """حذف کندل در حال تشکیل برای جلوگیری از repaint"""
     try:
         if df is None or len(df) < 2:
             return df
@@ -298,10 +334,13 @@ def _drop_forming(df, minutes):
 
 def analyze_technical_topdown(data_dict):
     """
-    تحلیل تکنیکال با 5 تایم‌فریم
-    Returns: dict کامل حتی اگه blocked باشه
+    تحلیل تکنیکال نسخه ۴.۳
+    اولویت‌بندی بر اساس روش ICT/SMC حرفه‌ای:
+    1. HTF Bias
+    2. Liquidity Sweep
+    3. Structure Shift (CHOCH)
+    4. Entry در FVG یا Order Block
     """
-    # ابتدا قیمت و داده 15m رو بگیر (حتی اگه blocked)
     price = None
     atr = 0.0
     zone = "-"
@@ -328,10 +367,8 @@ def analyze_technical_topdown(data_dict):
     except Exception:
         pass
 
-    # فیلتر Top-Down
-    td_dir, td_reason, wk_trend, d_trend = top_down_filter(data_dict)
+    td_dir, td_reason, wk_trend, d_trend, soft = top_down_filter(data_dict)
 
-    # Base response با همه اطلاعات موجود
     base = {
         "score": 0.0,
         "direction": None,
@@ -347,7 +384,7 @@ def analyze_technical_topdown(data_dict):
         "blocked": False,
     }
 
-    # اگه تضاد یا خنثی
+    # فقط تضاد مستقیم سخت بلاک می‌شود
     if td_dir == "CONFLICT":
         base["reasons"] = [f"🚫 {td_reason}", f"هفتگی: {wk_trend}", f"روزانه: {d_trend}"]
         base["blocked"] = True
@@ -358,7 +395,6 @@ def analyze_technical_topdown(data_dict):
         base["blocked"] = True
         return base
 
-    # چک داده کافی
     if df_4h is None or df_1h is None or df_15m is None:
         base["reasons"] = ["داده کافی نیست"]
         base["blocked"] = True
@@ -369,111 +405,202 @@ def analyze_technical_topdown(data_dict):
         base["blocked"] = True
         return base
 
-    if atr == 0:
-        base["reasons"] = ["ATR صفر"]
+    if atr == 0 or price is None:
+        base["reasons"] = ["ATR یا قیمت نامعتبر"]
         base["blocked"] = True
         return base
 
-    # تحلیل
+    # آماده‌سازی داده‌ها
     df_1h = _drop_forming(df_1h, 60)
     df_15m = _drop_forming(df_15m, 15)
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
+    sweep = detect_liquidity_sweep(df_15m, lookback=30)
+    choch = detect_choch(df_1h, lookback=20)
     unicorn = detect_unicorn_setup(df_4h, df_1h, df_15m)
 
     score = 0.0
     reasons = [f"🎯 فیلتر محیطی: {td_reason}"]
 
+    # جریمه حالت soft
+    if soft:
+        score -= 0.10
+        reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه -۰.۱۰)")
+
     direction = None
     sl = tp = None
 
-    # BUY
-    if td_dir == "BULLISH" and htf_obs["bullish"]:
-        ob = htf_obs["bullish"]
-        _tol = (ob["high"] - ob["low"]) * 0.1
-        in_ob = ob["low"] <= price <= ob["high"] + _tol
+    # ============================================================
+    #  BUY Logic
+    # ============================================================
+    if td_dir == "BULLISH":
+        # ۱. امتیاز پایه هم‌راستایی HTF
+        score += 0.15
+        reasons.append("هم‌راستایی صعودی HTF (+۰.۱۵)")
 
-        if in_ob and htf_pd["zone"] == "DISCOUNT":
-            score += 0.5
-            reasons.append("OB صعودی 4H + Discount")
+        # ۲. Liquidity Sweep (مهم‌ترین تریگر از نظر ICT)
+        if sweep and sweep["type"] == "BULLISH_SWEEP":
+            score += 0.25
+            reasons.append("🔄 Liquidity Sweep صعودی (+۰.۲۵)")
+        elif sweep and sweep["type"] == "BEARISH_SWEEP":
+            score -= 0.08
+            reasons.append("Sweep مخالف جهت (جریمه کوچک)")
 
-            if ltf_fvg and ltf_fvg["type"] == "BULLISH":
-                score += 0.15
-                reasons.append("FVG صعودی 15m")
+        # ۳. Structure Shift (CHOCH)
+        if choch and choch["type"] == "BULLISH_CHOCH":
+            score += 0.18
+            reasons.append("CHOCH صعودی (+۰.۱۸)")
 
-            if get_candle_confirmation(df_15m, "BUY"):
-                score += 0.15
-                reasons.append("تأییدیه کندلی صعودی")
+        # ۴. Order Block + فاصله
+        ob = htf_obs.get("bullish")
+        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
 
-            if unicorn and unicorn["direction"] == "BUY":
-                score += 0.2
-                reasons.append("🦄 ستاپ Unicorn صعودی")
+        if ob:
+            if dist == 0.0:
+                score += 0.30
+                reasons.append("داخل OB صعودی 4H (+۰.۳۰)")
+            elif dist <= 0.50:
+                score += 0.20
+                reasons.append(f"نزدیک OB صعودی ({dist:.2f} ATR) (+۰.۲۰)")
+            elif dist <= 1.0:
+                score += 0.10
+                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (+۰.۱۰)")
+            else:
+                reasons.append(f"دور از OB صعودی ({dist:.2f} ATR)")
+        else:
+            reasons.append("OB صعودی 4H پیدا نشد")
 
-            if score >= MIN_SIGNAL_SCORE:
-                direction = "BUY"
+        # ۵. Premium / Discount (نرم)
+        if htf_pd["zone"] == "DISCOUNT":
+            score += 0.12
+            reasons.append("ناحیه Discount (+۰.۱۲)")
+        else:
+            score -= 0.12
+            reasons.append("ناحیه PREMIUM (جریمه -۰.۱۲)")
+
+        # ۶. FVG
+        if ltf_fvg and ltf_fvg["type"] == "BULLISH":
+            score += 0.12
+            reasons.append("FVG صعودی 15m (+۰.۱۲)")
+
+        # ۷. Unicorn کامل (بالاترین confluence)
+        if unicorn and unicorn["direction"] == "BUY":
+            score += 0.22
+            reasons.append("🦄 ستاپ Unicorn کامل صعودی (+۰.۲۲)")
+
+        # ۸. تأیید کندلی
+        if get_candle_confirmation(df_15m, "BUY"):
+            score += 0.10
+            reasons.append("تأییدیه کندلی (+۰.۱۰)")
+
+        # صدور جهت فقط با confluence کافی
+        # شرط: امتیاز کافی + (نزدیک OB یا Unicorn یا Sweep+CHOCH)
+        strong_confluence = (
+            (ob and dist <= 0.75) or
+            (unicorn and unicorn["direction"] == "BUY") or
+            (sweep and sweep["type"] == "BULLISH_SWEEP" and choch and choch["type"] == "BULLISH_CHOCH")
+        )
+
+        if score >= MIN_SIGNAL_SCORE and strong_confluence:
+            direction = "BUY"
+            # SL منطقی: زیر OB یا زیر سطح Sweep
+            if ob:
                 ob_size = ob["high"] - ob["low"]
                 buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["low"] - buf, 6)
-                risk = price - sl
-                if risk <= 0:
-                    direction = None
-                    sl = None
-                    reasons.append("ریسک نامعتبر (SL بالاتر از قیمت)")
-                else:
-                    tp = round(price + risk * RISK_REWARD, 6)
+            elif sweep:
+                sl = round(sweep["level"] - atr * SL_ATR_MULTIPLIER, 6)
+            else:
+                sl = round(price - atr * SL_ATR_MULTIPLIER * 1.5, 6)
+
+            risk = price - sl
+            if risk <= 0:
+                direction = None
+                sl = None
+                reasons.append("ریسک نامعتبر")
+            else:
+                tp = round(price + risk * RISK_REWARD, 6)
+
+    # ============================================================
+    #  SELL Logic
+    # ============================================================
+    elif td_dir == "BEARISH":
+        score -= 0.15
+        reasons.append("هم‌راستایی نزولی HTF (-۰.۱۵)")
+
+        if sweep and sweep["type"] == "BEARISH_SWEEP":
+            score -= 0.25
+            reasons.append("🔄 Liquidity Sweep نزولی (-۰.۲۵)")
+        elif sweep and sweep["type"] == "BULLISH_SWEEP":
+            score += 0.08
+            reasons.append("Sweep مخالف جهت (جریمه کوچک)")
+
+        if choch and choch["type"] == "BEARISH_CHOCH":
+            score -= 0.18
+            reasons.append("CHOCH نزولی (-۰.۱۸)")
+
+        ob = htf_obs.get("bearish")
+        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
+
+        if ob:
+            if dist == 0.0:
+                score -= 0.30
+                reasons.append("داخل OB نزولی 4H (-۰.۳۰)")
+            elif dist <= 0.50:
+                score -= 0.20
+                reasons.append(f"نزدیک OB نزولی ({dist:.2f} ATR) (-۰.۲۰)")
+            elif dist <= 1.0:
+                score -= 0.10
+                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (-۰.۱۰)")
+            else:
+                reasons.append(f"دور از OB نزولی ({dist:.2f} ATR)")
         else:
-            if not in_ob:
-                reasons.append("قیمت خارج از OB صعودی 4H")
-            if htf_pd["zone"] != "DISCOUNT":
-                reasons.append(f"ناحیه {htf_pd['zone']} (نیاز به Discount)")
+            reasons.append("OB نزولی 4H پیدا نشد")
 
-    # SELL
-    elif td_dir == "BEARISH" and htf_obs["bearish"]:
-        ob = htf_obs["bearish"]
-        _tol = (ob["high"] - ob["low"]) * 0.1
-        in_ob = ob["low"] - _tol <= price <= ob["high"]
+        if htf_pd["zone"] == "PREMIUM":
+            score -= 0.12
+            reasons.append("ناحیه Premium (-۰.۱۲)")
+        else:
+            score += 0.12
+            reasons.append("ناحیه DISCOUNT (جریمه معکوس +۰.۱۲)")
 
-        if in_ob and htf_pd["zone"] == "PREMIUM":
-            score -= 0.5
-            reasons.append("OB نزولی 4H + Premium")
+        if ltf_fvg and ltf_fvg["type"] == "BEARISH":
+            score -= 0.12
+            reasons.append("FVG نزولی 15m (-۰.۱۲)")
 
-            if ltf_fvg and ltf_fvg["type"] == "BEARISH":
-                score -= 0.15
-                reasons.append("FVG نزولی 15m")
+        if unicorn and unicorn["direction"] == "SELL":
+            score -= 0.22
+            reasons.append("🦄 ستاپ Unicorn کامل نزولی (-۰.۲۲)")
 
-            if get_candle_confirmation(df_15m, "SELL"):
-                score -= 0.15
-                reasons.append("تأییدیه کندلی نزولی")
+        if get_candle_confirmation(df_15m, "SELL"):
+            score -= 0.10
+            reasons.append("تأییدیه کندلی (-۰.۱۰)")
 
-            if unicorn and unicorn["direction"] == "SELL":
-                score -= 0.2
-                reasons.append("🦄 ستاپ Unicorn نزولی")
+        strong_confluence = (
+            (ob and dist <= 0.75) or
+            (unicorn and unicorn["direction"] == "SELL") or
+            (sweep and sweep["type"] == "BEARISH_SWEEP" and choch and choch["type"] == "BEARISH_CHOCH")
+        )
 
-            if score <= -MIN_SIGNAL_SCORE:
-                direction = "SELL"
+        if score <= -MIN_SIGNAL_SCORE and strong_confluence:
+            direction = "SELL"
+            if ob:
                 ob_size = ob["high"] - ob["low"]
                 buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["high"] + buf, 6)
-                risk = sl - price
-                if risk <= 0:
-                    direction = None
-                    sl = None
-                    reasons.append("ریسک نامعتبر (SL پایین‌تر از قیمت)")
-                else:
-                    tp = round(price - risk * RISK_REWARD, 6)
-        else:
-            if not in_ob:
-                reasons.append("قیمت خارج از OB نزولی 4H")
-            if htf_pd["zone"] != "PREMIUM":
-                reasons.append(f"ناحیه {htf_pd['zone']} (نیاز به Premium)")
+            elif sweep:
+                sl = round(sweep["level"] + atr * SL_ATR_MULTIPLIER, 6)
+            else:
+                sl = round(price + atr * SL_ATR_MULTIPLIER * 1.5, 6)
 
-    else:
-        # روند داریم ولی OB مناسب نیست
-        if td_dir == "BULLISH" and not htf_obs["bullish"]:
-            reasons.append("OB صعودی 4H پیدا نشد")
-        elif td_dir == "BEARISH" and not htf_obs["bearish"]:
-            reasons.append("OB نزولی 4H پیدا نشد")
+            risk = sl - price
+            if risk <= 0:
+                direction = None
+                sl = None
+                reasons.append("ریسک نامعتبر")
+            else:
+                tp = round(price - risk * RISK_REWARD, 6)
 
     base.update({
         "score": round(score, 2),
@@ -497,7 +624,6 @@ async def full_analysis(data_dict, symbol, news_safe=True,
 
     tech = analyze_technical_topdown(data_dict)
 
-    # اگه بلاک شده بود، فقط تکنیکال رو برگردون
     if tech.get("blocked"):
         return {
             "score": 0.0,
@@ -532,6 +658,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     elif final_score <= -MIN_SIGNAL_SCORE:
         direction = "SELL"
 
+    # هم‌جهتی اجباری
     if tech["score"] > 0 and direction == "SELL":
         direction = None
     if tech["score"] < 0 and direction == "BUY":
