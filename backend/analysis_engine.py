@@ -21,6 +21,11 @@ from .config import (
 
 logger = logging.getLogger(__name__)
 
+# حداقل فاصلهٔ ریسک (SL تا قیمت) بر حسب ضریب ATR — قبلاً هیچ حداقلی چک نمی‌شد
+# و در صورت کوچک بودن OB، SL می‌توانست غیرواقعی نزدیک به قیمت باشد.
+# در صورت نیاز به تنظیم‌پذیری، می‌توان این را به config.py منتقل کرد.
+MIN_RISK_ATR_RATIO = 0.25
+
 
 # ============================================================
 #  ابزارهای پایه
@@ -56,18 +61,33 @@ def ema_trend(df, period=50):
 
 
 def find_swings(df, left=3, right=3):
-    highs, lows = [], []
-    for i in range(left, len(df) - right):
-        wh = df["high"].iloc[i - left:i + right + 1]
-        wl = df["low"].iloc[i - left:i + right + 1]
-        if df["high"].iloc[i] == wh.max():
-            highs.append((i, float(df["high"].iloc[i])))
-        if df["low"].iloc[i] == wl.min():
-            lows.append((i, float(df["low"].iloc[i])))
+    """نسخه بهینه: به‌جای برش pandas در هر پله حلقه (کند روی دیتافریم بزرگ)،
+    ماکزیمم/مینیمم پنجره متحرک را یک‌بار به‌صورت برداری محاسبه می‌کند."""
+    n = len(df)
+    if n < left + right + 1:
+        return {"highs": [], "lows": []}
+    high, low = df["high"], df["low"]
+    # max/min سمت چپ (شامل i) + سمت راست (شامل i) -> اجتماع = کل پنجره [i-left, i+right]
+    back_max = high.rolling(left + 1).max()
+    fwd_max = high[::-1].rolling(right + 1).max()[::-1]
+    win_max = pd.concat([back_max, fwd_max], axis=1).max(axis=1)
+    back_min = low.rolling(left + 1).min()
+    fwd_min = low[::-1].rolling(right + 1).min()[::-1]
+    win_min = pd.concat([back_min, fwd_min], axis=1).min(axis=1)
+
+    is_high = high == win_max
+    is_low = low == win_min
+    highs = [(i, float(high.iloc[i])) for i in range(left, n - right) if is_high.iloc[i]]
+    lows = [(i, float(low.iloc[i])) for i in range(left, n - right) if is_low.iloc[i]]
     return {"highs": highs, "lows": lows}
 
 
 def detect_structure(df):
+    """
+    نکته: قبلاً حالت مختلط (مثلاً HH ولی LL، یا LH ولی HL) به‌اشتباه با
+    شرط ضعیف `hh or hl` صعودی/نزولی قلمداد می‌شد. این حالت در واقع یعنی
+    ساختار در حال تغییر/تناقض دارد (نه یک روند تمیز)، پس باید RANGING باشد.
+    """
     sw = find_swings(df)
     highs, lows = sw["highs"], sw["lows"]
     if len(highs) < 2 or len(lows) < 2:
@@ -82,10 +102,6 @@ def detect_structure(df):
     if hh and hl:
         trend = "BULLISH"
     elif lh_ and ll_:
-        trend = "BEARISH"
-    elif hh or hl:
-        trend = "BULLISH"
-    elif lh_ or ll_:
         trend = "BEARISH"
     else:
         trend = "RANGING"
@@ -102,7 +118,7 @@ def find_order_blocks(df, lookback=80):
         return {"bullish": None, "bearish": None}
 
     bull = bear = None
-    for i in range(len(w) - 3, 1, -1):
+    for i in range(len(w) - 3, -1, -1):
         cur, nxt = w.iloc[i], w.iloc[i + 1]
         body = abs(nxt["close"] - nxt["open"])
         later = w.iloc[i + 2:]
@@ -128,25 +144,35 @@ def find_order_blocks(df, lookback=80):
     return {"bullish": bull, "bearish": bear}
 
 
-def detect_fvg(df, lookback=15):
+def detect_fvg(df, lookback=15, min_gap_ratio=0.15):
+    """
+    min_gap_ratio: حداقل اندازهٔ gap نسبت به میانگین رنج کندل‌های بازه.
+    قبلاً هیچ حداقلی نبود، پس شکاف‌های خیلی ریز/نویزی هم به‌عنوان FVG معتبر برمی‌گشتند.
+    """
     if len(df) < 5:
         return None
     price = float(df["close"].iloc[-1])
     start = max(2, len(df) - lookback)
-    for i in range(len(df) - 1, start, -1):
+    window = df.iloc[max(0, start - 2):]
+    avg_range = float((window["high"] - window["low"]).mean())
+    min_gap = avg_range * min_gap_ratio if avg_range > 0 else 0.0
+
+    for i in range(len(df) - 1, start - 1, -1):
         c1, c3 = df.iloc[i - 2], df.iloc[i]
         if c3["low"] > c1["high"]:
             t, b = float(c3["low"]), float(c1["high"])
-            if price > b:
+            if (t - b) >= min_gap and price > b:
                 return {"type": "BULLISH", "top": t, "bottom": b}
         if c3["high"] < c1["low"]:
             t, b = float(c1["low"]), float(c3["high"])
-            if price < t:
+            if (t - b) >= min_gap and price < t:
                 return {"type": "BEARISH", "top": t, "bottom": b}
     return None
 
 
 def get_premium_discount(df, lookback=60):
+    if len(df) == 0:
+        return {"zone": "-", "high": 0.0, "low": 0.0, "eq": 0.0}
     if len(df) < lookback:
         lookback = len(df)
     w = df.iloc[-lookback:]
@@ -274,7 +300,7 @@ def top_down_filter(data_dict):
     try:
         df_wk = pd.DataFrame(data_dict["1wk"])
         df_d = pd.DataFrame(data_dict["1d"])
-    except (KeyError, Exception):
+    except Exception:
         return "NEUTRAL", "داده کافی برای فیلتر", "-", "-", False
 
     wk_struct = detect_structure(df_wk)
@@ -388,11 +414,13 @@ def analyze_technical_topdown(data_dict):
     if td_dir == "CONFLICT":
         base["reasons"] = [f"🚫 {td_reason}", f"هفتگی: {wk_trend}", f"روزانه: {d_trend}"]
         base["blocked"] = True
+        logger.info("بلاک شد (CONFLICT): wk=%s d=%s", wk_trend, d_trend)
         return base
 
     if td_dir == "NEUTRAL":
         base["reasons"] = [f"⏸ {td_reason}"]
         base["blocked"] = True
+        logger.debug("بلاک شد (NEUTRAL): wk=%s d=%s", wk_trend, d_trend)
         return base
 
     if df_4h is None or df_1h is None or df_15m is None:
@@ -515,10 +543,17 @@ def analyze_technical_topdown(data_dict):
                 sl = round(price - atr * SL_ATR_MULTIPLIER * 1.5, 6)
 
             risk = price - sl
+            min_risk = atr * MIN_RISK_ATR_RATIO
             if risk <= 0:
                 direction = None
                 sl = None
                 reasons.append("ریسک نامعتبر")
+                logger.warning("BUY: ریسک نامعتبر (risk=%.6f)", risk)
+            elif risk < min_risk:
+                direction = None
+                sl = None
+                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
+                logger.warning("BUY: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
             else:
                 tp = round(price + risk * RISK_REWARD, 6)
 
@@ -595,10 +630,17 @@ def analyze_technical_topdown(data_dict):
                 sl = round(price + atr * SL_ATR_MULTIPLIER * 1.5, 6)
 
             risk = sl - price
+            min_risk = atr * MIN_RISK_ATR_RATIO
             if risk <= 0:
                 direction = None
                 sl = None
                 reasons.append("ریسک نامعتبر")
+                logger.warning("SELL: ریسک نامعتبر (risk=%.6f)", risk)
+            elif risk < min_risk:
+                direction = None
+                sl = None
+                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
+                logger.warning("SELL: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
             else:
                 tp = round(price - risk * RISK_REWARD, 6)
 
@@ -651,6 +693,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
 
     if not news_safe:
         final_score = 0.0
+        logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
 
     direction = None
     if final_score >= MIN_SIGNAL_SCORE:
@@ -665,6 +708,11 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         direction = None
     if direction and (tech["sl"] is None or tech["tp"] is None):
         direction = None
+
+    logger.info(
+        "%s: final_score=%.2f tech=%.2f fund=%.2f news=%.2f mem=%.2f direction=%s",
+        symbol, final_score, tech["score"], fund["score"], news_score, mem["score"], direction,
+    )
 
     all_reasons = [f"📈 تکنیکال: {tech['score']:+.2f}"]
     all_reasons.extend(tech["reasons"])
