@@ -10,6 +10,7 @@
 5. ریسک نامتقارن و محافظه‌کارانه حفظ شده
 """
 import logging
+from datetime import datetime, timezone
 import pandas as pd
 import numpy as np
 
@@ -209,6 +210,8 @@ def get_candle_confirmation(df, direction):
 
 
 def detect_liquidity_sweep(df, lookback=30):
+    """اندازهٔ sweep (size) هم برگردانده می‌شود تا امتیازدهی بتواند بین یک
+    sweep پنج‌پیپی و پنجاه‌پیپی تفاوت بگذارد (به‌جای امتیاز یکسان)."""
     if len(df) < lookback + 3:
         return None
     recent = df.iloc[-lookback:-3]
@@ -218,10 +221,58 @@ def detect_liquidity_sweep(df, lookback=30):
     for i in range(-3, 0):
         c = df.iloc[i]
         if c["high"] > prev_high and c["close"] < prev_high:
-            return {"type": "BEARISH_SWEEP", "level": prev_high}
+            return {"type": "BEARISH_SWEEP", "level": prev_high,
+                    "size": float(c["high"] - prev_high)}
         if c["low"] < prev_low and c["close"] > prev_low:
-            return {"type": "BULLISH_SWEEP", "level": prev_low}
+            return {"type": "BULLISH_SWEEP", "level": prev_low,
+                    "size": float(prev_low - c["low"])}
     return None
+
+
+def sweep_strength_multiplier(sweep, atr):
+    """
+    ضریب کیفیت Sweep بر اساس sweep_size / ATR.
+    قبلاً همهٔ Sweepها (صرف‌نظر از اندازه) امتیاز ثابت داشتند.
+    خروجی بین ۰.۵ (Sweep ضعیف/کم‌عمق) تا ۱.۶ (Sweep قوی/عمیق) کلیپ می‌شود
+    تا نه بی‌اثر شود نه بیش‌ازحد امتیاز را منفجر کند.
+    """
+    if not sweep or not atr:
+        return 1.0
+    ratio = sweep.get("size", 0.0) / atr
+    return max(0.5, min(1.6, 0.5 + ratio * 0.7))
+
+
+def is_london_session(dt=None):
+    """تقریبی (بدون احتساب دقیق DST): سشن لندن ~ ۰۷:۰۰ تا ۱۶:۰۰ UTC."""
+    dt = dt or datetime.now(timezone.utc)
+    return 7 <= dt.hour < 16
+
+
+def is_ny_session(dt=None):
+    """تقریبی: سشن نیویورک ~ ۱۲:۰۰ تا ۲۱:۰۰ UTC."""
+    dt = dt or datetime.now(timezone.utc)
+    return 12 <= dt.hour < 21
+
+
+def is_london_killzone(dt=None):
+    """تقریبی: کیل‌زون بازگشایی لندن ~ ۰۷:۰۰ تا ۱۰:۰۰ UTC."""
+    dt = dt or datetime.now(timezone.utc)
+    return 7 <= dt.hour < 10
+
+
+def is_ny_killzone(dt=None):
+    """تقریبی: کیل‌زون همپوشانی لندن/نیویورک ~ ۱۲:۰۰ تا ۱۵:۰۰ UTC."""
+    dt = dt or datetime.now(timezone.utc)
+    return 12 <= dt.hour < 15
+
+
+def current_session_label(dt=None):
+    dt = dt or datetime.now(timezone.utc)
+    if is_london_killzone(dt) or is_ny_killzone(dt):
+        return "KILLZONE"
+    if is_london_session(dt) or is_ny_session(dt):
+        return "ACTIVE_SESSION"
+    return "OFF_HOURS"
 
 
 def detect_choch(df, lookback=20):
@@ -447,14 +498,21 @@ def analyze_technical_topdown(data_dict):
     sweep = detect_liquidity_sweep(df_15m, lookback=30)
     choch = detect_choch(df_1h, lookback=20)
     unicorn = detect_unicorn_setup(df_4h, df_1h, df_15m)
+    sweep_mult = sweep_strength_multiplier(sweep, atr)
+    session = current_session_label()
 
     score = 0.0
     reasons = [f"🎯 فیلتر محیطی: {td_reason}"]
+    base["session"] = session
 
     # جریمه حالت soft
     if soft:
         score -= 0.10
         reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه -۰.۱۰)")
+
+    # بونوس کوچک و غیرمسدودکننده برای معامله داخل کیل‌زون (فقط تقویت، نه فیلتر سخت)
+    if session == "KILLZONE":
+        reasons.append("⏰ داخل کیل‌زون لندن/نیویورک")
 
     direction = None
     sl = tp = None
@@ -467,13 +525,20 @@ def analyze_technical_topdown(data_dict):
         score += 0.15
         reasons.append("هم‌راستایی صعودی HTF (+۰.۱۵)")
 
-        # ۲. Liquidity Sweep (مهم‌ترین تریگر از نظر ICT)
+        # ۲. Liquidity Sweep (مهم‌ترین تریگر از نظر ICT) — امتیاز متناسب با قدرت Sweep
         if sweep and sweep["type"] == "BULLISH_SWEEP":
-            score += 0.25
-            reasons.append("🔄 Liquidity Sweep صعودی (+۰.۲۵)")
+            add = round(0.25 * sweep_mult, 4)
+            score += add
+            reasons.append(f"🔄 Liquidity Sweep صعودی ×{sweep_mult:.2f} (+{add:.2f})")
         elif sweep and sweep["type"] == "BEARISH_SWEEP":
-            score -= 0.08
-            reasons.append("Sweep مخالف جهت (جریمه کوچک)")
+            pen = round(0.08 * sweep_mult, 4)
+            score -= pen
+            reasons.append(f"Sweep مخالف جهت (جریمه -{pen:.2f})")
+
+        # کیل‌زون: بونوس کوچک غیرمسدودکننده
+        if session == "KILLZONE":
+            score += 0.05
+            reasons.append("⏰ کیل‌زون فعال (+۰.۰۵)")
 
         # ۳. Structure Shift (CHOCH)
         if choch and choch["type"] == "BULLISH_CHOCH":
@@ -565,11 +630,17 @@ def analyze_technical_topdown(data_dict):
         reasons.append("هم‌راستایی نزولی HTF (-۰.۱۵)")
 
         if sweep and sweep["type"] == "BEARISH_SWEEP":
-            score -= 0.25
-            reasons.append("🔄 Liquidity Sweep نزولی (-۰.۲۵)")
+            add = round(0.25 * sweep_mult, 4)
+            score -= add
+            reasons.append(f"🔄 Liquidity Sweep نزولی ×{sweep_mult:.2f} (-{add:.2f})")
         elif sweep and sweep["type"] == "BULLISH_SWEEP":
-            score += 0.08
-            reasons.append("Sweep مخالف جهت (جریمه کوچک)")
+            pen = round(0.08 * sweep_mult, 4)
+            score += pen
+            reasons.append(f"Sweep مخالف جهت (جریمه +{pen:.2f})")
+
+        if session == "KILLZONE":
+            score -= 0.05
+            reasons.append("⏰ کیل‌زون فعال (-۰.۰۵)")
 
         if choch and choch["type"] == "BEARISH_CHOCH":
             score -= 0.18
