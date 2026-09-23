@@ -1,7 +1,6 @@
 """
 FastAPI Backend - Sina Quant v3.1.1 (security patch)
 """
-import hmac
 import logging
 import os
 import secrets
@@ -40,7 +39,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-VERSION = "3.2.0"
+VERSION = "3.1.2"
 
 # کلید ادمین: فقط از متغیر محیطی Render خوانده می‌شود (هرگز داخل کد نگذار)
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
@@ -56,44 +55,12 @@ def require_admin(x_admin_key: str = Header(default="")):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-# ============================================================
-#  دروازهٔ دسترسی کلی (فقط خودت): کل اپ (فرانت‌اند + API) بسته می‌شود
-#  مگر با کوکی معتبر یا ?key=<ACCESS_KEY> در URL.
-#  چون کوکی خودکار همراه هر fetch فرستاده می‌شود، فرانت‌اند نیازی به تغییر ندارد.
-#  اگر ACCESS_KEY ست نشود، این دروازه غیرفعال می‌ماند (رفتار قبلی حفظ می‌شود).
-# ============================================================
-ACCESS_KEY = os.getenv("ACCESS_KEY", "").strip()
-ACCESS_COOKIE_NAME = "sina_access"
-_PUBLIC_PATHS = {"/api/health", "/favicon.ico", "/manifest.json", "/sw.js", "/api/scan/force"}
-
-
-def _is_public_path(path: str) -> bool:
-    # /api/scan/force از دروازهٔ عمومی مستثناست چون خودش با X-Admin-Key
-    # جداگانه و سخت‌گیرانه‌تر محافظت می‌شود (مثلاً برای صدا زدن از cron/curl
-    # بدون نیاز به کوکی مرورگر).
-    return path in _PUBLIC_PATHS or path.startswith("/static/")
-
-
-def _access_granted(request: Request) -> bool:
-    if not ACCESS_KEY:
-        return True
-    cookie_val = request.cookies.get(ACCESS_COOKIE_NAME, "")
-    if cookie_val and hmac.compare_digest(cookie_val, ACCESS_KEY):
-        return True
-    key_param = request.query_params.get("key", "")
-    if key_param and hmac.compare_digest(key_param, ACCESS_KEY):
-        return True
-    return False
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("=" * 50)
     logger.info("🚀 راه‌اندازی Sina Quant...")
     if not ADMIN_KEY:
         logger.warning("⚠️ ADMIN_KEY ست نشده؛ /api/scan/force غیرفعال است")
-    if not ACCESS_KEY:
-        logger.warning("⚠️ ACCESS_KEY ست نشده؛ کل اپ عمومی و بدون محافظت است!")
     init_db()
     start_scheduler()
     logger.info("✅ اپ آماده است")
@@ -123,32 +90,6 @@ async def basic_security_headers(request: Request, call_next):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "same-origin")
-    return response
-
-
-@app.middleware("http")
-async def access_gate(request: Request, call_next):
-    """کل اپ رو می‌بنده مگر با کوکی معتبر یا ?key= درست. لاگ‌اوت هم اضافه شد."""
-    if _is_public_path(request.url.path):
-        return await call_next(request)
-
-    if not _access_granted(request):
-        logger.warning("تلاش دسترسی غیرمجاز به %s", request.url.path)
-        return JSONResponse(status_code=401, content={"error": "دسترسی غیرمجاز"})
-
-    response = await call_next(request)
-
-    # اگه با ?key= معتبر وارد شده، کوکی رو برای درخواست‌های بعدی همین دستگاه ست کن
-    key_param = request.query_params.get("key", "")
-    if ACCESS_KEY and key_param and hmac.compare_digest(key_param, ACCESS_KEY):
-        response.set_cookie(
-            key=ACCESS_COOKIE_NAME,
-            value=ACCESS_KEY,
-            max_age=60 * 60 * 24 * 365,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-        )
     return response
 
 
