@@ -147,6 +147,19 @@ def init_db():
 
     logger.info(f"✅ دیتابیس آماده شد ({'PostgreSQL' if USE_POSTGRES else 'SQLite'})")
 
+    # --- افزودن ستون price_at_signal (قیمت لحظه بازار موقع صدور سیگنال) ---
+    # جدا از entry، چون entry سطح تحلیلی SMC است نه لزوما قیمت لحظه‌ای بازار.
+    # با try/except idempotent شده چون ALTER TABLE ADD COLUMN IF NOT EXISTS
+    # روی نسخه‌های قدیمی‌تر SQLite پشتیبانی نمی‌شه.
+    with get_conn() as conn:
+        cur = conn.cursor()
+        try:
+            cur.execute(_q("ALTER TABLE signals ADD COLUMN price_at_signal REAL"))
+            conn.commit()
+            logger.info("✅ ستون price_at_signal اضافه شد")
+        except Exception:
+            conn.rollback()  # ستون از قبل وجود داره، مشکلی نیست
+
 
 # ============================================================
 #  ردیف به Dict
@@ -206,8 +219,14 @@ def _process_rows(cur) -> list:
 # ============================================================
 #  عملیات‌ها
 # ============================================================
-def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
-    """ثبت سیگنال جدید"""
+def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
+                   price_at_signal=None):
+    """ثبت سیگنال جدید
+
+    price_at_signal: قیمت لحظه‌ای بازار در لحظه صدور سیگنال (اختیاری).
+    جدا از entry نگه داشته می‌شه چون entry می‌تونه یه سطح تحلیلی SMC
+    (مثلا وسط یک Order Block) باشه، نه لزوما قیمت جاری بازار.
+    """
     if isinstance(reasons, list):
         reasons_json = json.dumps(reasons, ensure_ascii=False)
     else:
@@ -216,11 +235,11 @@ def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons):
     with get_conn() as conn:
         cur = _execute(conn, """
             INSERT INTO signals
-            (symbol, name, direction, entry, sl, tp, score, reasons, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (symbol, name, direction, entry, sl, tp, score, reasons, price_at_signal, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol, name, direction, entry, sl, tp, score,
-            reasons_json,
+            reasons_json, price_at_signal,
             datetime.utcnow().isoformat()
         ))
 

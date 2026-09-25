@@ -2,6 +2,7 @@
 رصد خودکار سیگنال‌ها: چک کردن TP و SL
 + Timeout برای سیگنال‌های گیر افتاده
 + فرمت صحیح طلا
++ فیلتر همبستگی ارزی (جلوگیری از باخت هم‌زمان روی نمادهای هم‌ارز)
 """
 import logging
 from datetime import datetime, timezone, timedelta
@@ -171,9 +172,37 @@ def _check_signal(sig: dict, candles: list):
 
 def is_duplicate_signal(symbol: str, direction: str,
                          hours: int = 4) -> bool:
-    """جلوگیری از تکرار سیگنال مشابه در بازه کوتاه"""
+    """جلوگیری از تکرار سیگنال مشابه در بازه کوتاه (فقط همون نماد)"""
     recent = get_recent_signals_for_symbol(symbol, hours=hours)
     for sig in recent:
         if sig["direction"] == direction and sig["status"] == "OPEN":
             return True
     return False
+
+
+# ============================================================
+#  فیلتر همبستگی ارزی — رفع علت اصلی دو باخت هم‌زمان
+#  (GBPJPY و USDJPY هر دو JPY دارن، ولی نماد متفاوته پس
+#   is_duplicate_signal بالا جلوشون رو نمی‌گیره)
+# ============================================================
+
+def extract_currencies(symbol: str):
+    """مثلا 'GBPJPY' یا 'GBP/JPY' -> ('GBP', 'JPY')"""
+    s = symbol.replace("/", "").replace("-", "").upper()
+    return s[:3], s[3:6]
+
+
+def has_correlated_open_signal(symbol: str):
+    """
+    چک می‌کند آیا سیگنال بازِ دیگری روی نمادی با ارز پایه یا کوت مشترک
+    وجود دارد (مثلا GBPJPY وقتی USDJPY باز است).
+    برمی‌گرداند: dict سیگنال تداخل‌دار، یا None
+    """
+    base, quote = extract_currencies(symbol)
+    for sig in get_open_signals():
+        if sig["symbol"] == symbol:
+            continue
+        e_base, e_quote = extract_currencies(sig["symbol"])
+        if base in (e_base, e_quote) or quote in (e_base, e_quote):
+            return sig
+    return None

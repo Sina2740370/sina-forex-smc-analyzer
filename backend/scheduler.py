@@ -1,6 +1,7 @@
 """
-زمان‌بند خودکار - نسخه 2.2
+زمان‌بند خودکار - نسخه 2.3
 با فیکس باگ تکرار + Startup cooldown + In-Memory tracking
++ فیلتر همبستگی ارزی + ثبت قیمت لحظه صدور
 """
 import asyncio
 import logging
@@ -15,7 +16,11 @@ from .config import (
 from .data_fetcher import fetch_topdown, get_cache_stats
 from .analysis_engine import full_analysis
 from .news_fetcher import fetch_news, is_news_safe
-from .signal_tracker import check_open_signals, is_duplicate_signal
+from .signal_tracker import (
+    check_open_signals,
+    is_duplicate_signal,
+    has_correlated_open_signal,
+)
 from .database import insert_signal
 from .notifier import notify_new_signal, notify_startup
 
@@ -43,6 +48,13 @@ DUPLICATE_COOLDOWN_SECONDS = 4 * 3600  # 4 ساعت
 # ============================================================
 _last_startup_notified = 0
 STARTUP_COOLDOWN_SECONDS = 6 * 3600  # 6 ساعت
+
+# ============================================================
+#  حالت فیلتر همبستگی ارزی: "block" یا "half_size"
+#  block: سیگنال دوم روی ارز مشترک کلا رد می‌شه
+#  half_size: سیگنال صادر می‌شه ولی با پرچم reduced_risk=True (نصف حجم دستی بگیر)
+# ============================================================
+CORRELATION_MODE = "block"
 
 
 def _is_duplicate_in_memory(symbol: str, direction: str) -> bool:
@@ -84,6 +96,7 @@ async def scan_market():
     errors = 0
     blocked = 0
     duplicates = 0
+    correlated_blocked = 0
 
     for symbol, name in SYMBOLS.items():
         try:
@@ -105,6 +118,16 @@ async def scan_market():
                     logger.info(f"⏭ تکرار in-database: {name} {direction}")
                     continue
 
+                # --- فیلتر همبستگی ارزی ---
+                conflict = has_correlated_open_signal(symbol)
+                if conflict and CORRELATION_MODE == "block":
+                    correlated_blocked += 1
+                    logger.info(
+                        f"⛔ {name} به دلیل تداخل ارزی با سیگنال باز "
+                        f"{conflict['symbol']} ({conflict['direction']}) رد شد"
+                    )
+                    continue
+
                 _mark_signal_sent(symbol, direction)
                 insert_signal(
                     symbol=symbol,
@@ -115,8 +138,15 @@ async def scan_market():
                     tp=result["suggested_tp"],
                     score=result["score"],
                     reasons=result.get("reasons", []),
+                    price_at_signal=result["current_price"],
                 )
                 signals_created += 1
+
+                if conflict:
+                    logger.info(
+                        f"⚠️ {name} با {conflict['symbol']} هم‌ارز است "
+                        f"(حالت half_size) — حجم را دستی کاهش بده"
+                    )
 
                 logger.info(
                     f"✅ سیگنال: {name} {direction} "
@@ -164,7 +194,8 @@ async def scan_market():
         f"✔️ اسکن تمام شد ({elapsed:.1f}s) | "
         f"سیگنال: {signals_created} | "
         f"تکراری: {duplicates} | "
-        f"بلاک‌شده: {blocked} | "
+        f"بلاک‌شده(روند): {blocked} | "
+        f"بلاک‌شده(همبستگی): {correlated_blocked} | "
         f"خطا: {errors} | "
         f"کش: {cache['size']}"
     )
