@@ -531,6 +531,13 @@ function renderSignalCard(s) {
     reasons = `<div class="reasons"><div class="reasons-title">دلایل:</div><ul>${reasonsArr.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
   }
 
+  // قیمت لحظه بازار در لحظه صدور سیگنال (جدا از entry که سطح تحلیلی SMC است)
+  const priceAtSignalRow = (s.price_at_signal !== null && s.price_at_signal !== undefined)
+    ? `<div class="card-row">
+         <span class="label">📍 قیمت لحظه صدور</span>
+         <span class="value">${fmtPrice(s.price_at_signal, s.symbol)}</span>
+       </div>` : '';
+
   return `
     <div class="card">
       <div class="card-head">
@@ -548,6 +555,7 @@ function renderSignalCard(s) {
         <span class="label">💰 ورود</span>
         <span class="value">${fmtPrice(s.entry, s.symbol)}</span>
       </div>
+      ${priceAtSignalRow}
       <div class="card-row">
         <span class="label">🛑 حد ضرر</span>
         <span class="value red">${fmtPrice(s.sl, s.symbol)}</span>
