@@ -17,8 +17,18 @@ logger = logging.getLogger(__name__)
 #  انتخاب نوع دیتابیس
 # ============================================================
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+IS_RENDER = os.getenv("RENDER", "").strip() != ""  # Render خودش این متغیر رو ست می‌کنه
 
 USE_POSTGRES = DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://")
+
+if IS_RENDER and not USE_POSTGRES:
+    # تو Production (Render) هرگز نباید بی‌سروصدا بره رو SQLite؛
+    # چون فضای دیسک موقتیه و با هر دیپلوی/ری‌استارت داده‌ها پاک می‌شن.
+    raise RuntimeError(
+        "روی Render هستیم ولی DATABASE_URL معتبر (postgresql://...) تنظیم نشده. "
+        "بدون Postgres، هر ری‌استارت باعث از دست رفتن کامل داده‌ها می‌شه. "
+        "این رو در Render → Environment تنظیم کن."
+    )
 
 if USE_POSTGRES:
     try:
@@ -26,11 +36,17 @@ if USE_POSTGRES:
         import psycopg2.extras
         logger.info("🐘 استفاده از PostgreSQL")
     except ImportError:
-        logger.error("❌ psycopg2 نصب نیست → fallback به SQLite")
+        if IS_RENDER:
+            raise RuntimeError(
+                "psycopg2 نصب نیست ولی روی Render هستیم و PostgreSQL اجباریه. "
+                "psycopg2-binary رو به requirements.txt اضافه کن."
+            )
+        logger.error("❌ psycopg2 نصب نیست → fallback به SQLite (فقط برای تست محلی)")
         USE_POSTGRES = False
-else:
+
+if not USE_POSTGRES:
     import sqlite3
-    logger.info("📁 استفاده از SQLite")
+    logger.info("📁 استفاده از SQLite (محیط محلی/تست)")
 
 
 # ============================================================
