@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
-from .config import DB_PATH, PIP_SIZE, RISK_PER_TRADE
+from .config import DB_PATH, PIP_SIZE, LOT_RISK_PCT
 
 logger = logging.getLogger(__name__)
 
@@ -355,7 +355,10 @@ def get_stats_summary():
         "total_pips": round(total_pips, 1),
         "total_r": round(cum, 2),
         "max_drawdown_r": round(max_dd, 2),
-        "max_drawdown_pct": round(max_dd * RISK_PER_TRADE, 4),
+        # LOT_RISK_PCT عدد درصدیه (مثلا ۰.۵ یعنی ۰.۵٪)، برای همین تقسیم بر ۱۰۰ می‌کنیم
+        # تا با max_dd (که بر حسب R-multiple است) هم‌واحد بشه و drawdown واقعی حساب رو نشون بده،
+        # نه یه مقدار جدا که با ریسک واقعیِ استفاده‌شده تو محاسبه‌ی حجم لات (notifier.py) هم‌خوانی نداره.
+        "max_drawdown_pct": round(max_dd * (LOT_RISK_PCT / 100), 4),
         "open_signals": open_count,
         "expired_signals": expired,
     }
