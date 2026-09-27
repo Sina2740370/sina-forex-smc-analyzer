@@ -236,6 +236,9 @@ def fetch_topdown(symbol: str) -> dict:
 _prices_cache = {"data": {}, "ts": 0}
 PRICES_TTL_SECONDS = 30
 
+# آخرین باری که حداقل یک قیمت زنده با موفقیت دریافت شد (برای health check)
+_last_price_success_ts = 0.0
+
 
 def fetch_live_prices(use_cache: bool = True) -> dict:
     global _prices_cache
@@ -291,9 +294,31 @@ def fetch_live_prices(use_cache: bool = True) -> dict:
     if result:
         _prices_cache["data"] = result
         _prices_cache["ts"] = time.time()
+        global _last_price_success_ts
+        _last_price_success_ts = time.time()
         logger.info(f"💰 {len(result)} قیمت زنده دریافت شد")
 
     return result
+
+
+# ============================================================
+#  وضعیت سلامت Data Feed (برای /api/health)
+# ============================================================
+
+def data_feed_health(max_age_seconds: int = 900) -> dict:
+    """آیا اخیراً قیمت زنده با موفقیت دریافت شده؟
+    max_age_seconds: بعد از این مدت بدون دریافت موفق، Feed 'down' حساب می‌شه
+    (پیش‌فرض ۱۵ دقیقه = یک دور اسکن کامل)."""
+    if _last_price_success_ts == 0:
+        return {"healthy": False, "seconds_since_success": None, "reason": "هنوز هیچ دریافت موفقی ثبت نشده"}
+
+    age = time.time() - _last_price_success_ts
+    healthy = age < max_age_seconds
+    return {
+        "healthy": healthy,
+        "seconds_since_success": round(age),
+        "reason": None if healthy else f"{round(age)} ثانیه از آخرین دریافت موفق گذشته",
+    }
 
 
 # ============================================================

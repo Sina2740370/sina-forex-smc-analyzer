@@ -27,8 +27,9 @@ from .scheduler import (
     start_scheduler, get_last_scan, get_scan_stats,
     scan_market,
 )
-from .data_fetcher import fetch_live_prices
+from .data_fetcher import fetch_live_prices, data_feed_health
 from . import database
+from .database import check_db_connection
 
 logging.basicConfig(
     level=logging.INFO,
@@ -136,17 +137,30 @@ def db_status():
 @app.get("/api/health")
 def health():
     stats = get_scan_stats()
-    return {
-        "status": "ok",
+    db_check = check_db_connection()
+    feed_check = data_feed_health()
+
+    overall_ok = db_check["healthy"] and feed_check["healthy"]
+
+    payload = {
+        "status": "ok" if overall_ok else "degraded",
         "app": "Sina Quant",
         "version": VERSION,
         "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
+        "database": db_check,
+        "data_feed": feed_check,
         "scans": stats.get("total_scans", 0),
         "last_scan": stats.get("last_scan_time"),
         "timeframes": stats.get("timeframes", []),
         "signals_today": stats.get("signals_today", 0),
         "errors": stats.get("errors", 0),
     }
+
+    if not overall_ok:
+        # کد ۵۰۳ تا UptimeRobot/مانیتورینگ واقعاً قطعی رو تشخیص بده،
+        # نه اینکه همیشه 200 ببینه و فکر کنه همه‌چی سالمه
+        return JSONResponse(content=payload, status_code=503)
+    return payload
 
 
 @app.get("/api/config")

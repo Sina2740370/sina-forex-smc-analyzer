@@ -373,3 +373,20 @@ def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
             WHERE symbol = ? AND created_at > ?
         """, (symbol, cutoff))
         return _process_rows(cur)
+
+
+# ============================================================
+#  وضعیت سلامت دیتابیس (برای /api/health)
+# ============================================================
+def check_db_connection() -> dict:
+    """یه کوئری سبک واقعی می‌زنه تا مطمئن شه دیتابیس واقعاً در دسترسه،
+    نه فقط اینکه USE_POSTGRES تنظیم شده."""
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1")
+            cur.fetchone()
+        return {"healthy": True, "reason": None}
+    except Exception as e:
+        logger.error(f"❌ دیتابیس در دسترس نیست: {e}")
+        return {"healthy": False, "reason": str(e)}
