@@ -6,19 +6,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _require_env(name: str) -> str:
+    """کلیدهای حساس را فقط از Environment Variables می‌خواند؛
+    اگر ست نشده باشد برنامه بالا نمی‌آید (به‌جای استفاده از مقدار پیش‌فرض هاردکد)."""
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise RuntimeError(
+            f"متغیر محیطی {name} تنظیم نشده. آن را در Render → Environment اضافه کن."
+        )
+    return value
+
+
 # ============================================================
 #  API Keys
 # ============================================================
-FRED_API_KEY = os.getenv("FRED_API_KEY", "efd75b3fd5aa542e2d803b7d53a892aa")
+FRED_API_KEY = _require_env("FRED_API_KEY")
 
 # ============================================================
 #  Telegram Notifications
 # ============================================================
-TELEGRAM_BOT_TOKEN = os.getenv(
-    "TELEGRAM_BOT_TOKEN",
-    "8914305119:AAHNP1bba8m13wUMqx0CUrfv923ZP_cKQyk"
-)
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "6362801737")
+TELEGRAM_BOT_TOKEN = _require_env("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = _require_env("TELEGRAM_CHAT_ID")
 
 # ============================================================
 #  نمادها
