@@ -1,13 +1,12 @@
 """
 خط فرمان موتور:
 
-  python -m engine.cli backtest --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
-  python -m engine.cli backtest --source yfinance --symbols EURUSD
-  python -m engine.cli scan --symbols EURUSD GBPUSD
   python -m engine.cli fetch --symbols XAUUSD EURUSD GBPUSD USDJPY --years 4 --out data_duka
-  python -m engine.cli report --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
+  python -m engine.cli backtest --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
+  python -m engine.cli scan --symbols EURUSD GBPUSD
+  python -m engine.cli report --source csv --csv-dir data_duka --symbols XAUUSD EURUSD --walk-forward
 
-نام فایل CSV: {SYMBOL}_M15.csv (مثلاً EURUSD_M15.csv) خروجی Export Bars متاتریدر.
+نام فایل CSV: {SYMBOL}_M15.csv
 """
 from __future__ import annotations
 
@@ -28,15 +27,23 @@ from .strategy.smc_topdown import analyze
 def _load(args, symbol: str) -> dict:
     if args.source == "csv":
         path = os.path.join(args.csv_dir, f"{symbol}_M15.csv")
+        if not os.path.exists(path):
+            raise SystemExit(f"فایل پیدا نشد: {path}")
         return build_topdown(load_mt5_csv(path, args.tz_offset))
     return load_yfinance_topdown(INSTRUMENTS[symbol].yf)
+
+
+def cmd_fetch(args):
+    from .data.fetch_history import fetch_symbol
+    for sym in args.symbols:
+        fetch_symbol(sym, args.years, args.out)
 
 
 def cmd_backtest(args):
     cfg = EngineConfig()
     trades = []
     for sym in args.symbols:
-        print(f"▶ {sym} ...")
+        print(f"> {sym} ...", flush=True)
         trades += run_backtest(sym, _load(args, sym), cfg, args.start, args.end)
     s = summarize(trades)
     print(json.dumps({"config": cfg.hash(), "summary": s, "gate": evaluate_gate(s)},
@@ -45,14 +52,14 @@ def cmd_backtest(args):
         os.makedirs(args.out, exist_ok=True)
         path = os.path.join(args.out, f"trades_{cfg.hash()}.csv")
         pd.DataFrame(trades).assign(features=lambda d: d["features"].map(json.dumps)).to_csv(path, index=False)
-        print("trades →", path)
+        print("trades ->", path)
 
 
 def cmd_report(args):
     cfg = EngineConfig()
     all_trades, lines = [], []
     for sym in args.symbols:
-        print(f"▶ {sym} ...", flush=True)
+        print(f"> {sym} ...", flush=True)
         data = _load(args, sym)
         trades = run_backtest(sym, data, cfg, args.start, args.end)
         all_trades += trades
@@ -73,7 +80,7 @@ def cmd_report(args):
     os.makedirs(args.out, exist_ok=True)
     path = os.path.join(args.out, f"report_{cfg.hash()}.txt")
     open(path, "w", encoding="utf-8").write(text)
-    print("\nگزارش ذخیره شد →", path)
+    print("\nگزارش ذخیره شد ->", path)
 
 
 def cmd_scan(args):
@@ -83,41 +90,38 @@ def cmd_scan(args):
         data = _load(args, sym)
         lag = staleness_minutes(data["15m"], "15m", now)
         if lag > 45:
-            print(f"{sym}: داده کهنه ({lag:.0f} دقیقه) → رد شد")
+            print(f"{sym}: داده کهنه ({lag:.0f} دقیقه) -> رد شد")
             continue
         d = analyze(TopDownView(data).at(now), cfg, now)
-        print(sym, d.direction or f"— ({d.blocked})", f"score={d.score:.2f}", d.reasons)
-
-
-def cmd_fetch(args):
-    from .data.fetch_history import fetch_symbol
-    for sym in args.symbols:
-        fetch_symbol(sym, args.years, args.out)
+        print(sym, d.direction or f"- ({d.blocked})", f"score={d.score:.2f}", d.reasons)
 
 
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
+
     fp = sub.add_parser("fetch", help="دانلود تاریخچه از Dukascopy")
     fp.add_argument("--symbols", nargs="+", default=["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"])
     fp.add_argument("--years", type=float, default=4)
     fp.add_argument("--out", default="data_duka")
     fp.set_defaults(fn=cmd_fetch)
+
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
         sp = sub.add_parser(name)
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
-        sp.add_argument("--tz-offset", type=float, default=0.0, help="اختلاف ساعت سرور بروکر با UTC")
+        sp.add_argument("--tz-offset", type=float, default=0.0)
         sp.add_argument("--start")
         sp.add_argument("--end")
         sp.add_argument("--out", default="out")
-        sp.add_argument("--sims", type=int, default=300, help="تعداد شبیه‌سازی رندوم")
+        sp.add_argument("--sims", type=int, default=300)
         sp.add_argument("--walk-forward", action="store_true")
         sp.add_argument("--grid", nargs="+", type=float, default=[0.5, 0.6, 0.7])
         sp.add_argument("--train-days", type=int, default=180)
         sp.add_argument("--test-days", type=int, default=60)
         sp.set_defaults(fn=fn)
+
     args = p.parse_args()
     args.fn(args)
 
