@@ -4,6 +4,7 @@
   python -m engine.cli backtest --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
   python -m engine.cli backtest --source yfinance --symbols EURUSD
   python -m engine.cli scan --symbols EURUSD GBPUSD
+  python -m engine.cli report --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
 
 نام فایل CSV: {SYMBOL}_M15.csv (مثلاً EURUSD_M15.csv) خروجی Export Bars متاتریدر.
 """
@@ -15,6 +16,7 @@ import os
 
 import pandas as pd
 
+from .backtest.report import fold_stability, feature_table, random_baseline, walk_forward
 from .backtest.runner import evaluate_gate, run_backtest, summarize
 from .core.config import INSTRUMENTS, EngineConfig
 from .data.providers import (build_topdown, load_mt5_csv, load_yfinance_topdown,
@@ -45,6 +47,34 @@ def cmd_backtest(args):
         print("trades →", path)
 
 
+def cmd_report(args):
+    cfg = EngineConfig()
+    all_trades, lines = [], []
+    for sym in args.symbols:
+        print(f"▶ {sym} ...", flush=True)
+        data = _load(args, sym)
+        trades = run_backtest(sym, data, cfg, args.start, args.end)
+        all_trades += trades
+        lines.append(f"\n===== {sym} =====")
+        lines.append("خلاصه: " + json.dumps(summarize(trades), default=str, ensure_ascii=False))
+        lines.append("مقایسه با ورود تصادفی: " + json.dumps(
+            random_baseline(sym, data["15m"], trades, cfg, args.sims), ensure_ascii=False))
+        if args.walk_forward:
+            wf = walk_forward(sym, data, cfg, tuple(args.grid), args.train_days, args.test_days)
+            lines.append("walk-forward (خارج از نمونه): " + json.dumps(wf, default=str, ensure_ascii=False))
+    s = summarize(all_trades)
+    lines.append("\n===== کل =====")
+    lines.append(json.dumps({"summary": s, "gate": evaluate_gate(s)}, default=str, ensure_ascii=False, indent=1))
+    lines.append("\nپایداری زمانی: " + json.dumps(fold_stability(all_trades), ensure_ascii=False))
+    lines.append("\nعملکرد ویژگی‌ها:\n" + (feature_table(all_trades).to_string(index=False) if all_trades else "-"))
+    text = "\n".join(lines)
+    print(text)
+    os.makedirs(args.out, exist_ok=True)
+    path = os.path.join(args.out, f"report_{cfg.hash()}.txt")
+    open(path, "w", encoding="utf-8").write(text)
+    print("\nگزارش ذخیره شد →", path)
+
+
 def cmd_scan(args):
     cfg = EngineConfig()
     now = pd.Timestamp.now(tz="UTC")
@@ -61,7 +91,7 @@ def cmd_scan(args):
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
-    for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan)):
+    for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
         sp = sub.add_parser(name)
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
@@ -70,6 +100,11 @@ def main():
         sp.add_argument("--start")
         sp.add_argument("--end")
         sp.add_argument("--out", default="out")
+        sp.add_argument("--sims", type=int, default=300, help="تعداد شبیه‌سازی رندوم")
+        sp.add_argument("--walk-forward", action="store_true")
+        sp.add_argument("--grid", nargs="+", type=float, default=[0.5, 0.6, 0.7])
+        sp.add_argument("--train-days", type=int, default=180)
+        sp.add_argument("--test-days", type=int, default=60)
         sp.set_defaults(fn=fn)
     args = p.parse_args()
     args.fn(args)

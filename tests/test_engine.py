@@ -112,3 +112,14 @@ def test_stats_helpers():
                     "symbol": "X"} for i in range(5)])
     assert s["profit_factor"] == 99.0 and s["max_drawdown_r"] == 0
     assert evaluate_gate(s)["ready"] is False                          # n<100
+
+
+def test_report_tools_run():
+    from engine.backtest.report import feature_table, fold_stability, random_baseline
+    cfg = EngineConfig(min_score=0.35)
+    data = build_topdown(make_15m(300, seed=3))
+    trades = run_backtest("EURUSD", data, cfg)
+    b = random_baseline("EURUSD", data["15m"], trades, cfg, n_sims=20)
+    assert "p_value" in b and 0 < b["p_value"] <= 1
+    assert not feature_table(trades).empty
+    assert isinstance(fold_stability(trades, 2), list)

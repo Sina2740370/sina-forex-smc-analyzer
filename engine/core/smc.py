@@ -6,16 +6,19 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 
 
 # ---------------------------------------------------------------- اندیکاتور
 def atr(df: pd.DataFrame, period: int = 14) -> float:
     if len(df) < period + 1:
         return 0.0
-    h, l, c = df["high"], df["low"], df["close"]
-    tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
-    v = tr.rolling(period).mean().iloc[-1]
-    return float(v) if pd.notna(v) else 0.0
+    h = df["high"].to_numpy()[-(period + 1):]
+    l = df["low"].to_numpy()[-(period + 1):]
+    c = df["close"].to_numpy()[-(period + 1):]
+    tr = np.maximum.reduce([h[1:] - l[1:], np.abs(h[1:] - c[:-1]), np.abs(l[1:] - c[:-1])])
+    v = float(tr.mean())
+    return v if np.isfinite(v) else 0.0
 
 
 def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
@@ -32,16 +35,16 @@ def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
 # ---------------------------------------------------------------- ساختار
 def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     """سوئینگ‌ها: لیست (index, price). یک سوئینگ تا `right` کندل بعدش تأیید نمی‌شود."""
-    if len(df) < left + right + 1:
-        return [], []
     w = left + right + 1
-    hi, lo = df["high"], df["low"]
-    wmax = hi.rolling(w).max().shift(-right)
-    wmin = lo.rolling(w).min().shift(-right)
-    ih = np.flatnonzero((hi == wmax).to_numpy())
-    il = np.flatnonzero((lo == wmin).to_numpy())
-    return ([(int(i), float(hi.iloc[i])) for i in ih],
-            [(int(i), float(lo.iloc[i])) for i in il])
+    if len(df) < w:
+        return [], []
+    hi, lo = df["high"].to_numpy(), df["low"].to_numpy()
+    mx = sliding_window_view(hi, w).max(axis=1)
+    mn = sliding_window_view(lo, w).min(axis=1)
+    ih = np.flatnonzero(hi[left:left + len(mx)] == mx) + left
+    il = np.flatnonzero(lo[left:left + len(mn)] == mn) + left
+    return ([(int(i), float(hi[i])) for i in ih],
+            [(int(i), float(lo[i])) for i in il])
 
 
 def structure(df: pd.DataFrame) -> str:
