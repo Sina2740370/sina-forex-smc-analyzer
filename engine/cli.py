@@ -4,6 +4,7 @@
   python -m engine.cli backtest --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
   python -m engine.cli backtest --source yfinance --symbols EURUSD
   python -m engine.cli scan --symbols EURUSD GBPUSD
+  python -m engine.cli fetch --symbols XAUUSD EURUSD GBPUSD USDJPY --years 4 --out data_duka
   python -m engine.cli report --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
 
 نام فایل CSV: {SYMBOL}_M15.csv (مثلاً EURUSD_M15.csv) خروجی Export Bars متاتریدر.
@@ -88,9 +89,20 @@ def cmd_scan(args):
         print(sym, d.direction or f"— ({d.blocked})", f"score={d.score:.2f}", d.reasons)
 
 
+def cmd_fetch(args):
+    from .data.fetch_history import fetch_symbol
+    for sym in args.symbols:
+        fetch_symbol(sym, args.years, args.out)
+
+
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
+    fp = sub.add_parser("fetch", help="دانلود تاریخچه از Dukascopy")
+    fp.add_argument("--symbols", nargs="+", default=["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"])
+    fp.add_argument("--years", type=float, default=4)
+    fp.add_argument("--out", default="data_duka")
+    fp.set_defaults(fn=cmd_fetch)
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
         sp = sub.add_parser(name)
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")

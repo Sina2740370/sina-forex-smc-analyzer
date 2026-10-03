@@ -1,0 +1,59 @@
+"""
+دانلود تاریخچه‌ی چندساله‌ی M15 از Dukascopy (رایگان، UTC، اسپات واقعی از جمله XAUUSD).
+
+خروجی: {out_dir}/{SYMBOL}_M15.csv با ستون‌های time,open,high,low,close,volume
+(قیمت Bid، زمان UTC) ← هنگام بک‌تست `--tz-offset 0` بده (پیش‌فرض است).
+دانلود سه‌ماهه‌به‌سه‌ماهه کش می‌شود؛ اگر قطع شد، دوباره اجرا کن و از همان‌جا ادامه می‌دهد.
+"""
+from __future__ import annotations
+
+import os
+from datetime import datetime, timedelta, timezone
+
+import pandas as pd
+
+COLS = ["open", "high", "low", "close", "volume"]
+
+
+def _quarters(start: datetime, end: datetime):
+    cur = start
+    while cur < end:
+        m = ((cur.month - 1) // 3 + 1) * 3 + 1          # ابتدای فصل بعد
+        nxt = datetime(cur.year + (m > 12), (m - 1) % 12 + 1, 1, tzinfo=timezone.utc)
+        yield cur, min(nxt, end)
+        cur = nxt
+
+
+def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) -> str:
+    import dukascopy_python as dk  # import تنبل
+
+    pair = f"{symbol[:3]}/{symbol[3:]}"                   # EURUSD → EUR/USD
+    end = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    start = (end - timedelta(days=int(365 * years))).replace(day=1, hour=0)
+    cache = os.path.join(out_dir, ".cache")
+    os.makedirs(cache, exist_ok=True)
+
+    parts = []
+    for a, b in _quarters(start, end):
+        f = os.path.join(cache, f"{symbol}_{a:%Y%m%d}.csv")
+        fresh = b < end - timedelta(days=7)                # فصل جاری هر بار دوباره گرفته می‌شود
+        if fresh and os.path.exists(f):
+            parts.append(pd.read_csv(f, index_col=0, parse_dates=True))
+            continue
+        if verbose:
+            print(f"  {symbol} {a:%Y-%m-%d} → {b:%Y-%m-%d} ...", flush=True)
+        df = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b)
+        df = df[COLS]
+        if fresh:
+            df.to_csv(f)
+        parts.append(df)
+
+    full = pd.concat(parts)
+    full = full[~full.index.duplicated()].sort_index()
+    full.index = full.index.tz_convert("UTC").tz_localize(None)
+    full.index.name = "time"
+    path = os.path.join(out_dir, f"{symbol}_M15.csv")
+    full.to_csv(path)
+    if verbose:
+        print(f"✓ {symbol}: {len(full)} کندل  {full.index[0]} → {full.index[-1]}  → {path}")
+    return path
