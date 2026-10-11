@@ -3,7 +3,7 @@ import pandas as pd
 
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
-from engine.core.config import EngineConfig
+from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, build_topdown, resample_ohlc
 from engine.strategy.smc_topdown import analyze
 
@@ -123,3 +123,28 @@ def test_report_tools_run():
     assert "p_value" in b and 0 < b["p_value"] <= 1
     assert not feature_table(trades).empty
     assert isinstance(fold_stability(trades, 2), list)
+
+
+def test_backtest_end_bounds_eod_close():
+    """معامله‌ی باز در --end روی آخرین کندل بازه بسته می‌شود، نه آخر کل دیتا."""
+    cfg = EngineConfig(min_score=0.35)
+    data = build_topdown(make_15m(300, seed=3))
+    df15 = data["15m"]
+    bar = pd.Timedelta(minutes=15)
+    all_trades = run_backtest("EURUSD", data, cfg)
+    assert len(all_trades) >= 1
+    end_ts = pd.Timestamp(all_trades[0]["open_time"]) + pd.Timedelta(hours=2)
+    trades = run_backtest("EURUSD", data, cfg, end=end_ts.isoformat())
+    assert len(trades) >= 1
+    for t in trades:
+        assert pd.Timestamp(t["close_time"]) <= end_ts
+        assert pd.Timestamp(t["open_time"]) <= end_ts
+        assert pd.Timestamp(t["close_time"]) >= pd.Timestamp(t["open_time"])
+    eod = [t for t in trades if t["status"] == "EOD"]
+    assert len(eod) >= 1
+    last = df15[df15["time"] + bar <= end_ts].iloc[-1]
+    half = spread_price("EURUSD") / 2.0
+    for t in eod:
+        side = 1 if t["side"] == "BUY" else -1
+        assert pd.Timestamp(t["close_time"]) == last["time"] + bar
+        assert abs(float(t["exit"]) - (float(last["close"]) - side * half)) < 1e-6
