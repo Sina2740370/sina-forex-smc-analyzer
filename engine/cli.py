@@ -6,7 +6,7 @@
   python -m engine.cli scan --symbols EURUSD GBPUSD
   python -m engine.cli report --source csv --csv-dir data_duka --symbols XAUUSD EURUSD --walk-forward
 
-نام فایل CSV: {SYMBOL}_M15.csv
+نام فایل CSV: {SYMBOL}_M15.csv (یا {SYMBOL}_i_M15.csv)
 """
 from __future__ import annotations
 
@@ -28,7 +28,11 @@ def _load(args, symbol: str) -> dict:
     if args.source == "csv":
         path = os.path.join(args.csv_dir, f"{symbol}_M15.csv")
         if not os.path.exists(path):
-            raise SystemExit(f"فایل پیدا نشد: {path}")
+            path = os.path.join(args.csv_dir, f"{symbol}_i_M15.csv")
+        if not os.path.exists(path):
+            raise SystemExit(
+                f"فایل پیدا نشد: {symbol}_M15.csv یا {symbol}_i_M15.csv در {args.csv_dir}"
+            )
         return build_topdown(load_mt5_csv(path, args.tz_offset))
     return load_yfinance_topdown(INSTRUMENTS[symbol].yf)
 
