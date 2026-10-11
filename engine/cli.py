@@ -24,6 +24,14 @@ from .data.providers import (build_topdown, load_mt5_csv, load_yfinance_topdown,
 from .strategy.smc_topdown import analyze
 
 
+def _strategy(name: str):
+    """smc پیش‌فرض؛ s1/s2 از engine/strategy/baselines.py (import تنبل)."""
+    if name == "smc":
+        return analyze
+    from .strategy import baselines
+    return {"s1": baselines.analyze_s1, "s2": baselines.analyze_s2}[name]
+
+
 def _load(args, symbol: str) -> dict:
     if args.source == "csv":
         path = os.path.join(args.csv_dir, f"{symbol}_M15.csv")
@@ -48,7 +56,8 @@ def cmd_backtest(args):
     trades = []
     for sym in args.symbols:
         print(f"> {sym} ...", flush=True)
-        trades += run_backtest(sym, _load(args, sym), cfg, args.start, args.end)
+        trades += run_backtest(sym, _load(args, sym), cfg, args.start, args.end,
+                               analyze_fn=_strategy(args.strategy))
     s = summarize(trades)
     print(json.dumps({"config": cfg.hash(), "summary": s, "gate": evaluate_gate(s)},
                      indent=2, default=str, ensure_ascii=False))
@@ -65,7 +74,8 @@ def cmd_report(args):
     for sym in args.symbols:
         print(f"> {sym} ...", flush=True)
         data = _load(args, sym)
-        trades = run_backtest(sym, data, cfg, args.start, args.end)
+        trades = run_backtest(sym, data, cfg, args.start, args.end,
+                              analyze_fn=_strategy(args.strategy))
         all_trades += trades
         lines.append(f"\n===== {sym} =====")
         lines.append("خلاصه: " + json.dumps(summarize(trades), default=str, ensure_ascii=False))
@@ -112,6 +122,7 @@ def main():
 
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
         sp = sub.add_parser(name)
+        sp.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
