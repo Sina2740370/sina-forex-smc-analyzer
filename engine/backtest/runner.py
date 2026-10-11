@@ -75,11 +75,15 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
 
     trades, pos, last_signal = [], None, {}
+    last_i = None
     for i in range(len(df15)):
         t_open = times.iloc[i]
         now = t_open + bar                      # لحظه‌ی بسته‌شدن کندل i
-        if now < t0 or now > t1:
+        if now < t0:
             continue
+        if now > t1:
+            break
+        last_i = i
 
         if pos is not None and i > pos.open_idx:
             status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
@@ -104,8 +108,13 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
         last_signal["t"] = now
 
-    if pos is not None:                         # پوزیشن باز آخر داده: mark-to-market
-        trades.append(_close_trade(symbol, pos, "EOD", cl[-1] - pos.side * half, times.iloc[-1], cfg))
+    if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
+        trades.append(_close_trade(
+            symbol, pos, "EOD",
+            cl[last_i] - pos.side * half,
+            times.iloc[last_i] + bar,           # لحظه‌ی بسته‌شدن آخرین کندل بازه
+            cfg,
+        ))
     return trades
 
 
