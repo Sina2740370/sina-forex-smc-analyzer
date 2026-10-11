@@ -60,8 +60,11 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
 
 
 def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
-                 start: Optional[str] = None, end: Optional[str] = None) -> list:
-    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict)."""
+                 start: Optional[str] = None, end: Optional[str] = None,
+                 analyze_fn=None) -> list:
+    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict).
+    analyze_fn: تابع (view_dict, cfg, now) -> Decision؛ پیش‌فرض همان analyze (SMC)."""
+    analyze_fn = analyze_fn or analyze
     view = TopDownView(data)
     df15 = data["15m"]
     half = spread_price(symbol) / 2.0
@@ -75,11 +78,15 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
 
     trades, pos, last_signal = [], None, {}
+    last_i = None
     for i in range(len(df15)):
         t_open = times.iloc[i]
         now = t_open + bar                      # لحظه‌ی بسته‌شدن کندل i
-        if now < t0 or now > t1:
+        if now < t0:
             continue
+        if now > t1:
+            break
+        last_i = i
 
         if pos is not None and i > pos.open_idx:
             status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
@@ -94,7 +101,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if now - last_signal.get("t", now - cooldown - bar) < cooldown:
             continue
 
-        dec = analyze(view.at(now), cfg, now)
+        dec = analyze_fn(view.at(now), cfg, now)
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
@@ -104,8 +111,13 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
         last_signal["t"] = now
 
-    if pos is not None:                         # پوزیشن باز آخر داده: mark-to-market
-        trades.append(_close_trade(symbol, pos, "EOD", cl[-1] - pos.side * half, times.iloc[-1], cfg))
+    if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
+        trades.append(_close_trade(
+            symbol, pos, "EOD",
+            cl[last_i] - pos.side * half,
+            times.iloc[last_i] + bar,           # لحظه‌ی بسته‌شدن آخرین کندل بازه
+            cfg,
+        ))
     return trades
 
 
