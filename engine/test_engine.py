@@ -3,9 +3,9 @@ import pandas as pd
 
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
-from engine.core.config import EngineConfig
+from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, build_topdown, resample_ohlc
-from engine.strategy.smc_topdown import analyze
+from engine.strategy.smc_topdown import analyze, kill_zone
 
 
 def make_15m(days=420, seed=7, base=1.10, vol=0.0004):
@@ -123,3 +123,64 @@ def test_report_tools_run():
     assert "p_value" in b and 0 < b["p_value"] <= 1
     assert not feature_table(trades).empty
     assert isinstance(fold_stability(trades, 2), list)
+
+
+def test_backtest_end_bounds_eod_close():
+    """معامله‌ی باز در --end روی آخرین کندل بازه بسته می‌شود، نه آخر کل دیتا."""
+    cfg = EngineConfig(min_score=0.35)
+    data = build_topdown(make_15m(300, seed=3))
+    df15 = data["15m"]
+    bar = pd.Timedelta(minutes=15)
+    all_trades = run_backtest("EURUSD", data, cfg)
+    assert len(all_trades) >= 1
+    end_ts = pd.Timestamp(all_trades[0]["open_time"]) + pd.Timedelta(hours=2)
+    trades = run_backtest("EURUSD", data, cfg, end=end_ts.isoformat())
+    assert len(trades) >= 1
+    for t in trades:
+        assert pd.Timestamp(t["close_time"]) <= end_ts
+        assert pd.Timestamp(t["open_time"]) <= end_ts
+        assert pd.Timestamp(t["close_time"]) >= pd.Timestamp(t["open_time"])
+    eod = [t for t in trades if t["status"] == "EOD"]
+    assert len(eod) >= 1
+    last = df15[df15["time"] + bar <= end_ts].iloc[-1]
+    half = spread_price("EURUSD") / 2.0
+    for t in eod:
+        side = 1 if t["side"] == "BUY" else -1
+        assert pd.Timestamp(t["close_time"]) == last["time"] + bar
+        assert abs(float(t["exit"]) - (float(last["close"]) - side * half)) < 1e-6
+
+
+def _flat_15m(start, days):
+    n = days * 96
+    t = pd.date_range(start, periods=n, freq="15min", tz="UTC")
+    p = np.linspace(1.0, 1.1, n)
+    return pd.DataFrame({"time": t, "open": p, "high": p + 0.001, "low": p - 0.001,
+                         "close": p, "volume": 1.0})
+
+
+def test_daily_bar_starts_at_ny_1700_winter_and_summer():
+    # زمستان: 17:00 نیویورک = 22:00 UTC ؛ تابستان: 21:00 UTC
+    win = resample_ohlc(_flat_15m("2025-01-05 22:00", 20), "1d")
+    assert (win["time"].dt.hour == 22).all()
+    summ = resample_ohlc(_flat_15m("2025-07-06 21:00", 20), "1d")
+    assert (summ["time"].dt.hour == 21).all()
+    wk = resample_ohlc(_flat_15m("2025-07-06 21:00", 20), "1wk")
+    assert (wk["time"].dt.hour == 21).all() and (wk["time"].dt.dayofweek == 6).all()
+
+
+def test_daily_bar_across_dst_switch_keeps_17_ny():
+    # عبور از شروع DST آمریکا (۹ مارس ۲۰۲۵): قبل ۲۲ UTC، بعد ۲۱ UTC و هیچ کندل یتیمی نیست
+    d = resample_ohlc(_flat_15m("2025-03-02 22:00", 14), "1d")
+    hrs = d.set_index("time").index.tz_convert("America/New_York").hour
+    assert (hrs == 17).all()
+    assert set(d["time"].dt.hour) == {22, 21}
+
+
+def test_kill_zone_local_london_and_ny_with_dst():
+    ts = lambda s: pd.Timestamp(s, tz="UTC")
+    # زمستان: لندن 07-10 UTC، نیویورک 12-15 UTC
+    assert kill_zone(ts("2025-01-15 07:00")) and kill_zone(ts("2025-01-15 12:00"))
+    assert not kill_zone(ts("2025-01-15 10:00")) and not kill_zone(ts("2025-01-15 11:00"))
+    # تابستان: لندن 06-09 UTC، نیویورک 11-14 UTC
+    assert kill_zone(ts("2025-07-15 06:00")) and kill_zone(ts("2025-07-15 11:00"))
+    assert not kill_zone(ts("2025-07-15 09:00")) and not kill_zone(ts("2025-07-15 14:00"))
