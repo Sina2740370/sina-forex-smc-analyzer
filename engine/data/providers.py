@@ -4,7 +4,7 @@
 نکات مهم:
 - همه‌ی زمان‌ها UTC و tz-aware هستند. خروجی MT5 بر پایه‌ی ساعت «سرور بروکر» است
   (معمولاً UTC+2/+3)، پس tz_offset_hours را درست بده.
-- روزانه/هفتگی با مرز بسته‌شدن فارکس (~22:00 UTC) ساخته می‌شود تا کندل یکشنبه جدا نیفتد.
+- روزانه/هفتگی با مرز 17:00 نیویورک (با DST؛ 21:00 یا 22:00 UTC) ساخته می‌شود تا کندل یکشنبه جدا نیفتد.
 """
 from __future__ import annotations
 
@@ -49,19 +49,37 @@ def _tidy(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------- ریسمپل
+NY_TZ = "America/New_York"
+_AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+
+
+def _resample_ny(df15: pd.DataFrame, rule: str) -> pd.DataFrame:
+    """
+    روز/هفته‌ی فارکس: شروع 17:00 به وقت نیویورک (با DST).
+    کار روی ساعت دیواری محلی انجام می‌شود تا مرز در تابستان 21:00 UTC و در زمستان 22:00 UTC شود.
+    """
+    d = df15.set_index("time")
+    shift = pd.Timedelta(hours=17)
+    d.index = d.index.tz_convert(NY_TZ).tz_localize(None) - shift
+    out = d.resample(rule, closed="left", label="left").agg(_AGG).dropna()
+    out.index = (out.index + shift).tz_localize(
+        NY_TZ, ambiguous="NaT", nonexistent="shift_forward").tz_convert("UTC")
+    out = out[out.index.notna()]
+    out.index.name = "time"
+    return out.reset_index()[COLS]
+
+
 def resample_ohlc(df15: pd.DataFrame, tf: str) -> pd.DataFrame:
-    """ساخت تایم‌فریم بالاتر از 15m. 1d/1wk با شیفت ۲ ساعت (۲۲:۰۰ UTC = شروع روز)."""
+    """ساخت تایم‌فریم بالاتر از 15m. 1d/1wk روی 17:00 نیویورک (با DST) شروع می‌شوند."""
     if tf == "15m":
         return df15
-    shift = pd.Timedelta(hours=2) if tf in ("1d", "1wk") else pd.Timedelta(0)
-    rule = {"1h": "1h", "4h": "4h", "1d": "1D", "1wk": "W-MON"}[tf]
+    if tf == "1d":
+        return _resample_ny(df15, "1D")
+    if tf == "1wk":
+        return _resample_ny(df15, "W-SUN")
+    rule = {"1h": "1h", "4h": "4h"}[tf]
     d = df15.set_index("time")
-    d.index = d.index + shift
-    kw = {"label": "left", "closed": "left"}
-    out = d.resample(rule, **kw).agg(
-        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
-    ).dropna()
-    out.index = out.index - shift
+    out = d.resample(rule, closed="left", label="left").agg(_AGG).dropna()
     return out.reset_index().rename(columns={"index": "time"})[COLS]
 
 
