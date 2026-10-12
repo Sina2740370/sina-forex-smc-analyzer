@@ -39,9 +39,11 @@ class Decision:
 
 
 def kill_zone(now: pd.Timestamp) -> bool:
-    """تقریبی و بدون DST: لندن 07-10 UTC، هم‌پوشانی NY 12-15 UTC."""
-    h = now.hour
-    return 7 <= h < 10 or 12 <= h < 15
+    """لندن 07-10 به وقت Europe/London و نیویورک 07-10 به وقت America/New_York (با DST)."""
+    t = now.tz_localize("UTC") if now.tzinfo is None else now
+    ldn = t.tz_convert("Europe/London").hour
+    ny = t.tz_convert("America/New_York").hour
+    return 7 <= ldn < 10 or 7 <= ny < 10
 
 
 def top_down_bias(df_wk: pd.DataFrame, df_d: pd.DataFrame):
