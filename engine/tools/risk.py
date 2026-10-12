@@ -33,6 +33,10 @@ class SizeResult:
     sl_pips: float
     rr: Optional[float]
     note: str = ""
+    margin: Optional[float] = None       # مارجین لازم (دلار)، فقط اگر leverage داده شده
+    margin_pct: Optional[float] = None   # مارجین به درصد موجودی
+    free_margin: Optional[float] = None  # مارجین آزاد پس از ورود
+    margin_limited: bool = False         # حجم به‌خاطر سقف مارجین کم شده؟
 
 
 def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] = None) -> float:
@@ -46,10 +50,27 @@ def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] =
     raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
 
 
+def margin_per_lot(symbol: str, price: float, leverage: float,
+                   contract: Optional[float] = None) -> float:
+    """مارجین یک لات به دلار: ارزش اسمی موقعیت ÷ اهرم."""
+    if symbol not in SPECS:
+        raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
+    if leverage <= 0:
+        raise ValueError("leverage باید مثبت باشد")
+    c = contract if contract is not None else SPECS[symbol]["contract"]
+    notional = c if symbol.startswith("USD") else c * price   # USD-base: ارزش اسمی خودش دلار است
+    return notional / leverage
+
+
 def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl: float,
                   tp: Optional[float] = None, lot_step: float = 0.01, min_lot: float = 0.01,
-                  max_lot: float = 100.0, contract: Optional[float] = None) -> SizeResult:
-    """حجم معامله برای ریسک درصدی ثابت. همیشه به پایین رُند می‌شود (هرگز ریسک بیشتر از خواسته)."""
+                  max_lot: float = 100.0, contract: Optional[float] = None,
+                  leverage: Optional[float] = None, max_margin_pct: float = 50.0) -> SizeResult:
+    """
+    حجم معامله برای ریسک درصدی ثابت. همیشه به پایین رُند می‌شود (هرگز ریسک بیشتر از خواسته).
+    اگر leverage داده شود، مارجین هم حساب می‌شود و حجم طوری سقف می‌خورد که مارجین از
+    max_margin_pct درصد موجودی بیشتر نشود (با SL خیلی نزدیک، حجم ریسکی ممکن است بیش از توان مارجین باشد).
+    """
     if symbol not in SPECS:
         raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
     if balance <= 0 or not (0 < risk_pct <= 100):
@@ -62,19 +83,39 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
     raw = risk_amount / per_lot
     lots = math.floor(raw / lot_step + 1e-9) * lot_step
     lots = round(min(lots, max_lot), 8)
+    margin_limited = False
+    if leverage is not None:
+        mpl = margin_per_lot(symbol, entry, leverage, contract)
+        cap = math.floor((balance * max_margin_pct / 100.0) / mpl / lot_step + 1e-9) * lot_step
+        if lots > cap:
+            lots, margin_limited = round(cap, 8), True
     rr = None
     if tp is not None:
         rr = round(abs(tp - entry) / dist, 2)
     pips = dist / SPECS[symbol]["pip"]
     if lots < min_lot:
-        return SizeResult(False, 0.0, risk_amount, 0.0, dist, round(pips, 1), rr,
-                          "حجم کمتر از حداقل لات است؛ SL را نزدیک‌تر کن یا ریسک/موجودی را بالا ببر")
+        why = ("مارجین/اهرم اجازه‌ی حداقل لات را نمی‌دهد؛ اهرم یا موجودی را بالا ببر یا SL را دورتر بگذار"
+               if margin_limited else
+               "حجم کمتر از حداقل لات است؛ SL را دورتر بگذار یا ریسک/موجودی را بالا ببر")
+        return SizeResult(False, 0.0, risk_amount, 0.0, dist, round(pips, 1), rr, why)
     actual = lots * per_lot
-    note = ""
+    notes = []
+    if margin_limited:
+        notes.append("حجم به‌خاطر سقف مارجین کم شد؛ ریسک واقعی کمتر از ریسک خواسته است")
     if actual > risk_amount * 1.0001:
-        note = "ریسک واقعی از خواسته بیشتر شد"
+        notes.append("ریسک واقعی از خواسته بیشتر شد")
+    margin = margin_pct = free = None
+    if leverage is not None:
+        margin = lots * margin_per_lot(symbol, entry, leverage, contract)
+        margin_pct = margin / balance * 100.0
+        free = balance - margin
+        if margin_pct > 30 and not margin_limited:
+            notes.append("بیش از ۳۰٪ موجودی درگیر مارجین می‌شود؛ جا برای افت کم است")
     return SizeResult(True, round(lots, 2), round(risk_amount, 2), round(actual, 2), dist,
-                      round(pips, 1), rr, note)
+                      round(pips, 1), rr, "؛ ".join(notes),
+                      None if margin is None else round(margin, 2),
+                      None if margin_pct is None else round(margin_pct, 1),
+                      None if free is None else round(free, 2), margin_limited)
 
 
 def breakeven_winrate(rr: float) -> float:
