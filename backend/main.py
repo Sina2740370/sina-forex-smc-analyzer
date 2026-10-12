@@ -1,5 +1,5 @@
 """
-FastAPI Backend - Sina Quant v3.1.1 (security patch)
+FastAPI Backend - Sina Quant v3.2.0 (risk calculator + trade journal)
 """
 import logging
 import os
@@ -8,6 +8,9 @@ import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
@@ -30,6 +33,18 @@ from .scheduler import (
 from .data_fetcher import fetch_live_prices, data_feed_health
 from . import database
 from .database import check_db_connection
+from . import journal_store
+
+from pydantic import BaseModel, Field
+
+# ابزارهای ریسک/ژورنال از موتور (اگر import نشد، فقط همین endpointها غیرفعال می‌شوند)
+try:
+    from engine.tools import journal as _journal, risk as _risk
+    TOOLS_OK = True
+except Exception as _e:  # pragma: no cover
+    _journal = _risk = None
+    TOOLS_OK = False
+    logging.getLogger(__name__).error("engine.tools در دسترس نیست: %s", _e)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,7 +55,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-VERSION = "3.1.2"
+VERSION = "3.2.0"
 
 # کلید ادمین: فقط از متغیر محیطی Render خوانده می‌شود (هرگز داخل کد نگذار)
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
@@ -63,6 +78,10 @@ async def lifespan(app: FastAPI):
     if not ADMIN_KEY:
         logger.warning("⚠️ ADMIN_KEY ست نشده؛ /api/scan/force غیرفعال است")
     init_db()
+    try:
+        journal_store.init_journal_table()
+    except Exception as e:
+        logger.error("ساخت جدول ژورنال ناموفق بود: %s", e)
     start_scheduler()
     logger.info("✅ اپ آماده است")
     logger.info("=" * 50)
@@ -243,6 +262,111 @@ def get_stats():
         "max_drawdown": MAX_DRAWDOWN,
         "ready_for_live": ready,
     }
+
+
+# ============================================================
+#  ابزار معامله‌ی دستی: ماشین‌حساب ریسک + ژورنال + نگهبان
+# ============================================================
+class SizeIn(BaseModel):
+    symbol: str
+    balance: float = Field(gt=0)
+    risk_pct: float = Field(gt=0, le=100)
+    entry: float
+    sl: float
+    tp: Optional[float] = None
+    lot_step: float = Field(0.01, gt=0)
+    min_lot: float = Field(0.01, gt=0)
+    contract: Optional[float] = Field(None, gt=0)
+
+
+class TradeIn(BaseModel):
+    symbol: str = Field(min_length=3, max_length=12)
+    side: str
+    entry: float
+    sl: float
+    exit: float
+    lots: Optional[float] = Field(None, gt=0)
+    tag: Optional[str] = Field(None, max_length=40)
+    note: Optional[str] = Field(None, max_length=500)
+    opened_at: Optional[str] = None
+    closed_at: Optional[str] = None
+
+
+def _need_tools():
+    if not TOOLS_OK:
+        raise HTTPException(status_code=503, detail="ابزارهای موتور در دسترس نیستند")
+
+
+def _journal_rows(limit: int = 2000, since: Optional[str] = None):
+    rows = journal_store.list_trades(limit=limit, since=since)
+    rows.reverse()  # قدیمی‌ترین اول (ترتیب زمانی درست برای دراودان و ضرر پشت‌سرهم)
+    return [{"symbol": r["symbol"], "side": r["side"], "entry": r["entry"], "sl": r["sl"],
+             "exit": r["exit_price"], "close_time": r["closed_at"],
+             "open_time": r.get("opened_at"), "tag": r.get("tag")} for r in rows]
+
+
+@app.post("/api/risk/size")
+def risk_size(body: SizeIn):
+    """حجم معامله برای ریسک درصدی ثابت (فقط محاسبه، بدون ذخیره)."""
+    _need_tools()
+    try:
+        res = _risk.position_size(body.symbol.upper().strip(), body.balance, body.risk_pct,
+                                  body.entry, body.sl, body.tp, body.lot_step, body.min_lot,
+                                  contract=body.contract)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {**res.__dict__, "supported": sorted(_risk.SPECS)}
+
+
+@app.post("/api/journal", dependencies=[Depends(require_admin)])
+def journal_add(t: TradeIn):
+    _need_tools()
+    side = t.side.upper().strip()
+    try:
+        r = _risk.trade_r(side, t.entry, t.sl, t.exit)
+        new_id = journal_store.add_trade(t.symbol.upper().strip(), side, t.entry, t.sl, t.exit,
+                                         round(r, 4), t.lots, t.tag, t.note,
+                                         t.opened_at, t.closed_at)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {"id": new_id, "r": round(r, 4)}
+
+
+@app.get("/api/journal", dependencies=[Depends(require_admin)])
+def journal_list(limit: int = Query(200, ge=1, le=1000)):
+    return {"trades": journal_store.list_trades(limit=limit)}
+
+
+@app.delete("/api/journal/{trade_id}", dependencies=[Depends(require_admin)])
+def journal_delete(trade_id: int):
+    if not journal_store.delete_trade(trade_id):
+        raise HTTPException(status_code=404, detail="معامله پیدا نشد")
+    return {"deleted": trade_id}
+
+
+@app.get("/api/journal/stats", dependencies=[Depends(require_admin)])
+def journal_stats():
+    """آمار صادقانه‌ی معاملات دستی: امید ریاضی با بازه اطمینان + قضاوت + عملکرد هر برچسب."""
+    _need_tools()
+    rows = _journal_rows()
+    out = {
+        "summary": _journal.journal_stats(rows),
+        "by_tag": _journal.by_tag(rows),
+        "drawdown": _journal.drawdown_guard([t["r"] for t in _journal.normalize(rows)]),
+    }
+    return _journal.json_safe(out)
+
+
+@app.get("/api/journal/guard", dependencies=[Depends(require_admin)])
+def journal_guard(max_daily_loss_r: float = Query(3.0, gt=0), max_trades: int = Query(5, ge=1),
+                  max_consec_losses: int = Query(3, ge=1)):
+    """وضعیت نگهبان امروز (روز UTC): ok / warn / stop."""
+    _need_tools()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00+00:00")
+    rows = _journal_rows(since=today)
+    r_today = [t["r"] for t in _journal.normalize(rows)]
+    return _journal.json_safe(_journal.daily_guard(r_today, max_daily_loss_r, max_trades,
+                                                   max_consec_losses))
 
 
 # ============================================================
