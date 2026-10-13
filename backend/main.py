@@ -1,6 +1,7 @@
 """
 FastAPI Backend - Sina Quant v3.2.0 (risk calculator + trade journal)
 """
+import asyncio
 import logging
 import os
 import secrets
@@ -12,7 +13,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -45,6 +46,14 @@ except Exception as _e:  # pragma: no cover
     _journal = _risk = None
     TOOLS_OK = False
     logging.getLogger(__name__).error("engine.tools در دسترس نیست: %s", _e)
+
+try:
+    from . import telegram_bot as tgbot
+    TG_OK = True
+except Exception as _e:  # pragma: no cover
+    tgbot = None
+    TG_OK = False
+    logging.getLogger(__name__).error("telegram_bot در دسترس نیست: %s", _e)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,6 +91,8 @@ async def lifespan(app: FastAPI):
         journal_store.init_journal_table()
     except Exception as e:
         logger.error("ساخت جدول ژورنال ناموفق بود: %s", e)
+    if TG_OK and ADMIN_KEY:
+        asyncio.create_task(tgbot.register_webhook(ADMIN_KEY))   # بدون بلاک کردن استارت
     start_scheduler()
     logger.info("✅ اپ آماده است")
     logger.info("=" * 50)
@@ -277,6 +288,8 @@ class SizeIn(BaseModel):
     lot_step: float = Field(0.01, gt=0)
     min_lot: float = Field(0.01, gt=0)
     contract: Optional[float] = Field(None, gt=0)
+    leverage: Optional[float] = Field(None, gt=0, le=3000)
+    max_margin_pct: float = Field(50.0, gt=0, le=100)
 
 
 class TradeIn(BaseModel):
@@ -297,12 +310,8 @@ def _need_tools():
         raise HTTPException(status_code=503, detail="ابزارهای موتور در دسترس نیستند")
 
 
-def _journal_rows(limit: int = 2000, since: Optional[str] = None):
-    rows = journal_store.list_trades(limit=limit, since=since)
-    rows.reverse()  # قدیمی‌ترین اول (ترتیب زمانی درست برای دراودان و ضرر پشت‌سرهم)
-    return [{"symbol": r["symbol"], "side": r["side"], "entry": r["entry"], "sl": r["sl"],
-             "exit": r["exit_price"], "close_time": r["closed_at"],
-             "open_time": r.get("opened_at"), "tag": r.get("tag")} for r in rows]
+def _journal_rows(limit: int = 2000):
+    return journal_store.to_records(journal_store.list_trades(limit=limit))
 
 
 @app.post("/api/risk/size")
@@ -312,14 +321,15 @@ def risk_size(body: SizeIn):
     try:
         res = _risk.position_size(body.symbol.upper().strip(), body.balance, body.risk_pct,
                                   body.entry, body.sl, body.tp, body.lot_step, body.min_lot,
-                                  contract=body.contract)
+                                  contract=body.contract, leverage=body.leverage,
+                                  max_margin_pct=body.max_margin_pct)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return {**res.__dict__, "supported": sorted(_risk.SPECS)}
 
 
 @app.post("/api/journal", dependencies=[Depends(require_admin)])
-def journal_add(t: TradeIn):
+def journal_add(t: TradeIn, background: BackgroundTasks):
     _need_tools()
     side = t.side.upper().strip()
     try:
@@ -329,6 +339,8 @@ def journal_add(t: TradeIn):
                                          t.opened_at, t.closed_at)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    if TG_OK:
+        background.add_task(tgbot.check_guard_alert)   # هشدار فقط روی تغییر وضعیت
     return {"id": new_id, "r": round(r, 4)}
 
 
@@ -358,15 +370,46 @@ def journal_stats():
 
 
 @app.get("/api/journal/guard", dependencies=[Depends(require_admin)])
-def journal_guard(max_daily_loss_r: float = Query(3.0, gt=0), max_trades: int = Query(5, ge=1),
-                  max_consec_losses: int = Query(3, ge=1)):
-    """وضعیت نگهبان امروز (روز UTC): ok / warn / stop."""
+def journal_guard(max_daily_loss_r: Optional[float] = Query(None, gt=0),
+                  max_trades: Optional[int] = Query(None, ge=1),
+                  max_consec_losses: Optional[int] = Query(None, ge=1)):
+    """وضعیت نگهبان امروز (روز به وقت GUARD_TZ، پیش‌فرض Asia/Tehran): ok / warn / stop.
+    سقف‌ها از تنظیمات ذخیره‌شده (تلگرام: /set) و در صورت ارسال پارامتر، override می‌شوند."""
     _need_tools()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00+00:00")
-    rows = _journal_rows(since=today)
-    r_today = [t["r"] for t in _journal.normalize(rows)]
-    return _journal.json_safe(_journal.daily_guard(r_today, max_daily_loss_r, max_trades,
-                                                   max_consec_losses))
+    g = journal_store.compute_guard({"maxloss": max_daily_loss_r, "maxtrades": max_trades,
+                                     "consec": max_consec_losses})
+    return _journal.json_safe(g)
+
+
+# ------------------------------ تلگرام (webhook)
+@app.post("/api/telegram/webhook", include_in_schema=False)
+async def telegram_webhook(request: Request, background: BackgroundTasks):
+    """تلگرام اینجا آپدیت‌ها را می‌فرستد. فوراً ۲۰۰ برمی‌گرداند و پردازش در پس‌زمینه است
+    (پاسخ کند باعث ارسال مجدد تلگرام و ثبت تکراری می‌شد)."""
+    if not (TG_OK and TOOLS_OK) or not tgbot.verify_secret(
+            request.headers.get("x-telegram-bot-api-secret-token"), ADMIN_KEY):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        update = await request.json()
+    except Exception:
+        return {"ok": True}
+    background.add_task(tgbot.handle_update, update)
+    return {"ok": True}
+
+
+@app.post("/api/telegram/setup", dependencies=[Depends(require_admin)])
+async def telegram_setup():
+    """ثبت دستی webhook (معمولاً لازم نیست؛ هنگام استارت خودکار ثبت می‌شود)."""
+    if not TG_OK:
+        raise HTTPException(status_code=503, detail="ماژول تلگرام در دسترس نیست")
+    return {"registered": await tgbot.register_webhook(ADMIN_KEY)}
+
+
+@app.get("/api/telegram/status", dependencies=[Depends(require_admin)])
+async def telegram_status():
+    if not TG_OK:
+        raise HTTPException(status_code=503, detail="ماژول تلگرام در دسترس نیست")
+    return await tgbot.webhook_status()
 
 
 # ============================================================
