@@ -50,6 +50,11 @@ def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] =
     raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
 
 
+def _decimals(step: float) -> int:
+    """تعداد رقم اعشار گام لات (0.01 → 2، 0.1 → 1، 0.001 → 3)."""
+    return max(0, -int(math.floor(math.log10(step) + 1e-9)))
+
+
 def margin_per_lot(symbol: str, price: float, leverage: float,
                    contract: Optional[float] = None) -> float:
     """مارجین یک لات به دلار: ارزش اسمی موقعیت ÷ اهرم."""
@@ -89,9 +94,12 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
         cap = math.floor((balance * max_margin_pct / 100.0) / mpl / lot_step + 1e-9) * lot_step
         if lots > cap:
             lots, margin_limited = round(cap, 8), True
-    rr = None
+    rr, tp_note = None, ""
     if tp is not None:
-        rr = round(abs(tp - entry) / dist, 2)
+        if (tp - entry) * (entry - sl) > 0:
+            rr = round(abs(tp - entry) / dist, 2)
+        else:
+            tp_note = "TP در سمت اشتباه است (باید خلاف جهت SL باشد)؛ R:R محاسبه نشد"
     pips = dist / SPECS[symbol]["pip"]
     if lots < min_lot:
         why = ("مارجین/اهرم اجازه‌ی حداقل لات را نمی‌دهد؛ اهرم یا موجودی را بالا ببر یا SL را دورتر بگذار"
@@ -99,7 +107,7 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
                "حجم کمتر از حداقل لات است؛ SL را دورتر بگذار یا ریسک/موجودی را بالا ببر")
         return SizeResult(False, 0.0, risk_amount, 0.0, dist, round(pips, 1), rr, why)
     actual = lots * per_lot
-    notes = []
+    notes = [tp_note] if tp_note else []
     if margin_limited:
         notes.append("حجم به‌خاطر سقف مارجین کم شد؛ ریسک واقعی کمتر از ریسک خواسته است")
     if actual > risk_amount * 1.0001:
@@ -111,7 +119,7 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
         free = balance - margin
         if margin_pct > 30 and not margin_limited:
             notes.append("بیش از ۳۰٪ موجودی درگیر مارجین می‌شود؛ جا برای افت کم است")
-    return SizeResult(True, round(lots, 2), round(risk_amount, 2), round(actual, 2), dist,
+    return SizeResult(True, round(lots, _decimals(lot_step)), round(risk_amount, 2), round(actual, 2), dist,
                       round(pips, 1), rr, "؛ ".join(notes),
                       None if margin is None else round(margin, 2),
                       None if margin_pct is None else round(margin_pct, 1),
