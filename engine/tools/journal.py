@@ -22,7 +22,7 @@ def normalize(rows: Iterable[dict]) -> list:
     out = []
     for r in rows:
         rr = trade_r(r["side"], float(r["entry"]), float(r["sl"]), float(r["exit"]))
-        ct = pd.Timestamp(r.get("close_time") or r.get("open_time") or pd.Timestamp.utcnow())
+        ct = pd.Timestamp(r.get("close_time") or r.get("open_time") or pd.Timestamp.now(tz="UTC"))
         if ct.tzinfo is None:
             ct = ct.tz_localize("UTC")
         out.append({
