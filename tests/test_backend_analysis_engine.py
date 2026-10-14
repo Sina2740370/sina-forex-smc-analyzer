@@ -178,3 +178,34 @@ def test_backend_topdown_rejects_stale_market_candles(monkeypatch):
 
     assert result == {"error": "15m داده‌ی کهنه است"}
     assert "EURUSD=X" not in data_fetcher._TOPDOWN_CACHE
+
+
+
+def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monkeypatch):
+    from engine import strategy
+    from engine.strategy.smc_topdown import Decision
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
+    data = {
+        "15m": _candles(130, 15, base_time).to_dict("records"),
+        "1h": _candles(80, 60, base_time).to_dict("records"),
+        "4h": _candles(40, 240, base_time).to_dict("records"),
+        "1d": _candles(40, 1440, base_time).to_dict("records"),
+        "1wk": _candles(40, 10080, base_time).to_dict("records"),
+    }
+
+    monkeypatch.setattr(
+        strategy.smc_topdown, "analyze",
+        lambda frames, cfg, now: Decision(
+            direction="SELL", score=0.72, entry=1.2, sl=1.3, tp=1.0,
+            bias="weekly+daily BEARISH", reasons=["test sell"], blocked=None,
+        ),
+    )
+    result = ae.analyze_canonical_topdown(data)
+
+    assert result["direction"] == "SELL"
+    assert result["score"] == pytest.approx(-0.72)
+    assert result["price"] == pytest.approx(1.2)
+    assert result["sl"] == pytest.approx(1.3)
+    assert result["tp"] == pytest.approx(1.0)
+    assert result["blocked"] is False
