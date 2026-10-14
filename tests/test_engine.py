@@ -162,8 +162,14 @@ def test_backtest_accepts_custom_analyzer():
         calls.append(now)
         return Decision(config_hash=config.hash())
 
-    trades = run_backtest("EURUSD", data, cfg, analyze_fn=custom_analyzer)
-    assert calls, "custom analyzer should be invoked by the backtester"
+    first = data["15m"]["time"].iloc[0]
+    trades = run_backtest(
+        "EURUSD", data, cfg,
+        start=(first + pd.Timedelta(minutes=15)).isoformat(),
+        end=(first + pd.Timedelta(hours=2)).isoformat(),
+        analyze_fn=custom_analyzer,
+    )
+    assert calls, "custom analyzer should be invoked with timezone-aware bounds"
     assert trades == []
 
 
