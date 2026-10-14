@@ -209,3 +209,38 @@ def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monke
     assert result["sl"] == pytest.approx(1.3)
     assert result["tp"] == pytest.approx(1.0)
     assert result["blocked"] is False
+
+
+
+def test_full_analysis_uses_canonical_engine_for_live_technical_layer(monkeypatch):
+    import asyncio
+    from backend import fundamental_analyzer, market_memory
+
+    tech = {
+        "score": -0.9, "direction": "SELL", "price": 1.1,
+        "sl": 1.12, "tp": 1.06, "trend": "BEARISH",
+        "wk_trend": "BEARISH", "d_trend": "BEARISH",
+        "zone": "PREMIUM", "atr": 0.001, "reasons": ["canonical engine"],
+        "blocked": False,
+    }
+    monkeypatch.setattr(ae, "analyze_canonical_topdown", lambda _: tech)
+    monkeypatch.setattr(
+        ae, "analyze_technical_topdown",
+        lambda _: pytest.fail("legacy technical analyzer must not drive live full_analysis"),
+    )
+
+    async def fundamental(_symbol):
+        return {"score": -1.0, "reasons": []}
+
+    monkeypatch.setattr(fundamental_analyzer, "calculate_fundamental_score", fundamental)
+    monkeypatch.setattr(
+        market_memory, "calculate_memory_score",
+        lambda _symbol: {"score": -1.0, "reasons": []},
+    )
+
+    result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=True, news_sentiment=-1.0))
+
+    assert result["direction"] == "SELL"
+    assert result["technical_score"] == pytest.approx(-0.9)
+    assert result["suggested_sl"] == pytest.approx(1.12)
+    assert result["suggested_tp"] == pytest.approx(1.06)
