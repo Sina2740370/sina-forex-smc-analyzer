@@ -424,7 +424,9 @@ def analyze_technical_topdown(data_dict):
     df_4h = df_1h = df_15m = None
 
     try:
-        df_15m = pd.DataFrame(data_dict["15m"])
+        # Drop the still-forming 15m candle before deriving price/ATR. Doing this
+        # later leaves entry and risk sizing dependent on an unfinished candle.
+        df_15m = _drop_forming(pd.DataFrame(data_dict["15m"]), 15)
         if len(df_15m) > 0:
             price = float(df_15m["close"].iloc[-1])
             atr = calculate_atr(df_15m)
@@ -489,9 +491,8 @@ def analyze_technical_topdown(data_dict):
         base["blocked"] = True
         return base
 
-    # آماده‌سازی داده‌ها
+    # آماده‌سازی داده‌ها؛ df_15m از ابتدای تابع فقط شامل کندل‌های بسته‌شده است.
     df_1h = _drop_forming(df_1h, 60)
-    df_15m = _drop_forming(df_15m, 15)
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
