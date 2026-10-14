@@ -29,7 +29,7 @@ def test_live_analysis_uses_closed_15m_candle_for_price_and_atr(monkeypatch):
     base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=5)
     data = {
         "15m": _candles(70, 15, base_time),
-        "1h": _candles(70, 60, base_time),
+        "1h": _candles(80, 60, base_time),
         "4h": _candles(40, 240, base_time),
         "1d": _candles(40, 1440, base_time),
         "1wk": _candles(40, 10080, base_time),
@@ -42,10 +42,21 @@ def test_live_analysis_uses_closed_15m_candle_for_price_and_atr(monkeypatch):
         return df
 
     monkeypatch.setattr(ae, "_drop_forming", drop_last_forming)
-    monkeypatch.setattr(ae, "calculate_atr", lambda df: seen_atr_lengths.append(len(df)) or 0.001)
+    def atr_by_timeframe(df):
+        seen_atr_lengths.append(len(df))
+        return {69: 0.001, 80: 0.02, 40: 0.03}[len(df)]
+
+    monkeypatch.setattr(ae, "calculate_atr", atr_by_timeframe)
     monkeypatch.setattr(ae, "top_down_filter", lambda _: ("BULLISH", "test bias", "BULLISH", "BULLISH", False))
     monkeypatch.setattr(ae, "current_session_label", lambda: "OFF_HOURS")
-    monkeypatch.setattr(ae, "find_order_blocks", lambda *a, **k: {"bullish": None, "bearish": None})
+    monkeypatch.setattr(ae, "find_order_blocks", lambda *a, **k: {
+        "bullish": {"high": 1.08, "low": 1.06}, "bearish": None
+    })
+    ob_atrs = []
+    monkeypatch.setattr(
+        ae, "_distance_to_ob",
+        lambda price, ob, atr: ob_atrs.append(atr) or 0.0,
+    )
     monkeypatch.setattr(ae, "get_premium_discount", lambda *a, **k: {"zone": "DISCOUNT", "high": 2.0, "low": 0.5, "eq": 1.25})
     monkeypatch.setattr(ae, "detect_fvg", lambda *a, **k: None)
     monkeypatch.setattr(ae, "detect_liquidity_sweep", lambda *a, **k: None)
@@ -55,9 +66,13 @@ def test_live_analysis_uses_closed_15m_candle_for_price_and_atr(monkeypatch):
 
     result = ae.analyze_technical_topdown({key: frame.to_dict("records") for key, frame in data.items()})
 
-    assert seen_atr_lengths == [69]
+    assert seen_atr_lengths == [69, 80, 40]
     assert result["price"] == data["15m"]["close"].iloc[-2]
     assert result["atr"] == 0.001
+    assert ob_atrs == [0.03]
+    # The 4h OB stop buffer is sized with 1h ATR, not 15m ATR.
+    assert result["direction"] == "BUY"
+    assert result["sl"] == 1.03
 
 
 
