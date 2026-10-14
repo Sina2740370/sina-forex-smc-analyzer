@@ -43,8 +43,15 @@ SYMBOLS = {
     "EURGBP=X": "EUR/GBP",
     "EURJPY=X": "EUR/JPY",
     "GBPJPY=X": "GBP/JPY",
-    "GC=F":    "XAU/USD",
 }
+
+# GC=F is a gold futures contract, not spot XAU/USD. Keep it out of the
+# default live universe unless the operator explicitly accepts proxy risk.
+ALLOW_GOLD_FUTURES_PROXY = os.getenv("ALLOW_GOLD_FUTURES_PROXY", "false").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+if ALLOW_GOLD_FUTURES_PROXY:
+    SYMBOLS["GC=F"] = "Gold Futures (GC=F; proxy, not XAU/USD spot)"
 
 # ============================================================
 #  تایم‌فریم‌ها (Top-Down)
