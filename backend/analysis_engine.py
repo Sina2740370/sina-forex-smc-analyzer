@@ -33,14 +33,23 @@ MIN_RISK_ATR_RATIO = 0.25
 # ============================================================
 
 def calculate_atr(df, period=14):
-    if len(df) < period + 1:
+    """Wilder ATR matching engine.core.smc.ATR over closed candles."""
+    if period < 1 or len(df) < period + 1:
         return 0.0
-    hl = df["high"] - df["low"]
-    hc = (df["high"] - df["close"].shift()).abs()
-    lc = (df["low"] - df["close"].shift()).abs()
-    tr = pd.concat([hl, hc, lc], axis=1).max(axis=1)
-    v = tr.rolling(period).mean().iloc[-1]
-    return float(v) if not pd.isna(v) else 0.0
+    h = pd.to_numeric(df["high"], errors="coerce").to_numpy(dtype=float)
+    l = pd.to_numeric(df["low"], errors="coerce").to_numpy(dtype=float)
+    c = pd.to_numeric(df["close"], errors="coerce").to_numpy(dtype=float)
+    tr = np.maximum.reduce([
+        h[1:] - l[1:],
+        np.abs(h[1:] - c[:-1]),
+        np.abs(l[1:] - c[:-1]),
+    ])
+    if not np.isfinite(tr).all():
+        return 0.0
+    value = float(tr[:period].mean())
+    for current in tr[period:]:
+        value = ((period - 1) * value + float(current)) / period
+    return value if np.isfinite(value) else 0.0
 
 
 def calculate_ema(df, period=50):
