@@ -182,7 +182,7 @@ def test_backend_topdown_rejects_stale_market_candles(monkeypatch):
 
 
 def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monkeypatch):
-    from engine import strategy
+    from engine.strategy import smc_topdown
     from engine.strategy.smc_topdown import Decision
 
     base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
@@ -195,7 +195,7 @@ def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monke
     }
 
     monkeypatch.setattr(
-        strategy.smc_topdown, "analyze",
+        smc_topdown, "analyze",
         lambda frames, cfg, now: Decision(
             direction="SELL", score=0.72, entry=1.2, sl=1.3, tp=1.0,
             bias="weekly+daily BEARISH", reasons=["test sell"], blocked=None,
