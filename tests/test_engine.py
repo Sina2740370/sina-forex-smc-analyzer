@@ -74,9 +74,9 @@ def test_view_never_shows_forming_candles():
     view = TopDownView(data)
     now = data["15m"]["time"].iloc[2000] + pd.Timedelta(minutes=15)
     out = view.at(now)
-    from engine.data.providers import TF_MINUTES
+    from engine.data.providers import candle_close_times
     for tf, df in out.items():
-        assert (df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf])).max() <= now
+        assert candle_close_times(df, tf).max() <= now
 
 
 def test_no_lookahead_decision_identical_on_truncated_data():
@@ -176,12 +176,14 @@ def test_daily_and_weekly_close_times_respect_new_york_dst():
     frame = pd.DataFrame({"time": starts, "open": [1.0, 1.0], "high": [1.1, 1.1],
                           "low": [0.9, 0.9], "close": [1.0, 1.0], "volume": [1, 1]})
     daily_close = candle_close_times(frame.iloc[:1], "1d").iloc[0].tz_convert("UTC")
-    weekly_close = candle_close_times(frame.iloc[:1], "1wk").iloc[0].tz_convert("UTC")
+    weekly_frame = frame.iloc[:1].copy()
+    weekly_frame["time"] = pd.to_datetime(["2025-10-26T21:00:00Z"], utc=True)
+    weekly_close = candle_close_times(weekly_frame, "1wk").iloc[0].tz_convert("UTC")
     assert daily_close == pd.Timestamp("2025-11-02T22:00:00Z")
-    assert weekly_close == pd.Timestamp("2025-11-08T21:00:00Z")
+    assert weekly_close == pd.Timestamp("2025-11-02T22:00:00Z")
 
     daily_view = TopDownView({"1d": frame})
-    weekly_view = TopDownView({"1wk": frame.iloc[:1]})
+    weekly_view = TopDownView({"1wk": weekly_frame})
     before_boundary = pd.Timestamp("2025-11-02T21:30:00Z")
     assert daily_view.at(before_boundary)["1d"].empty
     assert weekly_view.at(before_boundary)["1wk"].empty
