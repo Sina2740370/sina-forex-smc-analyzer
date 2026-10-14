@@ -99,3 +99,34 @@ def test_gold_futures_proxy_requires_explicit_opt_in():
         env=env, capture_output=True, text=True,
     )
     assert enabled.returncode == 0, enabled.stderr
+
+
+
+def test_backend_topdown_uses_engine_provider_and_expected_tail_windows(monkeypatch):
+    from backend import data_fetcher
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=900)
+    frames = {
+        "1wk": _candles(130, 10080, base_time),
+        "1d": _candles(210, 1440, base_time),
+        "4h": _candles(210, 240, base_time),
+        "1h": _candles(310, 60, base_time),
+        "15m": _candles(410, 15, base_time),
+    }
+    calls = []
+    data_fetcher._TOPDOWN_CACHE.clear()
+    monkeypatch.setattr(
+        data_fetcher, "load_yfinance_topdown",
+        lambda symbol: calls.append(symbol) or frames,
+    )
+
+    result = data_fetcher.fetch_topdown("EURUSD=X")
+    cached_result = data_fetcher.fetch_topdown("EURUSD=X")
+
+    assert calls == ["EURUSD=X"]
+    assert cached_result is result
+    assert {tf: len(rows) for tf, rows in result.items()} == {
+        "1wk": 120, "1d": 200, "4h": 200, "1h": 300, "15m": 400,
+    }
+    assert result["1wk"][0]["time"] == frames["1wk"]["time"].iloc[-120].isoformat()
+    assert result["15m"][-1]["close"] == frames["15m"]["close"].iloc[-1]
