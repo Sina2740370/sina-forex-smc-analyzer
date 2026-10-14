@@ -105,7 +105,7 @@ def test_gold_futures_proxy_requires_explicit_opt_in():
 def test_backend_topdown_uses_engine_provider_and_expected_tail_windows(monkeypatch):
     from backend import data_fetcher
 
-    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=900)
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
     frames = {
         "1wk": _candles(130, 10080, base_time),
         "1d": _candles(210, 1440, base_time),
@@ -130,3 +130,9 @@ def test_backend_topdown_uses_engine_provider_and_expected_tail_windows(monkeypa
     }
     assert result["1wk"][0]["time"] == frames["1wk"]["time"].iloc[-120].isoformat()
     assert result["15m"][-1]["close"] == frames["15m"]["close"].iloc[-1]
+
+    from engine.data.providers import candle_close_times
+    now = pd.Timestamp.now(tz="UTC")
+    for tf, rows in result.items():
+        returned = pd.DataFrame(rows)
+        assert candle_close_times(returned, tf).max() <= now
