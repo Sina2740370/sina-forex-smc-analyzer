@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 
 import pandas as pd
+import pytest
 
 # Backend configuration expects deployment secrets; test-only placeholders.
 os.environ.setdefault("FRED_API_KEY", "test-key")
@@ -136,3 +137,18 @@ def test_backend_topdown_uses_engine_provider_and_expected_tail_windows(monkeypa
     for tf, rows in result.items():
         returned = pd.DataFrame(rows)
         assert candle_close_times(returned, tf).max() <= now
+
+
+
+def test_backend_and_engine_atr_use_identical_wilder_calculation():
+    from engine.core import smc
+
+    df = pd.DataFrame({
+        "time": pd.date_range("2024-01-01", periods=6, freq="h", tz="UTC"),
+        "open": [10.0] * 6,
+        "high": [11.0, 11.5, 12.0, 12.5, 13.0, 12.0],
+        "low": [9.0, 8.5, 8.0, 7.5, 7.0, 8.0],
+        "close": [10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
+    })
+
+    assert ae.calculate_atr(df, period=3) == pytest.approx(smc.atr(df, period=3))
