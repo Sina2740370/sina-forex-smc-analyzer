@@ -4,7 +4,7 @@ import pandas as pd
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
-from engine.data.providers import TopDownView, build_topdown, resample_ohlc
+from engine.data.providers import TopDownView, build_topdown, resample_ohlc, candle_close_times
 from engine.strategy.smc_topdown import analyze
 
 
@@ -165,3 +165,24 @@ def test_backtest_accepts_custom_analyzer():
     trades = run_backtest("EURUSD", data, cfg, analyze_fn=custom_analyzer)
     assert calls, "custom analyzer should be invoked by the backtester"
     assert trades == []
+
+
+def test_daily_and_weekly_close_times_respect_new_york_dst():
+    # New York falls back on 2025-11-02: the Sunday 17:00 NY boundary is 22:00 UTC.
+    starts = pd.Series(pd.to_datetime([
+        "2025-11-01T21:00:00Z",  # Saturday 17:00 EDT
+        "2025-11-02T22:00:00Z",  # Sunday 17:00 EST
+    ], utc=True))
+    frame = pd.DataFrame({"time": starts, "open": [1.0, 1.0], "high": [1.1, 1.1],
+                          "low": [0.9, 0.9], "close": [1.0, 1.0], "volume": [1, 1]})
+    daily_close = candle_close_times(frame.iloc[:1], "1d").iloc[0].tz_convert("UTC")
+    weekly_close = candle_close_times(frame.iloc[:1], "1wk").iloc[0].tz_convert("UTC")
+    assert daily_close == pd.Timestamp("2025-11-02T22:00:00Z")
+    assert weekly_close == pd.Timestamp("2025-11-08T21:00:00Z")
+
+    daily_view = TopDownView({"1d": frame})
+    weekly_view = TopDownView({"1wk": frame.iloc[:1]})
+    before_boundary = pd.Timestamp("2025-11-02T21:30:00Z")
+    assert daily_view.at(before_boundary)["1d"].empty
+    assert weekly_view.at(before_boundary)["1wk"].empty
+    assert len(daily_view.at(daily_close)["1d"]) == 1

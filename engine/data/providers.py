@@ -120,12 +120,22 @@ def load_yfinance_topdown(yf_symbol: str) -> dict:
 
 
 # ---------------------------------------------------------------- تازگی
+def candle_close_times(df: pd.DataFrame, tf: str) -> pd.Series:
+    """زمان بسته‌شدن هر کندل؛ D/W باید با تقویم نیویورک و DST محاسبه شوند."""
+    starts = pd.to_datetime(df["time"], utc=True)
+    if tf == "1d":
+        return starts.dt.tz_convert(NY_TZ) + pd.DateOffset(days=1)
+    if tf == "1wk":
+        return starts.dt.tz_convert(NY_TZ) + pd.DateOffset(weeks=1)
+    return starts + pd.Timedelta(minutes=TF_MINUTES[tf])
+
+
 def staleness_minutes(df: pd.DataFrame, tf: str, now: pd.Timestamp) -> float:
     """چند دقیقه از بسته‌شدن آخرین کندل گذشته؛ برای رد داده‌ی کهنه در live."""
     if df.empty:
         return float("inf")
-    last_close = df["time"].iloc[-1] + pd.Timedelta(minutes=TF_MINUTES[tf])
-    return (now - last_close).total_seconds() / 60.0
+    last_close = candle_close_times(df.tail(1), tf).iloc[0].tz_convert("UTC")
+    return (now.tz_convert("UTC") - last_close).total_seconds() / 60.0
 
 
 # ---------------------------------------------------------------- نمای بدون lookahead
@@ -138,7 +148,7 @@ class TopDownView:
     def __init__(self, data: dict):
         self.data = data
         self._close = {
-            tf: (df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf]))
+            tf: candle_close_times(df, tf)
             .dt.tz_convert("UTC").dt.tz_localize(None).to_numpy(dtype="datetime64[ns]")
             for tf, df in data.items()
         }
