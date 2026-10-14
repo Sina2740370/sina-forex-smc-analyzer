@@ -11,14 +11,25 @@ from numpy.lib.stride_tricks import sliding_window_view
 
 # ---------------------------------------------------------------- اندیکاتور
 def atr(df: pd.DataFrame, period: int = 14) -> float:
-    if len(df) < period + 1:
+    """Wilder ATR over closed candles; use full available history for warm-up."""
+    if period < 1 or len(df) < period + 1:
         return 0.0
-    h = df["high"].to_numpy()[-(period + 1):]
-    l = df["low"].to_numpy()[-(period + 1):]
-    c = df["close"].to_numpy()[-(period + 1):]
-    tr = np.maximum.reduce([h[1:] - l[1:], np.abs(h[1:] - c[:-1]), np.abs(l[1:] - c[:-1])])
-    v = float(tr.mean())
-    return v if np.isfinite(v) else 0.0
+
+    h = df["high"].to_numpy(dtype=float)
+    l = df["low"].to_numpy(dtype=float)
+    c = df["close"].to_numpy(dtype=float)
+    tr = np.maximum.reduce([
+        h[1:] - l[1:],
+        np.abs(h[1:] - c[:-1]),
+        np.abs(l[1:] - c[:-1]),
+    ])
+    if not np.isfinite(tr).all():
+        return 0.0
+
+    value = float(tr[:period].mean())
+    for current in tr[period:]:
+        value = ((period - 1) * value + float(current)) / period
+    return value if np.isfinite(value) else 0.0
 
 
 def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
