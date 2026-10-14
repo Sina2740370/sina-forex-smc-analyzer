@@ -22,15 +22,15 @@ from .runner import run_backtest, summarize
 def _simulate(side, mid, risk_dist, rr, hi, lo, cl, half, n):
     """همان قواعد runner: SL اولویت دارد، EXPIRED با قیمت بازار در کندل n‌ام."""
     h, l = hi[:n], lo[:n]
-    sl = mid - side * risk_dist
-    tp = mid + side * risk_dist * rr
+    entry = mid + side * half
+    sl = entry - side * risk_dist
+    tp = entry + side * risk_dist * rr
     if side > 0:
         sl_hit, tp_hit = l - half <= sl, h - half >= tp
     else:
         sl_hit, tp_hit = h + half >= sl, l + half <= tp
     fs = int(sl_hit.argmax()) if sl_hit.any() else n + 1
     ft = int(tp_hit.argmax()) if tp_hit.any() else n + 1
-    entry = mid + side * half
     risk = (entry - sl) * side
     if fs <= ft and fs < n:
         exit_px = sl
@@ -50,11 +50,20 @@ def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineCo
     times = df15["time"]
     hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
     nb = cfg.max_hold_hours * 4
+    if len(df15) <= nb + 2:
+        return {"n": len(ts), "note": "داده برای شبیه‌سازی مبنای تصادفی کافی نیست"}
+
     bar = pd.Timedelta(minutes=15)
     j = [int(times.searchsorted(t["open_time"] - bar)) for t in ts]
     j_lo, j_hi = min(j), min(max(j), len(df15) - nb - 2)
-    risks = np.array([(((t["entry"] - (1 if t["side"] == "BUY" else -1) * half) - t["sl"])
-                       * (1 if t["side"] == "BUY" else -1)) for t in ts])
+    if j_lo > j_hi:
+        return {"n": len(ts), "note": "پنجره‌ی زمانی معتبری برای مبنای تصادفی وجود ندارد"}
+
+    # Preserve each real trade's executable entry-to-stop risk in R units.
+    risks = np.array([((t["entry"] - t["sl"]) *
+                       (1 if t["side"] == "BUY" else -1)) for t in ts], dtype=float)
+    if not np.isfinite(risks).all() or (risks <= 0).any():
+        return {"n": len(ts), "note": "فاصله‌ی ریسک نامعتبر در معاملات ورودی"}
     real = float(np.mean([t["r"] for t in ts]))
 
     rng = np.random.default_rng(seed)
