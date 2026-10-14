@@ -120,6 +120,7 @@ def test_backend_topdown_uses_engine_provider_and_expected_tail_windows(monkeypa
         data_fetcher, "load_yfinance_topdown",
         lambda symbol: calls.append(symbol) or frames,
     )
+    monkeypatch.setattr(data_fetcher, "staleness_minutes", lambda df, tf, now: 0.0)
 
     result = data_fetcher.fetch_topdown("EURUSD=X")
     cached_result = data_fetcher.fetch_topdown("EURUSD=X")
@@ -152,3 +153,28 @@ def test_backend_and_engine_atr_use_identical_wilder_calculation():
     })
 
     assert ae.calculate_atr(df, period=3) == pytest.approx(smc.atr(df, period=3))
+
+
+
+def test_backend_topdown_rejects_stale_market_candles(monkeypatch):
+    from backend import data_fetcher
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
+    frames = {
+        "1wk": _candles(130, 10080, base_time),
+        "1d": _candles(210, 1440, base_time),
+        "4h": _candles(210, 240, base_time),
+        "1h": _candles(310, 60, base_time),
+        "15m": _candles(410, 15, base_time),
+    }
+    data_fetcher._TOPDOWN_CACHE.clear()
+    monkeypatch.setattr(data_fetcher, "load_yfinance_topdown", lambda symbol: frames)
+    monkeypatch.setattr(
+        data_fetcher, "staleness_minutes",
+        lambda df, tf, now: 60.0 if tf == "15m" else 0.0,
+    )
+
+    result = data_fetcher.fetch_topdown("EURUSD=X")
+
+    assert result == {"error": "15m داده‌ی کهنه است"}
+    assert "EURUSD=X" not in data_fetcher._TOPDOWN_CACHE
