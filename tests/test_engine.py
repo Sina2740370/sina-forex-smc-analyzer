@@ -300,3 +300,16 @@ def test_atr_uses_wilder_smoothing_not_only_last_period_mean():
     # True ranges after the initial close are [3, 4, 5, 6]. Seed=(3+4+5)/3, then Wilder update with 6.
     expected = ((3 - 1) * 4.0 + 6.0) / 3.0
     assert smc.atr(df, period=3) == pytest.approx(expected)
+
+
+
+def test_random_baseline_simulation_preserves_spread_adjusted_rr():
+    from engine.backtest.report import _simulate
+
+    result_r = _simulate(
+        side=1, mid=1.1000, risk_dist=0.0100, rr=2.0,
+        hi=np.array([1.1230]), lo=np.array([1.1100]),
+        cl=np.array([1.1200]), half=0.0010, n=1,
+    )
+
+    assert result_r == pytest.approx(2.0)
