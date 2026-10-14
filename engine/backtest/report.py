@@ -126,14 +126,14 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
         best, best_exp = None, -1e9
         for ms in grid:
             train = run_backtest(symbol, data, replace(base, min_score=ms),
-                                 start=s.isoformat(), end=train_end.isoformat())
+                                 start=s.tz_localize(None).isoformat(), end=train_end.tz_localize(None).isoformat())
             if len(train) >= min_train_trades:
                 e = float(np.mean([t["r"] for t in train]))
                 if e > best_exp:
                     best, best_exp = ms, e
         if best is not None:
             test = run_backtest(symbol, data, replace(base, min_score=best),
-                                start=a.isoformat(), end=test_end.isoformat())
+                                start=a.tz_localize(None).isoformat(), end=test_end.tz_localize(None).isoformat())
             oos += test
             windows.append({"test_from": str(a)[:10], "chosen_min_score": best,
                             "train_exp": round(best_exp, 3), "test_n": len(test),
