@@ -113,9 +113,12 @@ def load_yfinance(yf_symbol: str, tf: str) -> pd.DataFrame:
 
 
 def load_yfinance_topdown(yf_symbol: str) -> dict:
-    """هر تایم‌فریم را بومی از yfinance می‌گیرد (1h و 4h: تا ۷۳۰ روز، 15m: تا ۶۰ روز)."""
-    data = {tf: load_yfinance(yf_symbol, tf) for tf in ("15m", "1h", "1d", "1wk")}
+    """15m/1h را از yfinance می‌گیرد و تایم‌فریم‌های بالاتر را با مرز 17:00 نیویورک می‌سازد."""
+    data = {tf: load_yfinance(yf_symbol, tf) for tf in ("15m", "1h")}
+    # جلوگیری از مخلوط شدن کندل‌های روزانه/هفتگیِ native یاهو با مرزهای سشن فارکس 17:00 نیویورک.
     data["4h"] = resample_ohlc(data["1h"], "4h")
+    data["1d"] = resample_ohlc(data["1h"], "1d")
+    data["1wk"] = resample_ohlc(data["1h"], "1wk")
     return data
 
 

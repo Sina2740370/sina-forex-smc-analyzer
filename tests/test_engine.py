@@ -225,3 +225,39 @@ def test_walk_forward_fits_train_then_runs_selected_config_on_fresh_test(monkeyp
     assert calls[2][2] == first + pd.Timedelta(days=3) - pd.Timedelta(nanoseconds=1)
     assert result["windows"][0]["chosen_min_score"] == 0.6
     assert result["out_of_sample"]["expectancy_r"] == -1.0
+
+
+
+def test_yfinance_topdown_resamples_daily_weekly_to_new_york_session(monkeypatch):
+    from engine.data import providers
+
+    start = pd.Timestamp("2025-10-20T21:00:00Z")
+    hourly_times = pd.date_range(start, periods=31 * 24, freq="1h")
+    hourly = pd.DataFrame({
+        "time": hourly_times,
+        "open": np.ones(len(hourly_times)),
+        "high": np.ones(len(hourly_times)) * 1.1,
+        "low": np.ones(len(hourly_times)) * 0.9,
+        "close": np.ones(len(hourly_times)),
+        "volume": np.ones(len(hourly_times)),
+    })
+    calls = []
+
+    def fake_load(symbol, tf):
+        calls.append(tf)
+        if tf == "15m":
+            return hourly.iloc[:100].copy()
+        if tf == "1h":
+            return hourly.copy()
+        raise AssertionError(f"native {tf} bars must not be mixed into the NY-session topdown view")
+
+    monkeypatch.setattr(providers, "load_yfinance", fake_load)
+    data = providers.load_yfinance_topdown("EURUSD=X")
+
+    assert calls == ["15m", "1h"]
+    for tf in ("1d", "1wk"):
+        local = data[tf]["time"].dt.tz_convert("America/New_York")
+        assert (local.dt.hour == 17).all()
+        assert (local.dt.minute == 0).all()
+    assert (data["1wk"]["time"].dt.dayofweek == 6).all()
+    assert set(data["1d"]["time"].dt.hour.unique()) == {21, 22}
