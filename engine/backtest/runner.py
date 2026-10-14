@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -60,8 +60,13 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
 
 
 def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
-                 start: Optional[str] = None, end: Optional[str] = None) -> list:
-    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict)."""
+                 start: Optional[str] = None, end: Optional[str] = None,
+                 analyze_fn: Optional[Callable[[dict, EngineConfig, pd.Timestamp], Decision]] = None) -> list:
+    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict).
+
+    analyze_fn permits CLI strategy selection while preserving the SMC default.
+    """
+    analyzer = analyze if analyze_fn is None else analyze_fn
     view = TopDownView(data)
     df15 = data["15m"]
     half = spread_price(symbol) / 2.0
@@ -98,7 +103,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if now - last_signal.get("t", now - cooldown - bar) < cooldown:
             continue
 
-        dec = analyze(view.at(now), cfg, now)
+        dec = analyzer(view.at(now), cfg, now)
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1

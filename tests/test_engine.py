@@ -148,3 +148,20 @@ def test_backtest_end_bounds_eod_close():
         side = 1 if t["side"] == "BUY" else -1
         assert pd.Timestamp(t["close_time"]) == last["time"] + bar
         assert abs(float(t["exit"]) - (float(last["close"]) - side * half)) < 1e-6
+
+
+def test_backtest_accepts_custom_analyzer():
+    """CLI-selected strategies can be injected without changing the SMC default."""
+    from engine.strategy.smc_topdown import Decision
+
+    cfg = EngineConfig()
+    data = build_topdown(make_15m(days=3, seed=19))
+    calls = []
+
+    def custom_analyzer(view, config, now):
+        calls.append(now)
+        return Decision(config_hash=config.hash())
+
+    trades = run_backtest("EURUSD", data, cfg, analyze_fn=custom_analyzer)
+    assert calls, "custom analyzer should be invoked by the backtester"
+    assert trades == []
