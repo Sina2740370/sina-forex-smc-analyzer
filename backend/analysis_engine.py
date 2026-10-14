@@ -656,7 +656,7 @@ def analyze_technical_topdown(data_dict):
             reasons.append("CHOCH نزولی (-۰.۱۸)")
 
         ob = htf_obs.get("bearish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
+        dist = _distance_to_ob(price, ob, atr_4h) if ob else 999.0
 
         if ob:
             if dist == 0.0:
@@ -702,7 +702,7 @@ def analyze_technical_topdown(data_dict):
             direction = "SELL"
             if ob:
                 ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
+                buf = max(atr_1h * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["high"] + buf, 6)
             elif sweep:
                 sl = round(sweep["level"] + atr_1h * SL_ATR_MULTIPLIER, 6)
@@ -710,7 +710,7 @@ def analyze_technical_topdown(data_dict):
                 sl = round(price + atr_1h * SL_ATR_MULTIPLIER * 1.5, 6)
 
             risk = sl - price
-            min_risk = atr * MIN_RISK_ATR_RATIO
+            min_risk = atr_1h * MIN_RISK_ATR_RATIO
             if risk <= 0:
                 direction = None
                 sl = None
