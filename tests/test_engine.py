@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
@@ -284,3 +285,18 @@ def test_yfinance_gold_proxy_requires_explicit_opt_in(monkeypatch):
     args.allow_gold_futures_proxy = True
     monkeypatch.setattr(cli, "load_yfinance_topdown", lambda symbol: {"loaded": symbol})
     assert cli._load(args, "XAUUSD") == {"loaded": "GC=F"}
+
+
+
+def test_atr_uses_wilder_smoothing_not_only_last_period_mean():
+    df = pd.DataFrame({
+        "time": pd.date_range("2024-01-01", periods=5, freq="h", tz="UTC"),
+        "open": [10.0] * 5,
+        "high": [11.0, 11.5, 12.0, 12.5, 13.0],
+        "low": [9.0, 8.5, 8.0, 7.5, 7.0],
+        "close": [10.0] * 5,
+    })
+
+    # True ranges are [2, 3, 4, 6]. Seed ATR=(2+3+4)/3, then Wilder update with 6.
+    expected = ((3.0 * 3.0) + 6.0) / 4.0
+    assert smc.atr(df, period=3) == pytest.approx(expected)
