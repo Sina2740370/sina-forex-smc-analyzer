@@ -105,13 +105,17 @@ def _check_signal(sig: dict, candles: list):
     effective_entry = _apply_spread(symbol, entry, direction)
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
 
-    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا با قیمت بازار می‌بندیم.
-    for c in sorted(candles, key=lambda row: _parse_dt(row["time"])):
+    # Parse defensively before sorting: one malformed provider timestamp must not
+    # abort tracking for this signal or the surrounding scan.
+    valid_candles = []
+    for candle in candles:
         try:
-            candle_time = _parse_dt(c["time"])
-        except Exception:
-            continue
+            valid_candles.append((_parse_dt(candle["time"]), candle))
+        except Exception as e:
+            logger.warning("نادیده گرفتن زمان کندل نامعتبر برای %s: %s", symbol, e)
 
+    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا با قیمت بازار می‌بندیم.
+    for candle_time, c in sorted(valid_candles, key=lambda item: item[0]):
         if candle_time <= created_at:
             continue
 
