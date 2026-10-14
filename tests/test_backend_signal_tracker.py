@@ -169,3 +169,59 @@ def test_sell_sl_triggers_when_executable_ask_reaches_stop(monkeypatch):
     assert len(closed) == 1
     assert closed[0][0] == 81
     assert closed[0][3] == "LOSS"
+
+
+
+def test_stop_loss_touch_in_expiry_boundary_candle_is_counted_as_loss(monkeypatch):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    candle_time = now.replace(minute=(now.minute // 15) * 15) - timedelta(minutes=15)
+    created = candle_time - timedelta(hours=signal_tracker.MAX_SIGNAL_LIFETIME_HOURS) + timedelta(minutes=8)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda signal_id, exit_price, pnl_pips, status:
+            closed.append((signal_id, exit_price, pnl_pips, status)),
+    )
+    signal = {
+        "id": 82, "symbol": "EURUSD=X", "direction": "BUY",
+        "entry": 1.1000, "sl": 1.0900, "tp": 1.1200,
+        "created_at": created.isoformat(),
+    }
+    candles = [{
+        "time": candle_time.isoformat(), "open": 1.1000,
+        "high": 1.1210, "low": 1.0890, "close": 1.1100, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert len(closed) == 1
+    assert closed[0][0] == 82
+    assert closed[0][3] == "LOSS"
+    assert closed[0][1] == signal["sl"]
+
+
+def test_expiry_boundary_bar_does_not_award_ambiguous_take_profit(monkeypatch):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    candle_time = now.replace(minute=(now.minute // 15) * 15) - timedelta(minutes=15)
+    created = candle_time - timedelta(hours=signal_tracker.MAX_SIGNAL_LIFETIME_HOURS) + timedelta(minutes=8)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda signal_id, exit_price, pnl_pips, status:
+            closed.append((signal_id, exit_price, pnl_pips, status)),
+    )
+    signal = {
+        "id": 83, "symbol": "EURUSD=X", "direction": "BUY",
+        "entry": 1.1000, "sl": 1.0900, "tp": 1.1200,
+        "created_at": created.isoformat(),
+    }
+    candles = [{
+        "time": candle_time.isoformat(), "open": 1.1000,
+        "high": 1.1210, "low": 1.0990, "close": 1.1100, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert len(closed) == 1
+    assert closed[0][0] == 83
+    assert closed[0][3] == "EXPIRED"
