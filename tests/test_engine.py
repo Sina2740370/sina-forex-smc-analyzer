@@ -297,6 +297,6 @@ def test_atr_uses_wilder_smoothing_not_only_last_period_mean():
         "close": [10.0] * 5,
     })
 
-    # True ranges are [2, 3, 4, 6]. Seed ATR=(2+3+4)/3, then Wilder update with 6.
-    expected = ((3 - 1) * 3.0 + 6.0) / 3.0
+    # True ranges after the initial close are [3, 4, 5, 6]. Seed=(3+4+5)/3, then Wilder update with 6.
+    expected = ((3 - 1) * 4.0 + 6.0) / 3.0
     assert smc.atr(df, period=3) == pytest.approx(expected)
