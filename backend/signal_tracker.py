@@ -120,9 +120,23 @@ def _check_signal(sig: dict, candles: list):
         if candle_time <= created_at:
             continue
 
-        # اولین کندلی که پایانش به مهلت انقضا می‌رسد، mark-to-market می‌شود؛
-        # TP/SLهای بعد از مهلت نباید نتیجه‌ی سیگنال منقضی را تغییر دهند.
-        if candle_time + timedelta(minutes=15) >= expires_at:
+        # OHLC cannot reveal whether TP/SL happened before expiry inside a bar
+        # that straddles the deadline. For risk safety, count a touched SL as LOSS,
+        # never award a TP from that ambiguous bar, and otherwise mark-to-market.
+        bar_close_time = candle_time + timedelta(minutes=15)
+        high = float(c["high"])
+        low = float(c["low"])
+        if candle_time < expires_at <= bar_close_time:
+            stop_touched = (
+                low - half_spread <= sl if direction == "BUY"
+                else high + half_spread >= sl
+            )
+            if stop_touched:
+                pnl = _to_pips(symbol, sl - effective_entry if direction == "BUY" else effective_entry - sl)
+                close_signal(sig_id, sl, pnl, "LOSS")
+                logger.info("LOSS at expiry boundary: %s (%+.1f pips)", symbol, pnl)
+                return
+
             close_mid = float(c["close"])
             exit_price = close_mid - half_spread if direction == "BUY" else close_mid + half_spread
             pnl_price = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
@@ -131,8 +145,9 @@ def _check_signal(sig: dict, candles: list):
             logger.info("EXPIRED: %s (%+.1f pips, market mark-to-market)", symbol, pnl_pips)
             return
 
-        high = float(c["high"])
-        low = float(c["low"])
+        # Candles fully before expiry can trigger either SL or TP.
+        if bar_close_time > expires_at:
+            continue
 
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
