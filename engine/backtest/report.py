@@ -111,25 +111,29 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
                  train_days: int = 180, test_days: int = 60, warmup_days: int = 150,
                  min_train_trades: int = 10) -> dict:
     """
-    هر کانفیگ یک‌بار روی کل دیتا اجرا می‌شود و معامله‌ها بر اساس open_time به
-    بازه‌های train/test تقسیم می‌شوند (تقریب؛ برای غربال overfit کافی است).
+    در هر fold، کانفیگ‌ها فقط روی بازه‌ی train ارزیابی می‌شوند؛ سپس کانفیگ منتخب
+    با حالت تازه فقط در بازه‌ی test اجرا می‌شود. مرزها نیمه‌بازند تا معامله‌ی مرزی دوبار شمرده نشود.
     """
-    runs = {ms: run_backtest(symbol, data, replace(base, min_score=ms)) for ms in grid}
     t0 = data["15m"]["time"].iloc[0] + pd.Timedelta(days=warmup_days)
     t_end = data["15m"]["time"].iloc[-1]
     windows, oos = [], []
     s = t0
     while s + pd.Timedelta(days=train_days + test_days) <= t_end:
         a, b = s + pd.Timedelta(days=train_days), s + pd.Timedelta(days=train_days + test_days)
+        # run_backtest treats --end as inclusive; subtract 1 ns to keep folds half-open [start, end).
+        train_end = a - pd.Timedelta(nanoseconds=1)
+        test_end = b - pd.Timedelta(nanoseconds=1)
         best, best_exp = None, -1e9
-        for ms, tr in runs.items():
-            tt = [t for t in tr if s <= t["open_time"] < a]
-            if len(tt) >= min_train_trades:
-                e = float(np.mean([t["r"] for t in tt]))
+        for ms in grid:
+            train = run_backtest(symbol, data, replace(base, min_score=ms),
+                                 start=s.isoformat(), end=train_end.isoformat())
+            if len(train) >= min_train_trades:
+                e = float(np.mean([t["r"] for t in train]))
                 if e > best_exp:
                     best, best_exp = ms, e
         if best is not None:
-            test = [t for t in runs[best] if a <= t["open_time"] < b]
+            test = run_backtest(symbol, data, replace(base, min_score=best),
+                                start=a.isoformat(), end=test_end.isoformat())
             oos += test
             windows.append({"test_from": str(a)[:10], "chosen_min_score": best,
                             "train_exp": round(best_exp, 3), "test_n": len(test),
