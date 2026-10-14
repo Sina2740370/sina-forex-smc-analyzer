@@ -434,7 +434,7 @@ def analyze_technical_topdown(data_dict):
         pass
 
     try:
-        df_4h = pd.DataFrame(data_dict["4h"])
+        df_4h = _drop_forming(pd.DataFrame(data_dict["4h"]), 240)
         if len(df_4h) >= 20:
             pd_zone = get_premium_discount(df_4h, lookback=60)
             zone = pd_zone["zone"]
@@ -442,7 +442,7 @@ def analyze_technical_topdown(data_dict):
         pass
 
     try:
-        df_1h = pd.DataFrame(data_dict["1h"])
+        df_1h = _drop_forming(pd.DataFrame(data_dict["1h"]), 60)
     except Exception:
         pass
 
@@ -491,8 +491,16 @@ def analyze_technical_topdown(data_dict):
         base["blocked"] = True
         return base
 
-    # آماده‌سازی داده‌ها؛ df_15m از ابتدای تابع فقط شامل کندل‌های بسته‌شده است.
-    df_1h = _drop_forming(df_1h, 60)
+    # Keep ATRs on their own timeframe: 15m for sweep strength, 1h for SL/risk,
+    # and 4h for distance to 4h order blocks.
+    atr_1h = calculate_atr(df_1h)
+    atr_4h = calculate_atr(df_4h)
+    if atr_1h == 0 or atr_4h == 0:
+        base["reasons"] = ["ATR تایم‌فریم بالاتر نامعتبر"]
+        base["blocked"] = True
+        return base
+
+    # آماده‌سازی داده‌ها؛ هر سه تایم‌فریم پایین/میانی فقط کندل بسته‌شده دارند.
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
@@ -548,7 +556,7 @@ def analyze_technical_topdown(data_dict):
 
         # ۴. Order Block + فاصله
         ob = htf_obs.get("bullish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
+        dist = _distance_to_ob(price, ob, atr_4h) if ob else 999.0
 
         if ob:
             if dist == 0.0:
@@ -601,15 +609,15 @@ def analyze_technical_topdown(data_dict):
             # SL منطقی: زیر OB یا زیر سطح Sweep
             if ob:
                 ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
+                buf = max(atr_1h * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["low"] - buf, 6)
             elif sweep:
-                sl = round(sweep["level"] - atr * SL_ATR_MULTIPLIER, 6)
+                sl = round(sweep["level"] - atr_1h * SL_ATR_MULTIPLIER, 6)
             else:
-                sl = round(price - atr * SL_ATR_MULTIPLIER * 1.5, 6)
+                sl = round(price - atr_1h * SL_ATR_MULTIPLIER * 1.5, 6)
 
             risk = price - sl
-            min_risk = atr * MIN_RISK_ATR_RATIO
+            min_risk = atr_1h * MIN_RISK_ATR_RATIO
             if risk <= 0:
                 direction = None
                 sl = None
@@ -697,9 +705,9 @@ def analyze_technical_topdown(data_dict):
                 buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
                 sl = round(ob["high"] + buf, 6)
             elif sweep:
-                sl = round(sweep["level"] + atr * SL_ATR_MULTIPLIER, 6)
+                sl = round(sweep["level"] + atr_1h * SL_ATR_MULTIPLIER, 6)
             else:
-                sl = round(price + atr * SL_ATR_MULTIPLIER * 1.5, 6)
+                sl = round(price + atr_1h * SL_ATR_MULTIPLIER * 1.5, 6)
 
             risk = sl - price
             min_risk = atr * MIN_RISK_ATR_RATIO
