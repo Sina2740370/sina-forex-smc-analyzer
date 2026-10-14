@@ -101,8 +101,9 @@ def _check_signal(sig: dict, candles: list):
         logger.error(f"خطا در پارس زمان سیگنال {sig_id}: {e}")
         return
 
-    # اسپرد روی ورود
+    # Use the same half-spread for entry, executable TP/SL triggers, and expiry.
     effective_entry = _apply_spread(symbol, entry, direction)
+    half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
 
     # Parse defensively before sorting: one malformed provider timestamp must not
@@ -123,7 +124,6 @@ def _check_signal(sig: dict, candles: list):
         # TP/SLهای بعد از مهلت نباید نتیجه‌ی سیگنال منقضی را تغییر دهند.
         if candle_time + timedelta(minutes=15) >= expires_at:
             close_mid = float(c["close"])
-            half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2
             exit_price = close_mid - half_spread if direction == "BUY" else close_mid + half_spread
             pnl_price = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
             pnl_pips = _to_pips(symbol, pnl_price)
@@ -136,12 +136,12 @@ def _check_signal(sig: dict, candles: list):
 
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
-            if low <= sl:
+            if low - half_spread <= sl:
                 pnl = _to_pips(symbol, sl - effective_entry)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
-            if high >= tp:
+            if high - half_spread >= tp:
                 pnl = _to_pips(symbol, tp - effective_entry)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
@@ -149,12 +149,12 @@ def _check_signal(sig: dict, candles: list):
 
         elif direction == "SELL":
             # اول SL
-            if high >= sl:
+            if high + half_spread >= sl:
                 pnl = _to_pips(symbol, effective_entry - sl)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
-            if low <= tp:
+            if low + half_spread <= tp:
                 pnl = _to_pips(symbol, effective_entry - tp)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
