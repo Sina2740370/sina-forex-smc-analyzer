@@ -58,3 +58,29 @@ def test_live_analysis_uses_closed_15m_candle_for_price_and_atr(monkeypatch):
     assert seen_atr_lengths == [69]
     assert result["price"] == data["15m"]["close"].iloc[-2]
     assert result["atr"] == 0.001
+
+
+
+def test_gold_futures_proxy_requires_explicit_opt_in():
+    import subprocess
+    import sys
+
+    env = os.environ.copy()
+    env.update({
+        "FRED_API_KEY": "test-key",
+        "TELEGRAM_BOT_TOKEN": "123456:test-token",
+        "TELEGRAM_CHAT_ID": "123456",
+        "ALLOW_GOLD_FUTURES_PROXY": "false",
+    })
+    disabled = subprocess.run(
+        [sys.executable, "-c", "import backend.config as c; assert 'GC=F' not in c.SYMBOLS"],
+        env=env, capture_output=True, text=True,
+    )
+    assert disabled.returncode == 0, disabled.stderr
+
+    env["ALLOW_GOLD_FUTURES_PROXY"] = "true"
+    enabled = subprocess.run(
+        [sys.executable, "-c", "import backend.config as c; assert c.SYMBOLS['GC=F'].startswith('Gold Futures')"],
+        env=env, capture_output=True, text=True,
+    )
+    assert enabled.returncode == 0, enabled.stderr
