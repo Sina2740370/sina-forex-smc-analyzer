@@ -126,16 +126,19 @@ def _check_signal(sig: dict, candles: list):
         bar_close_time = candle_time + timedelta(minutes=15)
         high = float(c["high"])
         low = float(c["low"])
-        if candle_time < expires_at <= bar_close_time:
-            stop_touched = (
-                low - half_spread <= sl if direction == "BUY"
-                else high + half_spread >= sl
-            )
-            if stop_touched:
-                pnl = _to_pips(symbol, sl - effective_entry if direction == "BUY" else effective_entry - sl)
-                close_signal(sig_id, sl, pnl, "LOSS")
-                logger.info("LOSS at expiry boundary: %s (%+.1f pips)", symbol, pnl)
-                return
+        if bar_close_time >= expires_at:
+            # Only a bar that overlaps the deadline is ambiguous. If it starts
+            # after expiry, ignore its high/low and mark-to-market at its close.
+            if candle_time < expires_at:
+                stop_touched = (
+                    low - half_spread <= sl if direction == "BUY"
+                    else high + half_spread >= sl
+                )
+                if stop_touched:
+                    pnl = _to_pips(symbol, sl - effective_entry if direction == "BUY" else effective_entry - sl)
+                    close_signal(sig_id, sl, pnl, "LOSS")
+                    logger.info("LOSS at expiry boundary: %s (%+.1f pips)", symbol, pnl)
+                    return
 
             close_mid = float(c["close"])
             exit_price = close_mid - half_spread if direction == "BUY" else close_mid + half_spread
@@ -144,10 +147,6 @@ def _check_signal(sig: dict, candles: list):
             close_signal(sig_id, exit_price, pnl_pips, "EXPIRED")
             logger.info("EXPIRED: %s (%+.1f pips, market mark-to-market)", symbol, pnl_pips)
             return
-
-        # Candles fully before expiry can trigger either SL or TP.
-        if bar_close_time > expires_at:
-            continue
 
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
