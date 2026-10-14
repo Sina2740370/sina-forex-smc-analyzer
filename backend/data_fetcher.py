@@ -16,7 +16,7 @@ import pandas as pd
 import yfinance as yf
 
 from .config import CANDLE_LIMIT, MIN_CANDLES, CACHE_TTL, SYMBOLS
-from engine.data.providers import TopDownView, load_yfinance_topdown
+from engine.data.providers import TopDownView, load_yfinance_topdown, staleness_minutes
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -226,7 +226,18 @@ def fetch_topdown(symbol: str) -> dict:
         frames = load_yfinance_topdown(symbol)
         # Apply the same close-time filter used by backtests. This excludes forming
         # 15m/1h/4h candles and, critically, incomplete daily/weekly NY-session bars.
-        closed_frames = TopDownView(frames).at(pd.Timestamp.now(tz="UTC"))
+        now = pd.Timestamp.now(tz="UTC")
+        closed_frames = TopDownView(frames).at(now)
+
+        # A closed candle can still be stale (e.g. Friday's last bar on Sunday).
+        # Require the last 15m/1h/4h bars to be no older than three bars.
+        max_staleness = {"15m": 45, "1h": 180, "4h": 720}
+        for tf, max_age_minutes in max_staleness.items():
+            age = staleness_minutes(closed_frames[tf], tf, now)
+            if not pd.notna(age) or age < 0 or age > max_age_minutes:
+                logger.warning("رد داده‌ی کهنه برای %s/%s: age=%.1f دقیقه", symbol, tf, age)
+                return {"error": f"{tf} داده‌ی کهنه است"}
+
         result = {}
         for tf in ("1wk", "1d", "4h", "1h", "15m"):
             df = closed_frames.get(tf)
