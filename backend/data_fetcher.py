@@ -16,7 +16,7 @@ import pandas as pd
 import yfinance as yf
 
 from .config import CANDLE_LIMIT, MIN_CANDLES, CACHE_TTL, SYMBOLS
-from engine.data.providers import load_yfinance_topdown
+from engine.data.providers import TopDownView, load_yfinance_topdown
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -224,9 +224,12 @@ def fetch_topdown(symbol: str) -> dict:
 
     try:
         frames = load_yfinance_topdown(symbol)
+        # Apply the same close-time filter used by backtests. This excludes forming
+        # 15m/1h/4h candles and, critically, incomplete daily/weekly NY-session bars.
+        closed_frames = TopDownView(frames).at(pd.Timestamp.now(tz="UTC"))
         result = {}
         for tf in ("1wk", "1d", "4h", "1h", "15m"):
-            df = frames.get(tf)
+            df = closed_frames.get(tf)
             min_required = 20 if tf in ("1wk", "1d") else MIN_CANDLES
             if df is None or df.empty or len(df) < min_required:
                 return {"error": f"{tf} داده کافی نیست"}
