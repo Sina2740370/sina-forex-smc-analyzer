@@ -62,10 +62,8 @@ def check_open_signals():
 
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
-    # ۱) چک سیگنال‌های منقضی
-    _check_expired_signals(open_signals)
-
-    # ۲) گروه‌بندی بر اساس نماد
+    # سیگنال‌ها فقط پس از دریافت کندل بسته می‌شوند؛ PnL صفر برای انقضا گمراه‌کننده است.
+    # گروه‌بندی بر اساس نماد
     by_symbol = {}
     for sig in open_signals:
         by_symbol.setdefault(sig["symbol"], []).append(sig)
@@ -82,29 +80,6 @@ def check_open_signals():
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
-
-
-def _check_expired_signals(signals: list):
-    """سیگنال‌های قدیمی رو EXPIRED می‌کنه"""
-    now = datetime.utcnow()
-    threshold = now - timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
-
-    for sig in signals:
-        try:
-            created = _parse_dt(sig["created_at"])
-            if created < threshold:
-                close_signal(
-                    sig["id"],
-                    sig["entry"],
-                    0.0,
-                    "EXPIRED",
-                )
-                logger.info(
-                    f"⏰ EXPIRED: {sig['symbol']} "
-                    f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
-                )
-        except Exception as e:
-            logger.error(f"خطا در چک EXPIRED {sig['id']}: {e}")
 
 
 def _check_signal(sig: dict, candles: list):
@@ -128,20 +103,32 @@ def _check_signal(sig: dict, candles: list):
 
     # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
+    expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
 
-    # مرور کندل‌ها
-    for c in candles:
+    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا با قیمت بازار می‌بندیم.
+    for c in sorted(candles, key=lambda row: _parse_dt(row["time"])):
         try:
             candle_time = _parse_dt(c["time"])
         except Exception:
             continue
 
-        # فقط کندل‌های بعد از ساخته شدن سیگنال
         if candle_time <= created_at:
             continue
 
-        high = c["high"]
-        low = c["low"]
+        # اولین کندلی که پایانش به مهلت انقضا می‌رسد، mark-to-market می‌شود؛
+        # TP/SLهای بعد از مهلت نباید نتیجه‌ی سیگنال منقضی را تغییر دهند.
+        if candle_time + timedelta(minutes=15) >= expires_at:
+            close_mid = float(c["close"])
+            half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2
+            exit_price = close_mid - half_spread if direction == "BUY" else close_mid + half_spread
+            pnl_price = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            pnl_pips = _to_pips(symbol, pnl_price)
+            close_signal(sig_id, exit_price, pnl_pips, "EXPIRED")
+            logger.info("EXPIRED: %s (%+.1f pips, market mark-to-market)", symbol, pnl_pips)
+            return
+
+        high = float(c["high"])
+        low = float(c["low"])
 
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
