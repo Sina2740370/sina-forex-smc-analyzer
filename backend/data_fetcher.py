@@ -16,6 +16,7 @@ import pandas as pd
 import yfinance as yf
 
 from .config import CANDLE_LIMIT, MIN_CANDLES, CACHE_TTL, SYMBOLS
+from engine.data.providers import load_yfinance_topdown
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -210,23 +211,43 @@ def _resample_to_4h(df: pd.DataFrame) -> pd.DataFrame:
 #  دریافت 5 تایم‌فریم
 # ============================================================
 
+# Top-down analysis must use the same candle construction as the backtest engine.
+_TOPDOWN_CACHE = {}
+_TOPDOWN_CACHE_TTL_SECONDS = 300
+_TOPDOWN_LIMITS = {"1wk": 120, "1d": 200, "4h": 200, "1h": 300, "15m": 400}
+
+
 def fetch_topdown(symbol: str) -> dict:
-    result = {}
-    timeframes = ["1wk", "1d", "4h", "1h", "15m"]
+    cached = _TOPDOWN_CACHE.get(symbol)
+    if cached and time.time() - cached["ts"] < _TOPDOWN_CACHE_TTL_SECONDS:
+        return cached["data"]
 
-    for tf in timeframes:
-        data = fetch_ohlcv(symbol, tf)
-        min_required = 20 if tf in ("1wk", "1d") else MIN_CANDLES
+    try:
+        frames = load_yfinance_topdown(symbol)
+        result = {}
+        for tf in ("1wk", "1d", "4h", "1h", "15m"):
+            df = frames.get(tf)
+            min_required = 20 if tf in ("1wk", "1d") else MIN_CANDLES
+            if df is None or df.empty or len(df) < min_required:
+                return {"error": f"{tf} داده کافی نیست"}
 
-        if len(data) < min_required:
-            if tf in ("1wk", "1d") and len(data) > 0:
-                result[tf] = data
-                continue
-            return {"error": f"{tf} داده کافی نیست"}
+            # Keep the same warm-up windows as the engine's top-down view.
+            tail = df.tail(_TOPDOWN_LIMITS[tf])
+            result[tf] = [{
+                "time": row["time"].isoformat() if hasattr(row["time"], "isoformat")
+                        else str(row["time"]),
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row.get("volume", 0)),
+            } for _, row in tail.iterrows()]
 
-        result[tf] = data
-
-    return result
+        _TOPDOWN_CACHE[symbol] = {"ts": time.time(), "data": result}
+        return result
+    except Exception as e:
+        logger.error("خطا در ساخت داده‌ی Top-Down همسان با موتور: %s", e)
+        return {"error": "دریافت یا هم‌ترازسازی داده‌های Top-Down ناموفق بود"}
 
 
 # ============================================================
