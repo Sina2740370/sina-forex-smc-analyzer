@@ -744,6 +744,87 @@ def analyze_technical_topdown(data_dict):
     return base
 
 
+def analyze_canonical_topdown(data_dict):
+    """Adapt the canonical backtest strategy to the legacy backend response schema."""
+    from engine.core import smc
+    from engine.core.config import EngineConfig
+    from engine.strategy.smc_topdown import analyze as engine_analyze
+
+    frames = {}
+    for tf in ("15m", "1h", "4h", "1d", "1wk"):
+        if tf not in data_dict:
+            return {
+                "score": 0.0, "direction": None, "price": None, "sl": None, "tp": None,
+                "trend": "RANGING", "wk_trend": "UNCLEAR", "d_trend": "UNCLEAR",
+                "zone": "-", "atr": 0.0, "reasons": [f"داده‌ی {tf} موجود نیست"],
+                "blocked": True,
+            }
+        df = pd.DataFrame(data_dict[tf]).copy()
+        if df.empty or not {"time", "open", "high", "low", "close"}.issubset(df.columns):
+            return {
+                "score": 0.0, "direction": None, "price": None, "sl": None, "tp": None,
+                "trend": "RANGING", "wk_trend": "UNCLEAR", "d_trend": "UNCLEAR",
+                "zone": "-", "atr": 0.0, "reasons": [f"داده‌ی {tf} نامعتبر است"],
+                "blocked": True,
+            }
+        df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+        df = df.dropna(subset=["time", "open", "high", "low", "close"])
+        df = df.sort_values("time").drop_duplicates("time").reset_index(drop=True)
+        frames[tf] = df
+
+    cfg = EngineConfig(
+        min_score=MIN_SIGNAL_SCORE,
+        risk_reward=RISK_REWARD,
+        sl_atr1h_mult=SL_ATR_MULTIPLIER,
+        sl_ob_buffer=SL_OB_BUFFER,
+        min_risk_atr1h=MIN_RISK_ATR_RATIO,
+    )
+    now = pd.Timestamp.now(tz="UTC")
+    decision = engine_analyze(frames, cfg, now)
+    bias = str(decision.bias or "").upper()
+    if decision.direction == "BUY":
+        sign = 1
+    elif decision.direction == "SELL":
+        sign = -1
+    elif "BULLISH" in bias:
+        sign = 1
+    elif "BEARISH" in bias:
+        sign = -1
+    else:
+        sign = 0
+
+    # Data/bias failures are hard blocks. Score/gate and risk gates leave the
+    # fundamental/news layers available, but cannot create a trade without SL/TP.
+    blocked_reason = str(decision.blocked or "").upper()
+    fatal = (
+        blocked_reason.startswith("INSUFFICIENT DATA")
+        or blocked_reason == "INVALID ATR"
+        or "CONFLICT" in blocked_reason
+        or "NEUTRAL" in blocked_reason
+    )
+    price = float(frames["15m"]["close"].iloc[-1]) if len(frames["15m"]) else None
+    zone = smc.premium_discount(frames["4h"], cfg.pd_lookback) if len(frames["4h"]) >= cfg.pd_lookback else "-"
+    trend = "BULLISH" if sign > 0 else "BEARISH" if sign < 0 else "RANGING"
+    reasons = list(decision.reasons or [])
+    if decision.blocked:
+        reasons.append(f"محدودیت موتور: {decision.blocked}")
+
+    return {
+        "score": round(float(decision.score) * sign, 4),
+        "direction": decision.direction,
+        "price": decision.entry if decision.entry is not None else price,
+        "sl": decision.sl,
+        "tp": decision.tp,
+        "trend": trend,
+        "wk_trend": smc.structure(frames["1wk"]),
+        "d_trend": smc.structure(frames["1d"]),
+        "zone": zone,
+        "atr": round(smc.atr(frames["15m"]), 6),
+        "reasons": reasons,
+        "blocked": fatal,
+    }
+
+
 # ============================================================
 #  تحلیل کامل ۴ لایه
 # ============================================================
@@ -753,7 +834,8 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
-    tech = analyze_technical_topdown(data_dict)
+    # Live decisions use the same deterministic strategy as paper/backtest.
+    tech = analyze_canonical_topdown(data_dict)
 
     if tech.get("blocked"):
         return {
