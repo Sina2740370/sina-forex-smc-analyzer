@@ -203,7 +203,7 @@ def test_walk_forward_fits_train_then_runs_selected_config_on_fresh_test(monkeyp
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end)
         calls.append((cfg.min_score, start_ts, end_ts))
-        if start_ts == first + pd.Timedelta(days=1):
+        if start_ts == first.tz_localize(None) + pd.Timedelta(days=1):
             r = 0.1 if cfg.min_score == 0.5 else 0.5
         else:
             r = 0.25 if cfg.min_score == 0.5 else -1.0
@@ -218,11 +218,11 @@ def test_walk_forward_fits_train_then_runs_selected_config_on_fresh_test(monkeyp
     )
 
     assert len(calls) == 3
-    assert calls[0][1] == first + pd.Timedelta(days=1)
-    assert calls[1][1] == first + pd.Timedelta(days=1)
+    assert calls[0][1] == first.tz_localize(None) + pd.Timedelta(days=1)
+    assert calls[1][1] == first.tz_localize(None) + pd.Timedelta(days=1)
     assert calls[2][0] == 0.6
-    assert calls[2][1] == first + pd.Timedelta(days=2)
-    assert calls[2][2] == first + pd.Timedelta(days=3) - pd.Timedelta(nanoseconds=1)
+    assert calls[2][1] == first.tz_localize(None) + pd.Timedelta(days=2)
+    assert calls[2][2] == first.tz_localize(None) + pd.Timedelta(days=3) - pd.Timedelta(nanoseconds=1)
     assert result["windows"][0]["chosen_min_score"] == 0.6
     assert result["out_of_sample"]["expectancy_r"] == -1.0
 
