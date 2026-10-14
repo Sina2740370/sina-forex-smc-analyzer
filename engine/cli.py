@@ -42,6 +42,12 @@ def _load(args, symbol: str) -> dict:
                 f"فایل پیدا نشد: {symbol}_M15.csv یا {symbol}_i_M15.csv در {args.csv_dir}"
             )
         return build_topdown(load_mt5_csv(path, args.tz_offset))
+    if symbol == "XAUUSD" and not getattr(args, "allow_gold_futures_proxy", False):
+        raise SystemExit(
+            "Yahoo Finance gold data is GC=F futures, not XAUUSD spot. "
+            "Use --source csv with MT5/Dukascopy spot data, or explicitly pass "
+            "--allow-gold-futures-proxy to test the futures proxy."
+        )
     return load_yfinance_topdown(INSTRUMENTS[symbol].yf)
 
 
@@ -127,6 +133,8 @@ def main():
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
         sp.add_argument("--tz-offset", type=float, default=0.0)
+        sp.add_argument("--allow-gold-futures-proxy", action="store_true",
+                        help="اجازه‌ی استفاده از GC=F futures به‌جای XAUUSD spot")
         sp.add_argument("--start")
         sp.add_argument("--end")
         sp.add_argument("--out", default="out")

@@ -261,3 +261,20 @@ def test_yfinance_topdown_resamples_daily_weekly_to_new_york_session(monkeypatch
         assert (local.dt.minute == 0).all()
     assert (data["1wk"]["time"].dt.dayofweek == 6).all()
     assert set(data["1d"]["time"].dt.hour.unique()) == {21, 22}
+
+
+
+def test_yfinance_gold_proxy_requires_explicit_opt_in(monkeypatch):
+    from types import SimpleNamespace
+    from engine import cli
+
+    args = SimpleNamespace(source="yfinance", allow_gold_futures_proxy=False)
+    try:
+        cli._load(args, "XAUUSD")
+        assert False, "XAUUSD must not silently use GC=F futures as spot"
+    except SystemExit as exc:
+        assert "GC=F futures, not XAUUSD spot" in str(exc)
+
+    args.allow_gold_futures_proxy = True
+    monkeypatch.setattr(cli, "load_yfinance_topdown", lambda symbol: {"loaded": symbol})
+    assert cli._load(args, "XAUUSD") == {"loaded": "GC=F"}
