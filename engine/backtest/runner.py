@@ -106,7 +106,9 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             break
         last_i = i
 
-        if pos is not None and i > pos.open_idx:
+        # A position is filled at the next candle's open after the signal candle closes.
+        # Since it is live from that open, exits can occur within the entry candle.
+        if pos is not None and i >= pos.open_idx:
             status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half, op[i])
             if status is None and now - pos.open_time >= hold:
                 status, px = "EXPIRED", cl[i] - pos.side * half
@@ -123,10 +125,21 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
-        entry = dec.entry + side * half         # BUY روی ask، SELL روی bid
-        if (entry - dec.sl) * side <= 0:
+        # The candle close is only known after it closes. Simulate a market
+        # order at the next bar's open instead of granting an optimistic fill
+        # at the already-observed signal close.
+        next_i = i + 1
+        if next_i >= len(df15):
             continue
-        pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
+        entry_time = times.iloc[next_i]
+        if entry_time >= t1:
+            continue
+        entry = float(op[next_i]) + side * half  # BUY on ask, SELL on bid
+        # If the next-open gap invalidates either protective level, skip the
+        # stale setup rather than creating a position with inverted risk/reward.
+        if (entry - dec.sl) * side <= 0 or (dec.tp - entry) * side <= 0:
+            continue
+        pos = _Pos(side, entry_time, next_i, entry, dec.sl, dec.tp, dec)
         last_signal["t"] = now
 
     if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
