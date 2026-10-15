@@ -225,3 +225,25 @@ def test_expiry_boundary_bar_does_not_award_ambiguous_take_profit(monkeypatch):
     assert len(closed) == 1
     assert closed[0][0] == 83
     assert closed[0][3] == "EXPIRED"
+
+
+
+def test_unknown_symbol_is_not_closed_with_fallback_pip_or_spread(monkeypatch):
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda *args: closed.append(args),
+    )
+    signal = {
+        "id": 99, "symbol": "UNKNOWN_SYMBOL", "direction": "BUY",
+        "entry": 100.0, "sl": 99.0, "tp": 102.0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    candles = [{
+        "time": datetime.now(timezone.utc).isoformat(),
+        "open": 100.0, "high": 103.0, "low": 98.0, "close": 101.0, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert closed == []
