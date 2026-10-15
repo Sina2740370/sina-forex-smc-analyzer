@@ -32,6 +32,16 @@ def test_check_exit_sl_wins_ties_and_spread():
     assert check_exit(1, 99, 102, 102.2, 99.8, 0.5) == (None, None)  # اسپرد TP را دور می‌کند
 
 
+def test_check_exit_models_adverse_gap_through_stop():
+    assert check_exit(1, 99, 102, 103, 94, 0.0, open_price=95) == ("SL", 95)
+    assert check_exit(-1, 101, 98, 106, 97, 0.0, open_price=105) == ("SL", 105)
+
+
+def test_check_exit_does_not_assume_price_improvement_on_gap_through_target():
+    assert check_exit(1, 99, 102, 104, 101, 0.0, open_price=103) == ("TP", 102)
+    assert check_exit(-1, 101, 98, 99, 96, 0.0, open_price=97) == ("TP", 98)
+
+
 def test_resample_weekly_and_daily_align_to_fx_week():
     m = make_15m(30)
     wk, d = resample_ohlc(m, "1wk"), resample_ohlc(m, "1d")
