@@ -385,13 +385,15 @@ def test_provider_tidy_discards_malformed_ohlc_and_keeps_valid_rows():
         {"time": base + pd.Timedelta(minutes=15), "open": 1.1000, "high": 1.0990, "low": 1.1010, "close": 1.1005, "volume": 1},
         {"time": base + pd.Timedelta(minutes=30), "open": 1.1000, "high": float("inf"), "low": 1.0990, "close": 1.1005, "volume": 1},
         {"time": "not-a-time", "open": 1.1000, "high": 1.1010, "low": 1.0990, "close": 1.1005, "volume": 1},
+        {"time": base + pd.Timedelta(minutes=45), "open": 1.1000, "high": 1.1010, "low": 1.0990, "close": 1.1005, "volume": float("inf")},
     ])
 
     clean = _tidy(raw)
 
-    assert len(clean) == 1
+    assert len(clean) == 2
     assert clean.iloc[0]["time"] == base
     assert clean.iloc[0]["high"] == pytest.approx(1.1010)
+    assert clean.iloc[1]["volume"] == 0.0
 
 
 
