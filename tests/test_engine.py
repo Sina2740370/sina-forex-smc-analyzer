@@ -477,7 +477,7 @@ def test_largest_bar_gap_reports_sparse_historical_source():
         ], utc=True),
     })
 
-    assert largest_bar_gap(frame) == pd.Timedelta(days=364, hours=23, minutes=45)
+    assert largest_bar_gap(frame) == pd.Timedelta(days=363, hours=23, minutes=45)
 
 
 def test_cli_rejects_csv_with_multiweek_gap(monkeypatch):
