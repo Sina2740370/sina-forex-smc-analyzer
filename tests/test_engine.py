@@ -323,3 +323,17 @@ def test_random_baseline_simulation_preserves_spread_adjusted_rr():
     )
 
     assert result_r == pytest.approx(2.0)
+
+
+
+def test_random_baseline_models_gap_through_stop_like_runner():
+    from engine.backtest.report import _simulate
+
+    result_r = _simulate(
+        side=1, mid=100.0, risk_dist=1.0, rr=2.0,
+        hi=np.array([101.0]), lo=np.array([94.0]),
+        cl=np.array([95.0]), half=0.0, n=1,
+        op=np.array([95.0]),
+    )
+
+    assert result_r == pytest.approx(-5.0)
