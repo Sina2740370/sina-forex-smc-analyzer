@@ -247,3 +247,42 @@ def test_unknown_symbol_is_not_closed_with_fallback_pip_or_spread(monkeypatch):
     signal_tracker._check_signal(signal, candles)
 
     assert closed == []
+
+
+
+@pytest.mark.parametrize(
+    "direction,entry,sl,tp,open_price,expected_exit",
+    [
+        ("BUY", 1.1000, 1.0990, 1.1200, 1.0980, 1.09796),
+        ("SELL", 1.1000, 1.1010, 1.0800, 1.1020, 1.10204),
+    ],
+)
+def test_stop_gap_uses_worse_executable_open(
+    monkeypatch, direction, entry, sl, tp, open_price, expected_exit
+):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    candle_time = now.replace(minute=(now.minute // 15) * 15) - timedelta(minutes=15)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda signal_id, exit_price, pnl_pips, status:
+            closed.append((signal_id, exit_price, pnl_pips, status)),
+    )
+    signal = {
+        "id": 120 if direction == "BUY" else 121,
+        "symbol": "EURUSD=X", "direction": direction,
+        "entry": entry, "sl": sl, "tp": tp,
+        "created_at": (candle_time - timedelta(minutes=30)).isoformat(),
+    }
+    candles = [{
+        "time": candle_time.isoformat(), "open": open_price,
+        "high": open_price + 0.0005, "low": open_price - 0.0005,
+        "close": open_price, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert len(closed) == 1
+    assert closed[0][1] == pytest.approx(expected_exit)
+    assert closed[0][2] == pytest.approx(-20.8)
+    assert closed[0][3] == "LOSS"
