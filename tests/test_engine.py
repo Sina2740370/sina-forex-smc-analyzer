@@ -373,3 +373,22 @@ def test_backtest_includes_final_candle_and_fills_gap_through_stop(monkeypatch):
     assert trades[0]["status"] == "SL"
     assert trades[0]["close_time"] == times[-1] + pd.Timedelta(minutes=15)
     assert trades[0]["r"] < -1.0
+
+
+
+def test_provider_tidy_discards_malformed_ohlc_and_keeps_valid_rows():
+    from engine.data.providers import _tidy
+
+    base = pd.Timestamp("2025-01-06 00:00", tz="UTC")
+    raw = pd.DataFrame([
+        {"time": base, "open": 1.1000, "high": 1.1010, "low": 1.0990, "close": 1.1005, "volume": 1},
+        {"time": base + pd.Timedelta(minutes=15), "open": 1.1000, "high": 1.0990, "low": 1.1010, "close": 1.1005, "volume": 1},
+        {"time": base + pd.Timedelta(minutes=30), "open": 1.1000, "high": float("inf"), "low": 1.0990, "close": 1.1005, "volume": 1},
+        {"time": "not-a-time", "open": 1.1000, "high": 1.1010, "low": 1.0990, "close": 1.1005, "volume": 1},
+    ])
+
+    clean = _tidy(raw)
+
+    assert len(clean) == 1
+    assert clean.iloc[0]["time"] == base
+    assert clean.iloc[0]["high"] == pytest.approx(1.1010)
