@@ -276,7 +276,7 @@ def test_full_analysis_cannot_override_canonical_score_or_confluence_gate(monkey
         lambda _symbol: {"score": 1.0, "reasons": ["positive memory"]},
     )
 
-    result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=True))
+    result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=True, news_sentiment="not-a-number"))
 
     assert result["score"] >= ae.MIN_SIGNAL_SCORE
     assert result["fundamental_score"] == pytest.approx(1.0)
