@@ -88,9 +88,10 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     op, hi, lo, cl = (df15[k].to_numpy() for k in ("open", "high", "low", "close"))
 
     # utc=True safely handles both naive bounds and ISO timestamps that already carry a timezone.
-    t0 = pd.to_datetime(start, utc=True) if start else times.iloc[0]
-    t1 = pd.to_datetime(end, utc=True) if end else times.iloc[-1]
     bar = pd.Timedelta(minutes=15)
+    t0 = pd.to_datetime(start, utc=True) if start else times.iloc[0]
+    # Loop timestamps are candle CLOSE times; include the final candle by default.
+    t1 = pd.to_datetime(end, utc=True) if end else times.iloc[-1] + bar
     hold = pd.Timedelta(hours=cfg.max_hold_hours)
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
 
