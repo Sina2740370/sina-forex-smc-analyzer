@@ -19,8 +19,8 @@ import pandas as pd
 from .backtest.report import fold_stability, feature_table, random_baseline, walk_forward
 from .backtest.runner import evaluate_gate, run_backtest, summarize
 from .core.config import INSTRUMENTS, EngineConfig
-from .data.providers import (build_topdown, load_mt5_csv, load_yfinance_topdown,
-                             staleness_minutes, TopDownView)
+from .data.providers import (build_topdown, largest_bar_gap, load_mt5_csv,
+                             load_yfinance_topdown, staleness_minutes, TopDownView)
 from .strategy.smc_topdown import analyze
 
 
@@ -41,7 +41,16 @@ def _load(args, symbol: str) -> dict:
             raise SystemExit(
                 f"فایل پیدا نشد: {symbol}_M15.csv یا {symbol}_i_M15.csv در {args.csv_dir}"
             )
-        return build_topdown(load_mt5_csv(path, args.tz_offset))
+        source_15m = load_mt5_csv(path, args.tz_offset)
+        largest_gap = largest_bar_gap(source_15m)
+        # Weekends/holidays are normal, but a gap over seven days means this
+        # history is not a continuous enough basis for a trustworthy backtest.
+        if largest_gap > pd.Timedelta(days=7):
+            raise ValueError(
+                f"CSV data quality rejected for {symbol}: largest M15 gap is "
+                f"{largest_gap}; repair/download complete history before backtesting"
+            )
+        return build_topdown(source_15m)
     if symbol == "XAUUSD" and not getattr(args, "allow_gold_futures_proxy", False):
         raise SystemExit(
             "Yahoo Finance gold data is GC=F futures, not XAUUSD spot. "
