@@ -69,13 +69,22 @@ def cmd_fetch(args):
 def cmd_backtest(args):
     cfg = EngineConfig()
     trades = []
+    skipped_symbols = {}
     for sym in args.symbols:
         print(f"> {sym} ...", flush=True)
-        trades += run_backtest(sym, _load(args, sym), cfg, args.start, args.end,
+        try:
+            data = _load(args, sym)
+        except ValueError as exc:
+            skipped_symbols[sym] = str(exc)
+            print(f"SKIPPED {sym}: {exc}", flush=True)
+            continue
+        trades += run_backtest(sym, data, cfg, args.start, args.end,
                                analyze_fn=_strategy(args.strategy))
     s = summarize(trades)
-    print(json.dumps({"config": cfg.hash(), "summary": s, "gate": evaluate_gate(s)},
-                     indent=2, default=str, ensure_ascii=False))
+    print(json.dumps({
+        "config": cfg.hash(), "summary": s, "gate": evaluate_gate(s),
+        "skipped_symbols": skipped_symbols,
+    }, indent=2, default=str, ensure_ascii=False))
     if trades:
         os.makedirs(args.out, exist_ok=True)
         path = os.path.join(args.out, f"trades_{cfg.hash()}.csv")
@@ -88,7 +97,11 @@ def cmd_report(args):
     all_trades, lines = [], []
     for sym in args.symbols:
         print(f"> {sym} ...", flush=True)
-        data = _load(args, sym)
+        try:
+            data = _load(args, sym)
+        except ValueError as exc:
+            lines.append(f"\n===== {sym}: SKIPPED =====\n{exc}")
+            continue
         trades = run_backtest(sym, data, cfg, args.start, args.end,
                               analyze_fn=_strategy(args.strategy))
         all_trades += trades
@@ -116,7 +129,11 @@ def cmd_scan(args):
     cfg = EngineConfig()
     now = pd.Timestamp.now(tz="UTC")
     for sym in args.symbols:
-        data = _load(args, sym)
+        try:
+            data = _load(args, sym)
+        except ValueError as exc:
+            print(f"{sym}: داده رد شد ({exc})")
+            continue
         lag = staleness_minutes(data["15m"], "15m", now)
         if lag > 45:
             print(f"{sym}: داده کهنه ({lag:.0f} دقیقه) -> رد شد")
