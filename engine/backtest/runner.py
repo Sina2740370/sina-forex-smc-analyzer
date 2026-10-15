@@ -182,15 +182,28 @@ def summarize(trades: list) -> dict:
 
 def evaluate_gate(s: dict, min_trades: int = 100, max_dd_r: float = 10.0) -> dict:
     """
-    معیار «آماده برای حساب واقعی» بر پایه‌ی آمار، نه Win Rate خام:
-    حد پایین بازه‌ی اطمینان امید ریاضی باید مثبت باشد (یعنی لبه از نویز جداست).
+    آماره‌سنجی استراتژی، نه تأیید آمادگی برای حساب واقعی.
+    هزینه‌ی اسپرد با تخمین ثابت لحاظ شده؛ کمیسیون بروکر و لغزش عمومی قیمت
+    مدل نشده‌اند، پس حتی ready=True به‌تنهایی مجوز اجرای زنده نیست.
     """
+    warning = (
+        "Statistical gate only: estimated fixed spread is included, but broker "
+        "commission and general slippage are not modeled. Not live-trading approval."
+    )
     if s.get("n", 0) == 0:
-        return {"ready": False, "checks": {"has_trades": False}}
+        return {
+            "ready": False,
+            "checks": {"has_trades": False},
+            "execution_model_warning": warning,
+        }
     checks = {
         f"n>={min_trades}": s["n"] >= min_trades,
         "expectancy_ci_low>0": s["expectancy_ci95"][0] > 0,
         "profit_factor>=1.3": s["profit_factor"] >= 1.3,
         f"max_dd_r<={max_dd_r}": s["max_drawdown_r"] <= max_dd_r,
     }
-    return {"ready": all(checks.values()), "checks": checks}
+    return {
+        "ready": all(checks.values()),
+        "checks": checks,
+        "execution_model_warning": warning,
+    }
