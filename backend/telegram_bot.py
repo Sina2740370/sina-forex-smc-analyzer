@@ -258,9 +258,24 @@ async def register_webhook(admin_key: str) -> bool:
             "url": f"{base}/api/telegram/webhook", "secret_token": webhook_secret(admin_key),
             "allowed_updates": ["message"], "max_connections": 1, "drop_pending_updates": False})
         logger.info("webhook تلگرام ثبت شد: %s", res.get("description"))
+        await register_menu_button(base)
         return bool(res.get("ok"))
     except Exception as e:
         logger.error("ثبت webhook ناموفق: %s", e)
+        return False
+
+
+async def register_menu_button(base: str) -> bool:
+    """دکمه‌ی مینی‌اپ فقط تو چت خود سینا (TELEGRAM_CHAT_ID) نمایش داده می‌شود."""
+    try:
+        res = await _tg_call("setChatMenuButton", {
+            "chat_id": int(TELEGRAM_CHAT_ID),
+            "menu_button": {"type": "web_app", "text": "Sina Quant",
+                            "web_app": {"url": f"{base}/"}}})
+        logger.info("دکمه‌ی مینی‌اپ ثبت شد: %s", res.get("ok"))
+        return bool(res.get("ok"))
+    except Exception as e:
+        logger.error("ثبت دکمه‌ی مینی‌اپ ناموفق: %s", e)
         return False
 
 
@@ -268,3 +283,4 @@ async def webhook_status() -> dict:
     info = (await _tg_call("getWebhookInfo")).get("result", {})
     return {"url_set": bool(info.get("url")), "pending": info.get("pending_update_count"),
             "last_error": info.get("last_error_message"), "last_error_date": info.get("last_error_date")}
+        
