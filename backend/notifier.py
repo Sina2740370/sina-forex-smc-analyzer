@@ -100,6 +100,7 @@ async def notify_new_signal(symbol: str, name: str, direction: str,
             f"{lot_line}"
             f"⏱ ورود فقط تا <code>{_format_price(max_entry, symbol)}</code>؛ بعدش (یا بعد ۱۵ دقیقه) ردش کن\n"
             f"🛑 SL و TP رو همون لحظه‌ی ثبت بذار\n"
+            "⚠️ حجم تخمینی است؛ قبل از ثبت، اسپرد و مشخصات قرارداد نماد را در بروکر بررسی کن.\n"
         )
 
     text = (
