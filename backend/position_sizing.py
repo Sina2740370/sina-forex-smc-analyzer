@@ -16,7 +16,9 @@ _BASE_NAMES = {
 
 def broker_symbol(symbol: str) -> str:
     """نام نماد تو MT5 (با پسوند بروکر)"""
-    base = GOLD_SYMBOL if symbol == "GC=F" else _BASE_NAMES.get(symbol, symbol)
+    # GC=F is a futures proxy, not a tradable XAUUSD spot quote.
+    # Never silently translate its prices into the broker's spot-gold symbol.
+    base = _BASE_NAMES.get(symbol, symbol)
     return f"{base}{BROKER_SUFFIX}"
 
 
@@ -45,6 +47,9 @@ def calc_lots(symbol, entry, sl, balance, risk_pct, rates=None):
     اگه حداقل لات ۰.۰۱ هم ریسک رو از هدف بیشتر کنه، over=True برمی‌گردونه.
     """
     try:
+        if symbol == "GC=F":
+            # Contract specs and basis differ by futures venue; don't invent spot sizing.
+            return None
         dist = abs(float(entry) - float(sl))
         # Signal entry/SL are mid-price levels. A market BUY enters at ask and
         # a market SELL at bid, so executable stop risk includes entry half-spread.
