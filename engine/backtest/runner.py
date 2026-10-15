@@ -190,9 +190,17 @@ def evaluate_gate(s: dict, min_trades: int = 100, max_dd_r: float = 10.0) -> dic
         "Statistical gate only: estimated fixed spread is included, but broker "
         "commission and general slippage are not modeled. Not live-trading approval."
     )
+    live_blockers = [
+        "broker commission is not modeled",
+        "general slippage is not modeled",
+        "broker-specific spread and execution behavior are not validated",
+    ]
     if s.get("n", 0) == 0:
         return {
             "ready": False,
+            "statistical_pass": False,
+            "live_ready": False,
+            "live_readiness_blockers": live_blockers,
             "checks": {"has_trades": False},
             "execution_model_warning": warning,
         }
@@ -202,8 +210,14 @@ def evaluate_gate(s: dict, min_trades: int = 100, max_dd_r: float = 10.0) -> dic
         "profit_factor>=1.3": s["profit_factor"] >= 1.3,
         f"max_dd_r<={max_dd_r}": s["max_drawdown_r"] <= max_dd_r,
     }
+    statistical_pass = all(checks.values())
     return {
-        "ready": all(checks.values()),
+        # ready is retained for CLI compatibility and means statistical checks only.
+        "ready": statistical_pass,
+        "statistical_pass": statistical_pass,
+        # Never imply live readiness while execution costs are incomplete.
+        "live_ready": False,
+        "live_readiness_blockers": live_blockers,
         "checks": checks,
         "execution_model_warning": warning,
     }
