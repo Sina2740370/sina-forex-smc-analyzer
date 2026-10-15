@@ -4,7 +4,7 @@
 """
 import math
 
-from .config import BROKER_SUFFIX, GOLD_SYMBOL
+from .config import BROKER_SUFFIX, GOLD_SYMBOL, PIP_SIZE, SPREAD
 
 _BASE_NAMES = {
     "EURUSD=X": "EURUSD", "GBPUSD=X": "GBPUSD", "USDJPY=X": "USDJPY",
@@ -46,6 +46,10 @@ def calc_lots(symbol, entry, sl, balance, risk_pct, rates=None):
     """
     try:
         dist = abs(float(entry) - float(sl))
+        # Signal entry/SL are mid-price levels. A market BUY enters at ask and
+        # a market SELL at bid, so executable stop risk includes entry half-spread.
+        if symbol in PIP_SIZE and symbol in SPREAD:
+            dist += PIP_SIZE[symbol] * SPREAD[symbol] / 2.0
         conv = _quote_to_usd(symbol, float(entry), rates)
         if dist <= 0 or not conv or balance <= 0 or risk_pct <= 0:
             return None
