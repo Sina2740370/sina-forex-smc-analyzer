@@ -130,17 +130,28 @@ def _check_signal(sig: dict, candles: list):
         bar_close_time = candle_time + timedelta(minutes=15)
         high = float(c["high"])
         low = float(c["low"])
+        open_price = float(c["open"])
+        # Match the backtest's conservative gap model: stop-market orders fill
+        # at the executable opening price when the market opens beyond the SL.
+        open_exit = open_price - half_spread if direction == "BUY" else open_price + half_spread
+        stop_gap = open_exit <= sl if direction == "BUY" else open_exit >= sl
+
         if bar_close_time >= expires_at:
             # Only a bar that overlaps the deadline is ambiguous. If it starts
             # after expiry, ignore its high/low and mark-to-market at its close.
             if candle_time < expires_at:
-                stop_touched = (
+                stop_touched = stop_gap or (
                     low - half_spread <= sl if direction == "BUY"
                     else high + half_spread >= sl
                 )
                 if stop_touched:
-                    pnl = _to_pips(symbol, sl - effective_entry if direction == "BUY" else effective_entry - sl)
-                    close_signal(sig_id, sl, pnl, "LOSS")
+                    exit_price = open_exit if stop_gap else sl
+                    pnl_price = (
+                        exit_price - effective_entry if direction == "BUY"
+                        else effective_entry - exit_price
+                    )
+                    pnl = _to_pips(symbol, pnl_price)
+                    close_signal(sig_id, exit_price, pnl, "LOSS")
                     logger.info("LOSS at expiry boundary: %s (%+.1f pips)", symbol, pnl)
                     return
 
@@ -153,10 +164,11 @@ def _check_signal(sig: dict, candles: list):
             return
 
         if direction == "BUY":
-            # اول SL (محافظه‌کارانه)
-            if low - half_spread <= sl:
-                pnl = _to_pips(symbol, sl - effective_entry)
-                close_signal(sig_id, sl, pnl, "LOSS")
+            # اول SL (محافظه‌کارانه); opening gaps fill at the worse executable open.
+            if stop_gap or low - half_spread <= sl:
+                exit_price = open_exit if stop_gap else sl
+                pnl = _to_pips(symbol, exit_price - effective_entry)
+                close_signal(sig_id, exit_price, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
             if high - half_spread >= tp:
@@ -166,10 +178,11 @@ def _check_signal(sig: dict, candles: list):
                 return
 
         elif direction == "SELL":
-            # اول SL
-            if high + half_spread >= sl:
-                pnl = _to_pips(symbol, effective_entry - sl)
-                close_signal(sig_id, sl, pnl, "LOSS")
+            # اول SL; opening gaps fill at the worse executable open.
+            if stop_gap or high + half_spread >= sl:
+                exit_price = open_exit if stop_gap else sl
+                pnl = _to_pips(symbol, effective_entry - exit_price)
+                close_signal(sig_id, exit_price, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
             if low + half_spread <= tp:
