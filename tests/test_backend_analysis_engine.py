@@ -269,3 +269,39 @@ def test_full_analysis_cannot_override_canonical_score_or_confluence_gate(monkey
     assert result["direction"] is None
     assert result["suggested_sl"] is None
     assert result["suggested_tp"] is None
+
+
+
+def test_backend_topdown_revalidates_freshness_before_serving_cache(monkeypatch):
+    from backend import data_fetcher
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
+    frames = {
+        "1wk": _candles(130, 10080, base_time),
+        "1d": _candles(210, 1440, base_time),
+        "4h": _candles(210, 240, base_time),
+        "1h": _candles(310, 60, base_time),
+        "15m": _candles(410, 15, base_time),
+    }
+    data_fetcher._TOPDOWN_CACHE.clear()
+    loads = []
+    monkeypatch.setattr(
+        data_fetcher, "load_yfinance_topdown",
+        lambda symbol: loads.append(symbol) or frames,
+    )
+    age_calls = {"n": 0}
+
+    def ages(df, tf, now):
+        age_calls["n"] += 1
+        # Initial fetch checks 15m/1h/4h. The next call's cached 15m bar
+        # has crossed the stale threshold; the refreshed provider data is fresh.
+        return 60.0 if age_calls["n"] == 4 else 0.0
+
+    monkeypatch.setattr(data_fetcher, "staleness_minutes", ages)
+
+    first = data_fetcher.fetch_topdown("EURUSD=X")
+    second = data_fetcher.fetch_topdown("EURUSD=X")
+
+    assert first is not second
+    assert loads == ["EURUSD=X", "EURUSD=X"]
+    assert "EURUSD=X" in data_fetcher._TOPDOWN_CACHE
