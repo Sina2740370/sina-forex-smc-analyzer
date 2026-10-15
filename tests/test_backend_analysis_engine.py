@@ -305,3 +305,14 @@ def test_backend_topdown_revalidates_freshness_before_serving_cache(monkeypatch)
     assert first is not second
     assert loads == ["EURUSD=X", "EURUSD=X"]
     assert "EURUSD=X" in data_fetcher._TOPDOWN_CACHE
+
+
+
+def test_explicit_gold_futures_proxy_spread_matches_engine_configuration():
+    from backend.config import PIP_SIZE, SPREAD
+    from engine.core.config import spread_price
+
+    backend_spread_price = PIP_SIZE["GC=F"] * SPREAD["GC=F"]
+    engine_spread_price = spread_price("XAUUSD")
+
+    assert backend_spread_price == pytest.approx(engine_spread_price)
