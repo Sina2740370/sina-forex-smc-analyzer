@@ -832,20 +832,8 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     # Live decisions use the same deterministic strategy as paper/backtest.
     tech = analyze_canonical_topdown(data_dict)
 
-    if tech.get("blocked"):
-        return {
-            "score": 0.0,
-            "direction": None,
-            "current_price": tech.get("price"),
-            "suggested_sl": None,
-            "suggested_tp": None,
-            "htf_trend": tech.get("trend", "RANGING"),
-            "zone": tech.get("zone", "-"),
-            "atr": tech.get("atr", 0),
-            "reasons": tech.get("reasons", []),
-            "summary": tech.get("reasons", ["در انتظار"])[0] if tech.get("reasons") else "در انتظار",
-        }
-
+    # Continue collecting context even when SMC blocks a trade. The hard
+    # strategy gate below controls execution eligibility, not diagnostic output.
     fund = await calculate_fundamental_score(symbol)
     news_score = news_sentiment
     mem = calculate_memory_score(symbol)
@@ -862,10 +850,11 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
 
     direction = None
-    if final_score >= MIN_SIGNAL_SCORE:
-        direction = "BUY"
-    elif final_score <= -MIN_SIGNAL_SCORE:
-        direction = "SELL"
+    if not tech.get("blocked"):
+        if final_score >= MIN_SIGNAL_SCORE:
+            direction = "BUY"
+        elif final_score <= -MIN_SIGNAL_SCORE:
+            direction = "SELL"
 
     # هم‌جهتی اجباری
     if tech["score"] > 0 and direction == "SELL":
@@ -901,6 +890,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         "news_score": news_score,
         "memory_score": mem["score"],
         "direction": direction,
+        "strategy_blocked": bool(tech.get("blocked")),
         "current_price": tech["price"],
         "suggested_sl": tech["sl"],
         "suggested_tp": tech["tp"],
@@ -908,5 +898,10 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         "zone": tech["zone"],
         "atr": tech["atr"],
         "reasons": all_reasons,
-        "summary": f"امتیاز کل: {final_score:+.2f}" if direction else "در انتظار",
+        "summary": (
+            f"موتور SMC معامله را رد کرد: {tech['reasons'][-1]}"
+            if tech.get("blocked") and tech.get("reasons")
+            else f"امتیاز کل: {final_score:+.2f}" if direction
+            else "در انتظار"
+        ),
     }
