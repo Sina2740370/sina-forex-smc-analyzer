@@ -338,3 +338,35 @@ def test_random_baseline_models_gap_through_stop_like_runner():
     )
 
     assert result_r == pytest.approx(-5.0)
+
+
+
+def test_backtest_includes_final_candle_and_fills_gap_through_stop(monkeypatch):
+    from engine.strategy.smc_topdown import Decision
+
+    times = pd.date_range("2024-01-01", periods=2, freq="15min", tz="UTC")
+    df15 = pd.DataFrame({
+        "time": times,
+        "open": [1.1000, 1.0950],
+        "high": [1.1010, 1.1010],
+        "low": [1.0995, 1.0940],
+        "close": [1.1000, 1.0950],
+        "volume": [1.0, 1.0],
+    })
+    data = {tf: df15.copy() for tf in ("15m", "1h", "4h", "1d", "1wk")}
+    calls = {"n": 0}
+
+    def one_buy_then_no_signal(_view, _cfg, _now):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return Decision(direction="BUY", score=0.9, entry=1.1000, sl=1.0990, tp=1.1020)
+        return Decision()
+
+    trades = run_backtest(
+        "EURUSD", data, EngineConfig(), analyze_fn=one_buy_then_no_signal,
+    )
+
+    assert len(trades) == 1
+    assert trades[0]["status"] == "SL"
+    assert trades[0]["close_time"] == times[-1] + pd.Timedelta(minutes=15)
+    assert trades[0]["r"] < -1.0
