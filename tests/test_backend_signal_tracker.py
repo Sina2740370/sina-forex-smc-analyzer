@@ -333,3 +333,34 @@ def test_tracker_refuses_stale_cached_candles(monkeypatch):
     signal_tracker._check_signal(signal, candles)
 
     assert closed == []
+
+
+
+def test_tracker_skips_non_finite_or_inconsistent_ohlc(monkeypatch):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    candle_time = now.replace(minute=(now.minute // 15) * 15) - timedelta(minutes=15)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda *args: closed.append(args),
+    )
+    signal = {
+        "id": 132, "symbol": "EURUSD=X", "direction": "BUY",
+        "entry": 1.1000, "sl": 1.0900, "tp": 1.1200,
+        "created_at": (candle_time - timedelta(minutes=30)).isoformat(),
+    }
+    candles = [
+        {
+            "time": candle_time.isoformat(), "open": 1.1000,
+            "high": float("nan"), "low": 1.0890, "close": 1.1100, "volume": 1,
+        },
+        {
+            "time": (candle_time - timedelta(minutes=15)).isoformat(),
+            "open": 1.1000, "high": 1.0990, "low": 1.1010,
+            "close": 1.1000, "volume": 1,
+        },
+    ]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert closed == []
