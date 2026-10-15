@@ -249,6 +249,8 @@ def test_full_analysis_uses_canonical_engine_for_live_technical_layer(monkeypatc
     assert result["technical_score"] == pytest.approx(-0.9)
     assert result["suggested_sl"] == pytest.approx(1.12)
     assert result["suggested_tp"] == pytest.approx(1.06)
+    assert result["news_sentiment_available"] is True
+    assert result["news_mode"] == "sentiment+event_filter"
 
 
 
@@ -283,6 +285,8 @@ def test_full_analysis_cannot_override_canonical_score_or_confluence_gate(monkey
     assert result["direction"] is None
     assert result["suggested_sl"] == pytest.approx(1.12)
     assert result["suggested_tp"] == pytest.approx(1.16)
+    assert result["news_sentiment_available"] is False
+    assert result["news_mode"] == "event_filter_only"
 
 
 
