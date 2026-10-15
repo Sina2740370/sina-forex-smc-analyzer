@@ -123,7 +123,10 @@ def test_stats_helpers():
     s = summarize([{"r": 2, "close_time": pd.Timestamp(i, unit="D"), "status": "TP",
                     "symbol": "X"} for i in range(5)])
     assert s["profit_factor"] == 99.0 and s["max_drawdown_r"] == 0
-    assert evaluate_gate(s)["ready"] is False                          # n<100
+    gate = evaluate_gate(s)
+    assert gate["ready"] is False                                      # n<100
+    assert "commission" in gate["execution_model_warning"].lower()
+    assert "not live-trading approval" in gate["execution_model_warning"].lower()
 
 
 def test_report_tools_run():
