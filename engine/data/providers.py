@@ -101,6 +101,16 @@ def resample_ohlc(df15: pd.DataFrame, tf: str) -> pd.DataFrame:
     return out.reset_index().rename(columns={"index": "time"})[COLS]
 
 
+def largest_bar_gap(df: pd.DataFrame) -> pd.Timedelta:
+    """Largest elapsed time between source bars; zero when fewer than two valid times exist."""
+    if df.empty or "time" not in df.columns:
+        return pd.Timedelta(0)
+    times = pd.to_datetime(df["time"], utc=True, errors="coerce").dropna().sort_values()
+    if len(times) < 2:
+        return pd.Timedelta(0)
+    return times.diff().max()
+
+
 def build_topdown(df15: pd.DataFrame) -> dict:
     return {tf: resample_ohlc(df15, tf) for tf in TF_MINUTES}
 
