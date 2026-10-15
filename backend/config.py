@@ -74,10 +74,9 @@ MAX_DRAWDOWN = float(os.getenv("MAX_DRAWDOWN", 0.15))
 # ============================================================
 #  آستانه سیگنال (تعدیل‌شده)
 # ============================================================
-# Canonical SMC defaults: keep the live adapter aligned with EngineConfig.
-MIN_SIGNAL_SCORE = 0.60
+MIN_SIGNAL_SCORE = 0.40
 RISK_REWARD = 2.0
-SL_ATR_MULTIPLIER = 0.5
+SL_ATR_MULTIPLIER = 1.5
 SL_OB_BUFFER = 0.3
 
 # ============================================================
