@@ -190,26 +190,32 @@ def db_status():
 
 
 @app.get("/api/health")
-def health():
+def health(request: Request):
     stats = get_scan_stats()
     db_check = check_db_connection()
     feed_check = data_feed_health()
 
     overall_ok = db_check["healthy"] and feed_check["healthy"]
+    status = "ok" if overall_ok else "degraded"
 
-    payload = {
-        "status": "ok" if overall_ok else "degraded",
-        "app": "Sina Quant",
-        "version": VERSION,
-        "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
-        "database": db_check,
-        "data_feed": feed_check,
-        "scans": stats.get("total_scans", 0),
-        "last_scan": stats.get("last_scan_time"),
-        "timeframes": stats.get("timeframes", []),
-        "signals_today": stats.get("signals_today", 0),
-        "errors": stats.get("errors", 0),
-    }
+    # برای غیرصاحب (مثلاً UptimeRobot) فقط وضعیت کلی؛ هیچ آمار/اطلاعات سیگنال نشان داده نمی‌شود
+    if not _is_owner(request.headers.get("authorization", ""),
+                     request.headers.get("x-admin-key", "")):
+        payload = {"status": status}
+    else:
+        payload = {
+            "status": status,
+            "app": "Sina Quant",
+            "version": VERSION,
+            "db_type": "PostgreSQL" if database.USE_POSTGRES else "SQLite",
+            "database": db_check,
+            "data_feed": feed_check,
+            "scans": stats.get("total_scans", 0),
+            "last_scan": stats.get("last_scan_time"),
+            "timeframes": stats.get("timeframes", []),
+            "signals_today": stats.get("signals_today", 0),
+            "errors": stats.get("errors", 0),
+        }
 
     if not overall_ok:
         # کد ۵۰۳ تا UptimeRobot/مانیتورینگ واقعاً قطعی رو تشخیص بده،
