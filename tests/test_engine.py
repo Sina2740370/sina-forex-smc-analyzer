@@ -392,3 +392,23 @@ def test_provider_tidy_discards_malformed_ohlc_and_keeps_valid_rows():
     assert len(clean) == 1
     assert clean.iloc[0]["time"] == base
     assert clean.iloc[0]["high"] == pytest.approx(1.1010)
+
+
+
+def test_statistical_pass_never_claims_live_readiness_without_execution_costs():
+    trades = [
+        {
+            "r": 1.0 if i % 4 else -0.5,
+            "close_time": pd.Timestamp("2025-01-01", tz="UTC") + pd.Timedelta(days=i),
+            "status": "TP" if i % 4 else "SL",
+            "symbol": "EURUSD",
+        }
+        for i in range(120)
+    ]
+    stats = summarize(trades)
+    gate = evaluate_gate(stats)
+
+    assert gate["statistical_pass"] is gate["ready"]
+    assert gate["live_ready"] is False
+    assert "broker commission is not modeled" in gate["live_readiness_blockers"]
+    assert "general slippage is not modeled" in gate["live_readiness_blockers"]
