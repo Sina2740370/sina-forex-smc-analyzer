@@ -414,3 +414,48 @@ def test_statistical_pass_never_claims_live_readiness_without_execution_costs():
     assert gate["live_ready"] is False
     assert "broker commission is not modeled" in gate["live_readiness_blockers"]
     assert "general slippage is not modeled" in gate["live_readiness_blockers"]
+
+
+
+def test_walk_forward_uses_non_overlapping_naive_utc_fold_bounds(monkeypatch):
+    import engine.backtest.report as report
+
+    times = pd.date_range("2020-01-01", periods=520, freq="D", tz="UTC")
+    data = {"15m": pd.DataFrame({"time": times})}
+    calls = []
+
+    def fake_run_backtest(symbol, supplied_data, cfg, start=None, end=None, analyze_fn=None):
+        start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
+        assert start_ts.tzinfo is None and end_ts.tzinfo is None
+        calls.append((cfg.min_score, start_ts, end_ts))
+        is_train = (end_ts - start_ts) > pd.Timedelta(days=100)
+        n = 10 if is_train else 2
+        value = float(cfg.min_score) if is_train else 0.25
+        return [
+            {
+                "r": value,
+                "open_time": start_ts + pd.Timedelta(hours=i),
+                "close_time": start_ts + pd.Timedelta(hours=i + 1),
+                "status": "TP" if value > 0 else "SL",
+                "symbol": symbol,
+            }
+            for i in range(n)
+        ]
+
+    monkeypatch.setattr(report, "run_backtest", fake_run_backtest)
+    result = report.walk_forward(
+        "EURUSD", data, EngineConfig(), grid=(0.5, 0.7),
+        train_days=180, test_days=60, warmup_days=150, min_train_trades=10,
+    )
+
+    windows = result["windows"]
+    assert len(windows) == 3
+    assert all(w["chosen_min_score"] == 0.7 for w in windows)
+    train_calls = [c for c in calls if c[2] - c[1] > pd.Timedelta(days=100)]
+    test_calls = [c for c in calls if c[2] - c[1] <= pd.Timedelta(days=100)]
+    assert len(train_calls) == 6 and len(test_calls) == 3
+    for (_, train_start, train_end), (_, test_start, test_end) in zip(
+        train_calls[::2], test_calls
+    ):
+        assert train_start < train_end < test_start < test_end
+    assert all(test_calls[i][2] < test_calls[i + 1][1] for i in range(len(test_calls) - 1))
