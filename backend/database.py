@@ -289,16 +289,17 @@ def get_all_signals(limit: int = 200):
 
 
 def close_signal(signal_id, exit_price, pnl_pips, status):
-    """بستن سیگنال"""
+    """Close an open signal once; concurrent tracker runs cannot overwrite a prior result."""
     with get_conn() as conn:
-        _execute(conn, """
+        cur = _execute(conn, """
             UPDATE signals
             SET status = ?, exit_price = ?, pnl_pips = ?, closed_at = ?
-            WHERE id = ?
+            WHERE id = ? AND status = 'OPEN'
         """, (
             status, exit_price, pnl_pips,
             datetime.utcnow().isoformat(), signal_id
         ))
+        return getattr(cur, "rowcount", 0) == 1
 
 
 def get_stats_summary():
