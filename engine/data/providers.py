@@ -49,6 +49,9 @@ def _tidy(df: pd.DataFrame) -> pd.DataFrame:
     df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
     for col in ("open", "high", "low", "close", "volume"):
         df[col] = pd.to_numeric(df[col], errors="coerce")
+    # Volume is auxiliary for the current strategy; sanitize missing/non-finite
+    # values to zero so they cannot poison resampled aggregate volume.
+    df["volume"] = df["volume"].where(np.isfinite(df["volume"]), 0.0).fillna(0.0)
 
     finite = np.isfinite(df[["open", "high", "low", "close"]].to_numpy(dtype=float)).all(axis=1)
     valid = (
