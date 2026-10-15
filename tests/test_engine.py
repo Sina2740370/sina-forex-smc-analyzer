@@ -502,3 +502,22 @@ def test_cli_rejects_csv_with_multiweek_gap(monkeypatch):
 
     with pytest.raises(ValueError, match="largest M15 gap"):
         cli._load(args, "GBPUSD")
+
+
+
+def test_walk_forward_reports_insufficient_history_explicitly():
+    from engine.backtest.report import walk_forward
+
+    data = {
+        "15m": pd.DataFrame({
+            "time": pd.date_range("2025-01-01", periods=100, freq="15min", tz="UTC")
+        })
+    }
+
+    result = walk_forward("EURUSD", data, EngineConfig())
+
+    assert result["status"] == "insufficient_history"
+    assert result["available_days"] < result["required_days"]
+    assert result["required_days"] == 390
+    assert result["windows"] == []
+    assert result["out_of_sample"] == {"n": 0}
