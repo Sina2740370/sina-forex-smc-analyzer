@@ -52,3 +52,34 @@ def test_stats_include_marked_to_market_expiry_pnl_and_executable_risk(monkeypat
     assert stats["total_r"] == pytest.approx(-0.19)
     assert stats["max_drawdown_r"] == pytest.approx(1.15)
     assert stats["profit_factor"] == pytest.approx(0.83)
+
+
+
+def test_close_signal_is_atomic_and_does_not_overwrite_closed_result(monkeypatch):
+    captured = {}
+    state = {"rowcount": 1}
+
+    class _UpdateCursor:
+        @property
+        def rowcount(self):
+            return state["rowcount"]
+
+    @contextmanager
+    def fake_conn():
+        yield object()
+
+    def fake_execute(_conn, query, params):
+        captured["query"] = query
+        captured["params"] = params
+        return _UpdateCursor()
+
+    monkeypatch.setattr(database, "get_conn", fake_conn)
+    monkeypatch.setattr(database, "_execute", fake_execute)
+
+    assert database.close_signal(17, 1.1010, 10.0, "WIN") is True
+    assert "WHERE id = ? AND status = 'OPEN'" in captured["query"]
+    assert captured["params"][-1] == 17
+
+    # A second concurrent worker finds no OPEN row and cannot overwrite the first close.
+    state["rowcount"] = 0
+    assert database.close_signal(17, 1.0900, -100.0, "LOSS") is False
