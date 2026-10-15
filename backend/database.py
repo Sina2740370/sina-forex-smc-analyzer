@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
-from .config import DB_PATH, PIP_SIZE, LOT_RISK_PCT
+from .config import DB_PATH, PIP_SIZE, SPREAD, LOT_RISK_PCT
 
 logger = logging.getLogger(__name__)
 
@@ -320,21 +320,31 @@ def get_stats_summary():
 
     for sym, status, entry, sl, pnl in rows:
         pnl = pnl or 0.0
-        pip = PIP_SIZE.get(sym, 0.0001)
-        risk_pips = abs(entry - sl) / pip if (sl is not None and pip) else 0.0
+        pip = PIP_SIZE.get(sym)
+        spread_pips = SPREAD.get(sym)
+        # entry is the mid-price signal; tracker PnL includes half-spread on entry
+        # and exit, so risk must include the executable entry half-spread too.
+        risk_pips = (
+            abs(entry - sl) / pip + spread_pips / 2
+            if sl is not None and pip and spread_pips is not None
+            else 0.0
+        )
         r = pnl / risk_pips if risk_pips > 0 else 0.0
 
         if status == "WIN":
             wins += 1
-            gross_r_win += max(r, 0.0)
-            total_pips += pnl
         elif status == "LOSS":
             losses += 1
-            gross_r_loss += abs(min(r, 0.0))
-            total_pips += pnl
         else:
             expired += 1
-            r = 0.0
+
+        # Expired trades are marked-to-market by signal_tracker; their realized
+        # PnL must affect expectancy, profit factor, total pips, and drawdown.
+        total_pips += pnl
+        if r > 0:
+            gross_r_win += r
+        elif r < 0:
+            gross_r_loss += abs(r)
 
         cum += r
         peak = max(peak, cum)
