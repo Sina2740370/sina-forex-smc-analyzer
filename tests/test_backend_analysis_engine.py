@@ -364,3 +364,16 @@ def test_canonical_live_adapter_excludes_forming_candles(monkeypatch):
 
     assert observed["15m_len"] == 129
     assert observed["last_15m_time"] < pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=15)
+
+
+
+def test_live_adapter_defaults_match_canonical_engine_config():
+    from backend import config as backend_config
+    from engine.core.config import EngineConfig
+
+    canonical = EngineConfig()
+    assert backend_config.MIN_SIGNAL_SCORE == canonical.min_score
+    assert backend_config.RISK_REWARD == canonical.risk_reward
+    assert backend_config.SL_ATR_MULTIPLIER == canonical.sl_atr1h_mult
+    assert backend_config.SL_OB_BUFFER == canonical.sl_ob_buffer
+    assert backend_config.MIN_RISK_ATR_RATIO == canonical.min_risk_atr1h
