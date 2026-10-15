@@ -344,17 +344,17 @@ def test_random_baseline_models_gap_through_stop_like_runner():
 
 
 
-def test_backtest_includes_final_candle_and_fills_gap_through_stop(monkeypatch):
+def test_backtest_fills_next_open_and_checks_entry_candle_exits(monkeypatch):
     from engine.strategy.smc_topdown import Decision
 
-    times = pd.date_range("2024-01-01", periods=2, freq="15min", tz="UTC")
+    times = pd.date_range("2024-01-01", periods=3, freq="15min", tz="UTC")
     df15 = pd.DataFrame({
         "time": times,
-        "open": [1.1000, 1.0950],
-        "high": [1.1010, 1.1010],
-        "low": [1.0995, 1.0940],
-        "close": [1.1000, 1.0950],
-        "volume": [1.0, 1.0],
+        "open": [1.1000, 1.1002, 1.0990],
+        "high": [1.1010, 1.1010, 1.1000],
+        "low": [1.0995, 1.0980, 1.0985],
+        "close": [1.1000, 1.0990, 1.0990],
+        "volume": [1.0, 1.0, 1.0],
     })
     data = {tf: df15.copy() for tf in ("15m", "1h", "4h", "1d", "1wk")}
     calls = {"n": 0}
@@ -370,9 +370,13 @@ def test_backtest_includes_final_candle_and_fills_gap_through_stop(monkeypatch):
     )
 
     assert len(trades) == 1
-    assert trades[0]["status"] == "SL"
-    assert trades[0]["close_time"] == times[-1] + pd.Timedelta(minutes=15)
-    assert trades[0]["r"] < -1.0
+    trade = trades[0]
+    half = spread_price("EURUSD") / 2.0
+    assert trade["open_time"] == times[1]
+    assert trade["entry"] == pytest.approx(df15.iloc[1]["open"] + half)
+    assert trade["status"] == "SL"
+    assert trade["close_time"] == times[1] + pd.Timedelta(minutes=15)
+    assert trade["r"] <= -1.0
 
 
 
