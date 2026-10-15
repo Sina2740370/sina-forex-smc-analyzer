@@ -5,6 +5,7 @@
 + فیلتر همبستگی ارزی (جلوگیری از باخت هم‌زمان روی نمادهای هم‌ارز)
 """
 import logging
+import math
 from datetime import datetime, timezone, timedelta
 
 from .config import PIP_SIZE, SPREAD
@@ -119,9 +120,14 @@ def _check_signal(sig: dict, candles: list):
             candle_time = _parse_dt(candle["time"])
             if candle_time + timedelta(minutes=15) > now_utc:
                 continue
+            o, h, l, close = (float(candle[k]) for k in ("open", "high", "low", "close"))
+            if not all(math.isfinite(v) for v in (o, h, l, close)):
+                raise ValueError("non-finite OHLC")
+            if h < max(o, close) or l > min(o, close) or h < l:
+                raise ValueError("inconsistent OHLC range")
             valid_candles.append((candle_time, candle))
         except Exception as e:
-            logger.warning("نادیده گرفتن زمان کندل نامعتبر برای %s: %s", symbol, e)
+            logger.warning("نادیده گرفتن کندل نامعتبر برای %s: %s", symbol, e)
 
     if not valid_candles:
         logger.warning("کندل بسته‌شده‌ای برای رصد %s موجود نیست", symbol)
