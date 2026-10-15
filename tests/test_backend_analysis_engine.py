@@ -249,26 +249,35 @@ def test_full_analysis_uses_canonical_engine_for_live_technical_layer(monkeypatc
 
 def test_full_analysis_cannot_override_canonical_score_or_confluence_gate(monkeypatch):
     import asyncio
-    from backend import fundamental_analyzer
+    from backend import fundamental_analyzer, market_memory
 
     tech = {
         "score": 0.35, "direction": None, "price": 1.1,
-        "sl": None, "tp": None, "trend": "BULLISH",
+        "sl": 1.12, "tp": 1.16, "trend": "BULLISH",
         "wk_trend": "BULLISH", "d_trend": "BULLISH",
         "zone": "DISCOUNT", "atr": 0.001,
         "reasons": ["محدودیت موتور: score/gate"], "blocked": True,
     }
     monkeypatch.setattr(ae, "analyze_canonical_topdown", lambda _: tech)
+
+    async def strong_fundamentals(_symbol):
+        return {"score": 1.0, "reasons": ["strong fundamentals"]}
+
+    monkeypatch.setattr(fundamental_analyzer, "calculate_fundamental_score", strong_fundamentals)
     monkeypatch.setattr(
-        fundamental_analyzer, "calculate_fundamental_score",
-        lambda _symbol: pytest.fail("fundamentals must not override a canonical strategy block"),
+        market_memory, "calculate_memory_score",
+        lambda _symbol: {"score": 1.0, "reasons": ["positive memory"]},
     )
 
     result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=True))
 
+    assert result["score"] >= ae.MIN_SIGNAL_SCORE
+    assert result["fundamental_score"] == pytest.approx(1.0)
+    assert result["memory_score"] == pytest.approx(1.0)
+    assert result["strategy_blocked"] is True
     assert result["direction"] is None
-    assert result["suggested_sl"] is None
-    assert result["suggested_tp"] is None
+    assert result["suggested_sl"] == pytest.approx(1.12)
+    assert result["suggested_tp"] == pytest.approx(1.16)
 
 
 
