@@ -825,7 +825,7 @@ def analyze_canonical_topdown(data_dict):
 # ============================================================
 
 async def full_analysis(data_dict, symbol, news_safe=True,
-                         news_reason="", news_sentiment=0.0):
+                         news_reason="", news_sentiment=None):
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
@@ -835,7 +835,11 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     # Continue collecting context even when SMC blocks a trade. The hard
     # strategy gate below controls execution eligibility, not diagnostic output.
     fund = await calculate_fundamental_score(symbol)
-    news_score = news_sentiment
+    news_sentiment_available = (
+        news_sentiment is not None
+        and np.isfinite(float(news_sentiment))
+    )
+    news_score = float(news_sentiment) if news_sentiment_available else 0.0
     mem = calculate_memory_score(symbol)
 
     final_score = (
@@ -888,6 +892,8 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         "technical_score": tech["score"],
         "fundamental_score": fund["score"],
         "news_score": news_score,
+        "news_sentiment_available": news_sentiment_available,
+        "news_mode": "sentiment+event_filter" if news_sentiment_available else "event_filter_only",
         "memory_score": mem["score"],
         "direction": direction,
         "strategy_blocked": bool(tech.get("blocked")),
