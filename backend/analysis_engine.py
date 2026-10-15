@@ -748,6 +748,7 @@ def analyze_canonical_topdown(data_dict):
     """Adapt the canonical backtest strategy to the legacy backend response schema."""
     from engine.core import smc
     from engine.core.config import EngineConfig
+    from engine.data.providers import TopDownView
     from engine.strategy.smc_topdown import analyze as engine_analyze
 
     frames = {}
@@ -780,6 +781,9 @@ def analyze_canonical_topdown(data_dict):
         min_risk_atr1h=MIN_RISK_ATR_RATIO,
     )
     now = pd.Timestamp.now(tz="UTC")
+    # Enforce the same closed-candle view as backtests even when this adapter
+    # is called outside fetch_topdown (e.g. tests, API, or future integrations).
+    frames = TopDownView(frames).at(now)
     decision = engine_analyze(frames, cfg, now)
     bias = str(decision.bias or "").upper()
     if decision.direction == "BUY":
