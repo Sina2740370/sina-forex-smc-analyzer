@@ -244,3 +244,28 @@ def test_full_analysis_uses_canonical_engine_for_live_technical_layer(monkeypatc
     assert result["technical_score"] == pytest.approx(-0.9)
     assert result["suggested_sl"] == pytest.approx(1.12)
     assert result["suggested_tp"] == pytest.approx(1.06)
+
+
+
+def test_full_analysis_cannot_override_canonical_score_or_confluence_gate(monkeypatch):
+    import asyncio
+    from backend import fundamental_analyzer
+
+    tech = {
+        "score": 0.35, "direction": None, "price": 1.1,
+        "sl": None, "tp": None, "trend": "BULLISH",
+        "wk_trend": "BULLISH", "d_trend": "BULLISH",
+        "zone": "DISCOUNT", "atr": 0.001,
+        "reasons": ["محدودیت موتور: score/gate"], "blocked": True,
+    }
+    monkeypatch.setattr(ae, "analyze_canonical_topdown", lambda _: tech)
+    monkeypatch.setattr(
+        fundamental_analyzer, "calculate_fundamental_score",
+        lambda _symbol: pytest.fail("fundamentals must not override a canonical strategy block"),
+    )
+
+    result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=True))
+
+    assert result["direction"] is None
+    assert result["suggested_sl"] is None
+    assert result["suggested_tp"] is None
