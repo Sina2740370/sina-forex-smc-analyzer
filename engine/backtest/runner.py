@@ -21,8 +21,22 @@ from ..data.providers import TopDownView
 from ..strategy.smc_topdown import Decision, analyze
 
 
-def check_exit(side: int, sl: float, tp: float, high: float, low: float, half: float):
-    """('SL'|'TP'|None, قیمت خروج) — SL اولویت دارد."""
+def check_exit(side: int, sl: float, tp: float, high: float, low: float,
+               half: float, open_price: Optional[float] = None):
+    """Return conservative executable fill; opening gaps through SL fill at the worse open."""
+    if open_price is not None:
+        open_exec = open_price - side * half
+        if side > 0:
+            if open_exec <= sl:
+                return "SL", open_exec
+            if open_exec >= tp:
+                return "TP", tp  # conservative limit fill; do not assume price improvement
+        else:
+            if open_exec >= sl:
+                return "SL", open_exec
+            if open_exec <= tp:
+                return "TP", tp
+
     if side > 0:   # خروج روی bid = mid - half
         if low - half <= sl:
             return "SL", sl
@@ -71,7 +85,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     df15 = data["15m"]
     half = spread_price(symbol) / 2.0
     times = df15["time"]
-    hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
+    op, hi, lo, cl = (df15[k].to_numpy() for k in ("open", "high", "low", "close"))
 
     # utc=True safely handles both naive bounds and ISO timestamps that already carry a timezone.
     t0 = pd.to_datetime(start, utc=True) if start else times.iloc[0]
@@ -92,7 +106,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         last_i = i
 
         if pos is not None and i > pos.open_idx:
-            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
+            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half, op[i])
             if status is None and now - pos.open_time >= hold:
                 status, px = "EXPIRED", cl[i] - pos.side * half
             if status:
