@@ -19,25 +19,37 @@ from .runner import run_backtest, summarize
 
 
 # ---------------------------------------------------------------- ۱) رندوم
-def _simulate(side, mid, risk_dist, rr, hi, lo, cl, half, n):
-    """همان قواعد runner: SL اولویت دارد، EXPIRED با قیمت بازار در کندل n‌ام."""
-    h, l = hi[:n], lo[:n]
+def _simulate(side, mid, risk_dist, rr, hi, lo, cl, half, n, op=None):
+    """Conservative random trade using the same spread, gap, SL-first and expiry rules as runner."""
     entry = mid + side * half
     sl = entry - side * risk_dist
     tp = entry + side * risk_dist * rr
-    if side > 0:
-        sl_hit, tp_hit = l - half <= sl, h - half >= tp
-    else:
-        sl_hit, tp_hit = h + half >= sl, l + half <= tp
-    fs = int(sl_hit.argmax()) if sl_hit.any() else n + 1
-    ft = int(tp_hit.argmax()) if tp_hit.any() else n + 1
     risk = (entry - sl) * side
-    if fs <= ft and fs < n:
-        exit_px = sl
-    elif ft < n:
-        exit_px = tp
-    else:
-        exit_px = cl[n - 1] - side * half
+
+    for i in range(n):
+        if op is not None:
+            open_exec = float(op[i]) - side * half
+            if side > 0:
+                if open_exec <= sl:
+                    return (open_exec - entry) * side / risk
+                if open_exec >= tp:
+                    return (tp - entry) * side / risk
+            else:
+                if open_exec >= sl:
+                    return (open_exec - entry) * side / risk
+                if open_exec <= tp:
+                    return (tp - entry) * side / risk
+
+        if side > 0:
+            sl_hit, tp_hit = lo[i] - half <= sl, hi[i] - half >= tp
+        else:
+            sl_hit, tp_hit = hi[i] + half >= sl, lo[i] + half <= tp
+        if sl_hit:
+            return (sl - entry) * side / risk
+        if tp_hit:
+            return (tp - entry) * side / risk
+
+    exit_px = cl[n - 1] - side * half
     return (exit_px - entry) * side / risk
 
 
@@ -48,7 +60,7 @@ def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineCo
         return {"n": len(ts), "note": "تعداد معامله برای مقایسه کافی نیست"}
     half = spread_price(symbol) / 2.0
     times = df15["time"]
-    hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
+    op, hi, lo, cl = (df15[k].to_numpy() for k in ("open", "high", "low", "close"))
     nb = cfg.max_hold_hours * 4
     if len(df15) <= nb + 2:
         return {"n": len(ts), "note": "داده برای شبیه‌سازی مبنای تصادفی کافی نیست"}
@@ -75,7 +87,7 @@ def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineCo
             side = 1 if rng.random() < 0.5 else -1
             rs.append(_simulate(side, cl[k], rd, cfg.risk_reward,
                                 hi[k + 1:k + 1 + nb], lo[k + 1:k + 1 + nb], cl[k + 1:k + 1 + nb],
-                                half, nb))
+                                half, nb, op[k + 1:k + 1 + nb]))
         sims[s] = np.mean(rs)
     return {
         "n": len(ts), "real_expectancy_r": round(real, 4),
