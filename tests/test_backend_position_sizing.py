@@ -71,3 +71,29 @@ def test_gold_futures_proxy_notification_blocks_spot_mt5_instructions(monkeypatc
     assert "برای XAUUSD اسپات در MT5 استفاده نکن" in sent[0]
     assert "ثبت در MT5" not in sent[0]
     assert "نماد: <code>XAUUSD" not in sent[0]
+
+
+
+def test_manual_mt5_recipe_warns_about_broker_specific_sizing(monkeypatch):
+    import asyncio
+    from backend import notifier
+
+    sent = []
+    async def fake_send(message):
+        sent.append(message)
+
+    monkeypatch.setattr(notifier, "send_telegram", fake_send)
+    asyncio.run(notifier.notify_new_signal(
+        symbol="EURUSD=X",
+        name="EUR/USD",
+        direction="BUY",
+        entry=1.1000,
+        sl=1.0990,
+        tp=1.1020,
+        score=0.8,
+        reasons=["test"],
+    ))
+
+    assert len(sent) == 1
+    assert "حجم تخمینی است" in sent[0]
+    assert "مشخصات قرارداد نماد" in sent[0]
