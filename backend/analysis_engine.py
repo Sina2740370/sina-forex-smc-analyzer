@@ -773,13 +773,9 @@ def analyze_canonical_topdown(data_dict):
         df = df.sort_values("time").drop_duplicates("time").reset_index(drop=True)
         frames[tf] = df
 
-    cfg = EngineConfig(
-        min_score=MIN_SIGNAL_SCORE,
-        risk_reward=RISK_REWARD,
-        sl_atr1h_mult=SL_ATR_MULTIPLIER,
-        sl_ob_buffer=SL_OB_BUFFER,
-        min_risk_atr1h=MIN_RISK_ATR_RATIO,
-    )
+    # The engine's immutable defaults are the single source of truth shared
+    # by CLI backtest, CLI scan, and live technical analysis.
+    cfg = EngineConfig()
     now = pd.Timestamp.now(tz="UTC")
     # Enforce the same closed-candle view as backtests even when this adapter
     # is called outside fetch_topdown (e.g. tests, API, or future integrations).
