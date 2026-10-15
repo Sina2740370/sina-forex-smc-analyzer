@@ -112,7 +112,8 @@ def test_backtest_runs_and_invariants():
         side = 1 if t["side"] == "BUY" else -1
         assert (t["entry"] - t["sl"]) * side > 0
         if t["status"] == "SL":
-            assert abs(t["r"] + 1) < 1e-3
+            # Normal stop fills lose about 1R; opening gaps may make the loss worse.
+            assert t["r"] <= -1 + 1e-3
     assert s["max_drawdown_r"] >= 0
 
 
