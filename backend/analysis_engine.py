@@ -835,7 +835,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     # Continue collecting context even when SMC blocks a trade. The hard
     # strategy gate below controls execution eligibility, not diagnostic output.
     fund = await calculate_fundamental_score(symbol)
-    news_sentiment_available = (
+    news_sentiment_available = bool(
         news_sentiment is not None
         and np.isfinite(float(news_sentiment))
     )
