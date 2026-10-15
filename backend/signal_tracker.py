@@ -110,16 +110,33 @@ def _check_signal(sig: dict, candles: list):
     half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
 
-    # Parse defensively before sorting: one malformed provider timestamp must not
-    # abort tracking for this signal or the surrounding scan.
+    # Parse defensively and only consume fully closed 15m candles. Yahoo may
+    # return a forming candle whose high/low can still repaint before close.
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     valid_candles = []
     for candle in candles:
         try:
-            valid_candles.append((_parse_dt(candle["time"]), candle))
+            candle_time = _parse_dt(candle["time"])
+            if candle_time + timedelta(minutes=15) > now_utc:
+                continue
+            valid_candles.append((candle_time, candle))
         except Exception as e:
             logger.warning("نادیده گرفتن زمان کندل نامعتبر برای %s: %s", symbol, e)
 
-    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا با قیمت بازار می‌بندیم.
+    if not valid_candles:
+        logger.warning("کندل بسته‌شده‌ای برای رصد %s موجود نیست", symbol)
+        return
+
+    latest_time = max(candle_time for candle_time, _ in valid_candles)
+    latest_close_time = latest_time + timedelta(minutes=15)
+    age_minutes = (now_utc - latest_close_time).total_seconds() / 60.0
+    if age_minutes > 45:
+        # Do not mark expired signals to market using an old cached quote/bar.
+        logger.warning("رد داده‌ی کهنه برای رصد %s: آخرین کندل بسته‌شده %.1f دقیقه قدیمی است",
+                       symbol, age_minutes)
+        return
+
+    # مرور کندل‌های بسته‌شده به ترتیب زمانی؛ پس از انقضا با قیمت بازار می‌بندیم.
     for candle_time, c in sorted(valid_candles, key=lambda item: item[0]):
         if candle_time <= created_at:
             continue
