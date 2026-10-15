@@ -286,3 +286,50 @@ def test_stop_gap_uses_worse_executable_open(
     assert closed[0][1] == pytest.approx(expected_exit)
     assert closed[0][2] == pytest.approx(-20.8)
     assert closed[0][3] == "LOSS"
+
+
+
+def test_tracker_ignores_forming_candle_until_close(monkeypatch):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    forming_start = now.replace(minute=(now.minute // 15) * 15)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda *args: closed.append(args),
+    )
+    signal = {
+        "id": 130, "symbol": "EURUSD=X", "direction": "BUY",
+        "entry": 1.1000, "sl": 1.0900, "tp": 1.1200,
+        "created_at": (forming_start - timedelta(minutes=30)).isoformat(),
+    }
+    candles = [{
+        "time": forming_start.isoformat(), "open": 1.1000,
+        "high": 1.1250, "low": 1.0990, "close": 1.1230, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert closed == []
+
+
+def test_tracker_refuses_stale_cached_candles(monkeypatch):
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    stale_start = now.replace(minute=(now.minute // 15) * 15) - timedelta(hours=2)
+    closed = []
+    monkeypatch.setattr(
+        signal_tracker, "close_signal",
+        lambda *args: closed.append(args),
+    )
+    signal = {
+        "id": 131, "symbol": "EURUSD=X", "direction": "BUY",
+        "entry": 1.1000, "sl": 1.0900, "tp": 1.1200,
+        "created_at": (stale_start - timedelta(minutes=30)).isoformat(),
+    }
+    candles = [{
+        "time": stale_start.isoformat(), "open": 1.1000,
+        "high": 1.1250, "low": 1.0890, "close": 1.1100, "volume": 1,
+    }]
+
+    signal_tracker._check_signal(signal, candles)
+
+    assert closed == []
