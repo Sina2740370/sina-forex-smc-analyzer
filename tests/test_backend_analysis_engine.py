@@ -325,3 +325,37 @@ def test_explicit_gold_futures_proxy_spread_matches_engine_configuration():
     engine_spread_price = spread_price("XAUUSD")
 
     assert backend_spread_price == pytest.approx(engine_spread_price)
+
+
+
+def test_canonical_live_adapter_excludes_forming_candles(monkeypatch):
+    from engine.strategy import smc_topdown
+    from engine.strategy.smc_topdown import Decision
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
+    frames = {
+        "15m": _candles(130, 15, base_time),
+        "1h": _candles(80, 60, base_time),
+        "4h": _candles(40, 240, base_time),
+        "1d": _candles(40, 1440, base_time),
+        "1wk": _candles(40, 10080, base_time),
+    }
+    # Last 15m bar began five minutes ago and is not closed yet.
+    frames["15m"].loc[frames["15m"].index[-1], "time"] = (
+        pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=5)
+    )
+    observed = {}
+
+    def capture(data, cfg, now):
+        observed["15m_len"] = len(data["15m"])
+        observed["last_15m_time"] = data["15m"]["time"].iloc[-1]
+        return Decision(blocked="insufficient data: test", bias="NEUTRAL")
+
+    monkeypatch.setattr(smc_topdown, "analyze", capture)
+
+    ae.analyze_canonical_topdown({
+        tf: df.to_dict("records") for tf, df in frames.items()
+    })
+
+    assert observed["15m_len"] == 129
+    assert observed["last_15m_time"] < pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=15)
