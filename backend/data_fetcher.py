@@ -218,20 +218,32 @@ _TOPDOWN_LIMITS = {"1wk": 120, "1d": 200, "4h": 200, "1h": 300, "15m": 400}
 
 
 def fetch_topdown(symbol: str) -> dict:
+    now = pd.Timestamp.now(tz="UTC")
+    max_staleness = {"15m": 45, "1h": 180, "4h": 720}
     cached = _TOPDOWN_CACHE.get(symbol)
     if cached and time.time() - cached["ts"] < _TOPDOWN_CACHE_TTL_SECONDS:
-        return cached["data"]
+        cached_is_fresh = True
+        try:
+            for tf, max_age_minutes in max_staleness.items():
+                cached_frame = pd.DataFrame(cached["data"].get(tf, []))
+                age = staleness_minutes(cached_frame, tf, now)
+                if not pd.notna(age) or age < 0 or age > max_age_minutes:
+                    cached_is_fresh = False
+                    break
+        except (KeyError, TypeError, ValueError, IndexError):
+            cached_is_fresh = False
+        if cached_is_fresh:
+            return cached["data"]
+        _TOPDOWN_CACHE.pop(symbol, None)
 
     try:
         frames = load_yfinance_topdown(symbol)
         # Apply the same close-time filter used by backtests. This excludes forming
         # 15m/1h/4h candles and, critically, incomplete daily/weekly NY-session bars.
-        now = pd.Timestamp.now(tz="UTC")
         closed_frames = TopDownView(frames).at(now)
 
         # A closed candle can still be stale (e.g. Friday's last bar on Sunday).
         # Require the last 15m/1h/4h bars to be no older than three bars.
-        max_staleness = {"15m": 45, "1h": 180, "4h": 720}
         for tf, max_age_minutes in max_staleness.items():
             age = staleness_minutes(closed_frames[tf], tf, now)
             if not pd.notna(age) or age < 0 or age > max_age_minutes:
