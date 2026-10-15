@@ -1,5 +1,5 @@
 """
-FastAPI Backend - Sina Quant v3.2.0 (risk calculator + trade journal)
+FastAPI Backend - Sina Quant v3.2.1 (owner-only Telegram Mini App auth)
 """
 import asyncio
 import logging
@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from .config import (
     TEST_DURATION_DAYS, MIN_WIN_RATE,
@@ -35,6 +35,7 @@ from .data_fetcher import fetch_live_prices, data_feed_health
 from . import database
 from .database import check_db_connection
 from . import journal_store
+from .tg_auth import verify_init_data, init_data_from_header
 
 from pydantic import BaseModel, Field
 
@@ -64,7 +65,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-VERSION = "3.2.0"
+VERSION = "3.2.1"
 
 # کلید ادمین: فقط از متغیر محیطی Render خوانده می‌شود (هرگز داخل کد نگذار)
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
@@ -72,12 +73,24 @@ ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
 ENABLE_DOCS = os.getenv("ENABLE_DOCS", "0").strip() == "1"
 
 
-def require_admin(x_admin_key: str = Header(default="")):
-    """احراز هویت ادمین با هدر X-Admin-Key (اگر ADMIN_KEY ست نباشد، مسیر بسته است)"""
-    if not ADMIN_KEY:
-        raise HTTPException(status_code=503, detail="Admin endpoint disabled")
-    if not secrets.compare_digest(x_admin_key.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
+def _is_owner(authorization: str, x_admin_key: str) -> bool:
+    """صاحب = initData معتبر تلگرام با آیدی TELEGRAM_CHAT_ID، یا کلید ادمین درست"""
+    if verify_init_data(init_data_from_header(authorization)):
+        return True
+    if ADMIN_KEY and x_admin_key and secrets.compare_digest(
+            x_admin_key.encode("utf-8"), ADMIN_KEY.encode("utf-8")):
+        return True
+    return False
+
+
+def require_admin(authorization: str = Header(default=""), x_admin_key: str = Header(default="")):
+    """احراز هویت صاحب: مینی‌اپ تلگرام (Authorization: tma ...) یا هدر X-Admin-Key"""
+    if not _is_owner(authorization, x_admin_key):
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+# مسیرهای باز: health برای UptimeRobot، webhook تلگرام با secret خودش چک می‌شود
+_OPEN_API_PATHS = {"/api/health", "/api/telegram/webhook"}
 
 
 @asynccontextmanager
@@ -113,6 +126,18 @@ app = FastAPI(
 
 # فشرده‌سازی پاسخ‌ها (سریع‌تر روی موبایل و اینترنت ضعیف)
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def owner_only(request: Request, call_next):
+    """همه‌ی /api/* فقط برای صاحب (به‌جز مسیرهای باز)"""
+    path = request.url.path
+    if (path.startswith("/api/") and path not in _OPEN_API_PATHS
+            and request.method != "OPTIONS"):
+        if not _is_owner(request.headers.get("authorization", ""),
+                         request.headers.get("x-admin-key", "")):
+            return JSONResponse({"detail": "Forbidden"}, status_code=403)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -431,7 +456,11 @@ def serve_index():
             content={"error": "index.html یافت نشد"},
             status_code=404,
         )
-    response = FileResponse(index)
+    html = index.read_text(encoding="utf-8")
+    tag = '<script src="/static/tg-auth.js"></script>'
+    if tag not in html:
+        html = html.replace("<head>", "<head>" + tag, 1) if "<head>" in html else tag + html
+    response = HTMLResponse(html)
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
