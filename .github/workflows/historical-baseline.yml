@@ -40,3 +40,10 @@ jobs:
               --tz-offset 0 \
               --out "out/baseline-$symbol"
           done
+      - name: Upload per-trade baseline CSVs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-baseline-trades-${{ github.sha }}
+          path: out/baseline-*/*.csv
+          if-no-files-found: warn
