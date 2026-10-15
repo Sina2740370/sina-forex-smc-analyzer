@@ -367,13 +367,29 @@ def test_canonical_live_adapter_excludes_forming_candles(monkeypatch):
 
 
 
-def test_live_adapter_defaults_match_canonical_engine_config():
-    from backend import config as backend_config
+def test_live_adapter_uses_canonical_engine_config(monkeypatch):
     from engine.core.config import EngineConfig
+    from engine.strategy import smc_topdown
+    from engine.strategy.smc_topdown import Decision
+
+    base_time = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1200)
+    data = {
+        "15m": _candles(130, 15, base_time).to_dict("records"),
+        "1h": _candles(80, 60, base_time).to_dict("records"),
+        "4h": _candles(40, 240, base_time).to_dict("records"),
+        "1d": _candles(40, 1440, base_time).to_dict("records"),
+        "1wk": _candles(40, 10080, base_time).to_dict("records"),
+    }
+    observed = {}
+
+    def capture(frames, cfg, now):
+        observed["config_hash"] = cfg.hash()
+        observed["config"] = cfg.to_dict()
+        return Decision(blocked="test block", bias="NEUTRAL")
+
+    monkeypatch.setattr(smc_topdown, "analyze", capture)
+    ae.analyze_canonical_topdown(data)
 
     canonical = EngineConfig()
-    assert backend_config.MIN_SIGNAL_SCORE == canonical.min_score
-    assert backend_config.RISK_REWARD == canonical.risk_reward
-    assert backend_config.SL_ATR_MULTIPLIER == canonical.sl_atr1h_mult
-    assert backend_config.SL_OB_BUFFER == canonical.sl_ob_buffer
-    assert backend_config.MIN_RISK_ATR_RATIO == canonical.min_risk_atr1h
+    assert observed["config_hash"] == canonical.hash()
+    assert observed["config"] == canonical.to_dict()
