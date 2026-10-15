@@ -793,15 +793,10 @@ def analyze_canonical_topdown(data_dict):
     else:
         sign = 0
 
-    # Data/bias failures are hard blocks. Score/gate and risk gates leave the
-    # fundamental/news layers available, but cannot create a trade without SL/TP.
-    blocked_reason = str(decision.blocked or "").upper()
-    fatal = (
-        blocked_reason.startswith("INSUFFICIENT DATA")
-        or blocked_reason == "INVALID ATR"
-        or "CONFLICT" in blocked_reason
-        or "NEUTRAL" in blocked_reason
-    )
+    # Preserve the canonical engine's hard gates in live analysis. If the
+    # strategy blocks for score/confluence, data, bias, ATR, or risk, the
+    # fundamental/news layers must not override that decision.
+    fatal = decision.blocked is not None
     price = float(frames["15m"]["close"].iloc[-1]) if len(frames["15m"]) else None
     zone = smc.premium_discount(frames["4h"], cfg.pd_lookback) if len(frames["4h"]) >= cfg.pd_lookback else "-"
     trend = "BULLISH" if sign > 0 else "BEARISH" if sign < 0 else "RANGING"
@@ -811,7 +806,7 @@ def analyze_canonical_topdown(data_dict):
 
     return {
         "score": round(float(decision.score) * sign, 4),
-        "direction": decision.direction,
+        "direction": None if fatal else decision.direction,
         "price": decision.entry if decision.entry is not None else price,
         "sl": decision.sl,
         "tp": decision.tp,
