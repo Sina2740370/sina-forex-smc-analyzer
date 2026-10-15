@@ -182,6 +182,7 @@ def test_backend_topdown_rejects_stale_market_candles(monkeypatch):
 
 
 def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monkeypatch):
+    from engine.core.config import EngineConfig
     from engine.strategy import smc_topdown
     from engine.strategy.smc_topdown import Decision
 
@@ -193,14 +194,16 @@ def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monke
         "1d": _candles(40, 1440, base_time).to_dict("records"),
         "1wk": _candles(40, 10080, base_time).to_dict("records"),
     }
+    seen = {}
 
-    monkeypatch.setattr(
-        smc_topdown, "analyze",
-        lambda frames, cfg, now: Decision(
+    def capture_config(frames, cfg, now):
+        seen["cfg"] = cfg
+        return Decision(
             direction="SELL", score=0.72, entry=1.2, sl=1.3, tp=1.0,
             bias="weekly+daily BEARISH", reasons=["test sell"], blocked=None,
-        ),
-    )
+        )
+
+    monkeypatch.setattr(smc_topdown, "analyze", capture_config)
     result = ae.analyze_canonical_topdown(data)
 
     assert result["direction"] == "SELL"
@@ -209,7 +212,9 @@ def test_canonical_live_adapter_maps_sell_decision_to_signed_backend_score(monke
     assert result["sl"] == pytest.approx(1.3)
     assert result["tp"] == pytest.approx(1.0)
     assert result["blocked"] is False
-
+    assert seen["cfg"] == EngineConfig()
+    assert seen["cfg"].min_score == pytest.approx(0.60)
+    assert seen["cfg"].sl_atr1h_mult == pytest.approx(0.5)
 
 
 def test_full_analysis_uses_canonical_engine_for_live_technical_layer(monkeypatch):
