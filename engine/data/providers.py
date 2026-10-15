@@ -44,7 +44,22 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0) -> pd.DataFrame:
 
 
 def _tidy(df: pd.DataFrame) -> pd.DataFrame:
-    df = df[COLS].dropna().drop_duplicates("time").sort_values("time")
+    """Normalize provider bars and discard rows with invalid timestamps or OHLC."""
+    df = df[COLS].copy()
+    df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+    for col in ("open", "high", "low", "close", "volume"):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    finite = np.isfinite(df[["open", "high", "low", "close"]].to_numpy(dtype=float)).all(axis=1)
+    valid = (
+        df["time"].notna()
+        & finite
+        & (df["high"] >= df[["open", "close", "low"]].max(axis=1))
+        & (df["low"] <= df[["open", "close", "high"]].min(axis=1))
+    )
+    # Missing volume is allowed (some CSV exports omit it), but malformed OHLC
+    # must never enter resampling or strategy calculations.
+    df = df.loc[valid].drop_duplicates("time").sort_values("time")
     return df.reset_index(drop=True)
 
 
