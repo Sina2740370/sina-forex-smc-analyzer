@@ -463,3 +463,42 @@ def test_walk_forward_uses_non_overlapping_naive_utc_fold_bounds(monkeypatch):
     ):
         assert train_start < train_end < test_start < test_end
     assert all(test_calls[i][2] < test_calls[i + 1][1] for i in range(len(test_calls) - 1))
+
+
+
+def test_largest_bar_gap_reports_sparse_historical_source():
+    from engine.data.providers import largest_bar_gap
+
+    frame = pd.DataFrame({
+        "time": pd.to_datetime([
+            "2025-10-03T00:00:00Z",
+            "2025-10-03T00:15:00Z",
+            "2026-10-02T00:00:00Z",
+        ], utc=True),
+    })
+
+    assert largest_bar_gap(frame) == pd.Timedelta(days=364, hours=23, minutes=45)
+
+
+def test_cli_rejects_csv_with_multiweek_gap(monkeypatch):
+    from types import SimpleNamespace
+    from engine import cli
+
+    frame = pd.DataFrame({
+        "time": pd.to_datetime([
+            "2025-10-03T00:00:00Z",
+            "2025-10-03T00:15:00Z",
+            "2026-10-02T00:00:00Z",
+        ], utc=True),
+        "open": [1.1, 1.1, 1.1],
+        "high": [1.101, 1.101, 1.101],
+        "low": [1.099, 1.099, 1.099],
+        "close": [1.1, 1.1, 1.1],
+        "volume": [1, 1, 1],
+    })
+    monkeypatch.setattr(cli.os.path, "exists", lambda _path: True)
+    monkeypatch.setattr(cli, "load_mt5_csv", lambda *_args: frame)
+    args = SimpleNamespace(source="csv", csv_dir="engine/data", tz_offset=0.0)
+
+    with pytest.raises(ValueError, match="largest M15 gap"):
+        cli._load(args, "GBPUSD")
