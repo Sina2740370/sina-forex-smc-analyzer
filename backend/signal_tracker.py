@@ -32,7 +32,7 @@ def _parse_dt(t):
 
 def _to_pips(symbol: str, price_diff: float) -> float:
     """تبدیل اختلاف قیمت به پیپ"""
-    pip = PIP_SIZE.get(symbol, 0.0001)
+    pip = PIP_SIZE[symbol]
     if pip == 0:
         return 0.0
     return round(price_diff / pip, 1)
@@ -40,8 +40,8 @@ def _to_pips(symbol: str, price_diff: float) -> float:
 
 def _apply_spread(symbol: str, price: float, direction: str) -> float:
     """اسپرد رو روی قیمت اعمال می‌کنه (شبیه‌سازی واقعی)"""
-    spread_pips = SPREAD.get(symbol, 1.0)
-    pip = PIP_SIZE.get(symbol, 0.0001)
+    spread_pips = SPREAD[symbol]
+    pip = PIP_SIZE[symbol]
     spread_price = spread_pips * pip
 
     if direction == "BUY":
@@ -88,6 +88,10 @@ def _check_signal(sig: dict, candles: list):
     فقط کندل‌های بعد از created_at بررسی می‌شن
     """
     symbol = sig["symbol"]
+    if symbol not in PIP_SIZE or symbol not in SPREAD:
+        logger.error("نماد %s در تنظیمات پیپ/اسپرد تعریف نشده؛ سیگنال %s باز می‌ماند", symbol, sig.get("id"))
+        return
+
     direction = sig["direction"]
     entry = sig["entry"]
     sl = sig["sl"]
