@@ -839,7 +839,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         parsed_news_sentiment = float(news_sentiment) if news_sentiment is not None else None
     except (TypeError, ValueError, OverflowError):
         parsed_news_sentiment = None
-    news_sentiment_available = (
+    news_sentiment_available = bool(
         parsed_news_sentiment is not None and np.isfinite(parsed_news_sentiment)
     )
     news_score = parsed_news_sentiment if news_sentiment_available else 0.0
