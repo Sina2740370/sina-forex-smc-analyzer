@@ -135,8 +135,20 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
     در هر fold، کانفیگ‌ها فقط روی بازه‌ی train ارزیابی می‌شوند؛ سپس کانفیگ منتخب
     با حالت تازه فقط در بازه‌ی test اجرا می‌شود. مرزها نیمه‌بازند تا معامله‌ی مرزی دوبار شمرده نشود.
     """
-    t0 = data["15m"]["time"].iloc[0] + pd.Timedelta(days=warmup_days)
-    t_end = data["15m"]["time"].iloc[-1]
+    first_time = pd.to_datetime(data["15m"]["time"].iloc[0], utc=True)
+    t_end = pd.to_datetime(data["15m"]["time"].iloc[-1], utc=True)
+    available_days = (t_end - first_time).total_seconds() / 86400.0
+    required_days = warmup_days + train_days + test_days
+    if available_days < required_days:
+        return {
+            "status": "insufficient_history",
+            "available_days": round(available_days, 2),
+            "required_days": required_days,
+            "windows": [],
+            "out_of_sample": {"n": 0},
+        }
+
+    t0 = first_time + pd.Timedelta(days=warmup_days)
     windows, oos = [], []
     s = t0
     while s + pd.Timedelta(days=train_days + test_days) <= t_end:
@@ -160,4 +172,10 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
                             "train_exp": round(best_exp, 3), "test_n": len(test),
                             "test_exp": round(float(np.mean([t["r"] for t in test])), 3) if test else None})
         s += pd.Timedelta(days=test_days)
-    return {"windows": windows, "out_of_sample": summarize(oos)}
+    return {
+        "status": "ok" if windows else "no_valid_folds",
+        "available_days": round(available_days, 2),
+        "required_days": required_days,
+        "windows": windows,
+        "out_of_sample": summarize(oos),
+    }
