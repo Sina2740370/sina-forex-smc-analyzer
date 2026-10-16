@@ -89,9 +89,58 @@ def load_mt5_csv(
     return _tidy(df)
 
 
+def _validate_ohlc(df: pd.DataFrame) -> pd.DataFrame:
+    """Fail closed on malformed candles before resampling or strategy evaluation."""
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("داده‌ی کندل باید DataFrame باشد")
+    missing = [column for column in COLS if column not in df.columns]
+    if missing:
+        raise ValueError(f"ستون‌های کندل ناقص است: {', '.join(missing)}")
+    if df.empty:
+        return df
+
+    numeric = {}
+    for column in ("open", "high", "low", "close", "volume"):
+        values = pd.to_numeric(df[column], errors="coerce").to_numpy(dtype=float)
+        if not np.isfinite(values).all():
+            raise ValueError(f"ستون {column} دارای NaN، Infinity یا مقدار غیرعددی است")
+        numeric[column] = values
+
+    prices = np.column_stack([numeric[name] for name in ("open", "high", "low", "close")])
+    if (prices <= 0).any():
+        raise ValueError("قیمت‌های OHLC باید مثبت باشند")
+    open_, high, low, close = (numeric[name] for name in ("open", "high", "low", "close"))
+    if (high < np.maximum(open_, close)).any():
+        raise ValueError("High نمی‌تواند از Open یا Close کمتر باشد")
+    if (low > np.minimum(open_, close)).any():
+        raise ValueError("Low نمی‌تواند از Open یا Close بیشتر باشد")
+    if (high < low).any():
+        raise ValueError("High نمی‌تواند از Low کمتر باشد")
+    if (numeric["volume"] < 0).any():
+        raise ValueError("Volume نباید منفی باشد")
+
+    timestamps = pd.to_datetime(df["time"], errors="raise")
+    if not isinstance(timestamps.dtype, pd.DatetimeTZDtype):
+        raise ValueError("زمان کندل‌ها باید timezone-aware باشد و به UTC نرمال شود")
+    if timestamps.isna().any():
+        raise ValueError("زمان کندل نمی‌تواند خالی باشد")
+    if timestamps.duplicated().any():
+        raise ValueError("داده‌ی کندل دارای timestamp تکراری است")
+    if not timestamps.is_monotonic_increasing:
+        raise ValueError("زمان کندل‌ها باید صعودی مرتب شده باشد")
+    return df
+
+
 def _tidy(df: pd.DataFrame) -> pd.DataFrame:
-    df = df[COLS].dropna().drop_duplicates("time").sort_values("time")
-    return df.reset_index(drop=True)
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("داده‌ی کندل باید DataFrame باشد")
+    missing = [column for column in COLS if column not in df.columns]
+    if missing:
+        raise ValueError(f"ستون‌های کندل ناقص است: {', '.join(missing)}")
+    # Incomplete records are discarded as before; surviving records are
+    # validated strictly so corrupt prices cannot silently reach the engine.
+    cleaned = df[COLS].dropna().drop_duplicates("time").sort_values("time").reset_index(drop=True)
+    return _validate_ohlc(cleaned)
 
 
 # ---------------------------------------------------------------- ریسمپل
@@ -117,8 +166,11 @@ def _resample_ny(df15: pd.DataFrame, rule: str) -> pd.DataFrame:
 
 def resample_ohlc(df15: pd.DataFrame, tf: str) -> pd.DataFrame:
     """ساخت تایم‌فریم بالاتر از 15m. 1d/1wk روی 17:00 نیویورک (با DST) شروع می‌شوند."""
+    if tf not in TF_MINUTES:
+        raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
+    _validate_ohlc(df15)
     if tf == "15m":
-        return df15
+        return df15.copy()
     if tf == "1d":
         return _resample_ny(df15, "1D")
     if tf == "1wk":
@@ -210,6 +262,12 @@ class TopDownView:
     """
 
     def __init__(self, data: dict):
+        if not isinstance(data, dict):
+            raise ValueError("داده‌ی چندتایم‌فریم باید dict باشد")
+        for tf, frame in data.items():
+            if tf not in TF_MINUTES:
+                raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
+            _validate_ohlc(frame)
         self.data = data
         self._close = {
             tf: _bar_close_times(df, tf)
