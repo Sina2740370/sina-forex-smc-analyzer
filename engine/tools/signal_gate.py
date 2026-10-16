@@ -23,6 +23,12 @@ def norm_symbol(symbol: str) -> str:
     return "XAUUSD" if s in ("GC=F", "GC", "XAU") else s
 
 
+def currency_pair(symbol: str) -> tuple[str, str]:
+    """Pair استانداردشده؛ نماد فیوچرز GC=F را برای تحلیل مواجهه به XAUUSD نگاشت می‌کند."""
+    s = norm_symbol(symbol)
+    return s[:3], s[3:6]
+
+
 def exposure(symbol: str, direction: str) -> dict:
     """جهت قرارگیری ارزی: BUY EURUSD = {EUR:+1, USD:-1}."""
     s = norm_symbol(symbol)
