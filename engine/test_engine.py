@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,7 +11,7 @@ from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, _bar_close_times, build_topdown, load_mt5_csv, resample_ohlc
 from engine.data.fetch_history import _fetch_side, _midpoint_ohlc
-from engine.strategy.smc_topdown import analyze, kill_zone
+from engine.strategy.smc_topdown import Decision, analyze, kill_zone
 
 
 def make_15m(days=420, seed=7, base=1.10, vol=0.0004):
