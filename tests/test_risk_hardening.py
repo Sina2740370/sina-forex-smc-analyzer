@@ -154,9 +154,9 @@ def test_tp_on_wrong_side_does_not_return_rr():
 def test_margin_pct_warning_uses_unrounded_percentage():
     # 30.04% should trigger the warning even if presentation rounds to 30.0%.
     result = position_size(
-        "EURUSD", 10_000, 1, 1.0, 0.99,
-        leverage=100, max_margin_pct=50, max_lot=0.3004,
-        lot_step=0.0001, min_lot=0.0001,
+        "EURUSD", 10_000, 100, 1.0, 0.99,
+        leverage=100, max_margin_pct=50, max_lot=3.004,
+        lot_step=0.001, min_lot=0.001,
     )
     assert result.ok
     assert result.margin_pct == pytest.approx(30.0)
