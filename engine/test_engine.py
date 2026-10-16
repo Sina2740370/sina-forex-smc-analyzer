@@ -316,7 +316,7 @@ def test_dukascopy_fetch_sets_timeout_and_restores_request_handler():
     original_get = FakeDukascopy.requests.get
     result = _fetch_side(FakeDukascopy, "XAU/USD", "B", "start", "end")
     assert result == "bars"
-    assert calls["timeout"] == (10, 45)
-    assert calls["args"] == ("XAU/USD", "15MIN", "B", 3)
+    assert calls["timeout"] == (5, 20)
+    assert calls["args"] == ("XAU/USD", "15MIN", "B", 1)
     assert FakeDukascopy.requests.get is original_get
 
