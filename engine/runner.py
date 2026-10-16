@@ -21,8 +21,25 @@ from .data.providers import TopDownView
 from .strategy.smc_topdown import Decision, analyze
 
 
-def check_exit(side: int, sl: float, tp: float, high: float, low: float, half: float):
-    """('SL'|'TP'|None, قیمت خروج) — SL اولویت دارد."""
+def check_exit(
+    side: int, sl: float, tp: float, high: float, low: float, half: float,
+    open_price: Optional[float] = None,
+):
+    """خروج با سمت اجرایی قیمت؛ SL اولویت دارد و گپ نامطلوب با open پر می‌شود."""
+    if open_price is not None:
+        if side > 0:
+            bid_open = open_price - half
+            if bid_open <= sl:
+                return "SL", bid_open
+            if bid_open >= tp:
+                return "TP", tp
+        else:
+            ask_open = open_price + half
+            if ask_open >= sl:
+                return "SL", ask_open
+            if ask_open <= tp:
+                return "TP", tp
+
     if side > 0:   # خروج روی bid = mid - half
         if low - half <= sl:
             return "SL", sl
@@ -93,7 +110,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         last_i = i
 
         if pos is not None and i >= pos.open_idx:
-            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
+            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half, float(df15["open"].iloc[i]))
             if status is None and now - pos.open_time >= hold:
                 status, px = "EXPIRED", cl[i] - pos.side * half
             if status:
@@ -107,6 +124,8 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
 
         dec = analyze_fn(view.at(now), cfg, now)
         if dec.direction is None:
+            continue
+        if dec.entry is None or dec.sl is None or dec.tp is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
         # تصمیم در close کندل i معلوم می‌شود؛ ورود زودتر از open کندل بعدی مجاز نیست.
