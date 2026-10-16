@@ -143,7 +143,7 @@ def _check_signal(sig: dict, candles: list):
         high = float(c["high"])
         low = float(c["low"])
         side = 1 if direction == "BUY" else -1
-        status, exit_price = engine_check_exit(side, float(sl), float(tp), high, low, half_spread)
+        status, exit_price = engine_check_exit(side, float(sl), float(tp), high, low, half_spread, float(c["open"]))
         if status is not None:
             pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
             pnl = _to_pips(symbol, pnl_diff)
