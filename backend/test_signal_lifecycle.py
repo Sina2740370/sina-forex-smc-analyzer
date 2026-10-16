@@ -135,6 +135,64 @@ class SignalLifecycleTests(unittest.TestCase):
             signal_tracker._check_signal(signal, candles)
         close.assert_called_once_with(23, 1.102, unittest.mock.ANY, "LOSS")
 
+
+    def test_signal_tracker_uses_next_eligible_bar_open_for_entry(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        created_at = now - timedelta(minutes=30)
+        signal = {
+            "id": 31, "symbol": "EURUSD=X", "direction": "BUY",
+            "entry": 1.1, "sl": 1.09, "tp": 1.101,
+            "created_at": created_at.isoformat(),
+        }
+        candles = [
+            {
+                "time": created_at.isoformat(), "open": 1.1,
+                "high": 1.101, "low": 1.099, "close": 1.1,
+            },
+            {
+                "time": (now - timedelta(minutes=15)).isoformat(),
+                "open": 1.1005, "high": 1.102, "low": 1.1002, "close": 1.101,
+            },
+        ]
+        half_spread = (
+            backend_config.SPREAD["EURUSD=X"] * backend_config.PIP_SIZE["EURUSD=X"] / 2
+        )
+        with patch.object(signal_tracker, "close_signal", return_value=True) as close:
+            signal_tracker._check_signal(signal, candles)
+
+        close.assert_called_once()
+        args = close.call_args.args
+        self.assertEqual(args[0], 31)
+        self.assertEqual(args[1], 1.101)
+        self.assertEqual(args[3], "WIN")
+        self.assertTrue(math.isclose(args[2], (1.101 - (1.1005 + half_spread)) / 0.0001, abs_tol=0.1))
+
+
+    def test_signal_tracker_rejects_unfillable_entry_gap(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        created_at = now - timedelta(minutes=30)
+        signal = {
+            "id": 32, "symbol": "EURUSD=X", "direction": "BUY",
+            "entry": 1.1, "sl": 1.09, "tp": 1.12,
+            "created_at": created_at.isoformat(),
+        }
+        candles = [
+            {
+                "time": created_at.isoformat(), "open": 1.1,
+                "high": 1.101, "low": 1.099, "close": 1.1,
+            },
+            {
+                "time": (now - timedelta(minutes=15)).isoformat(),
+                "open": 1.105, "high": 1.106, "low": 1.104, "close": 1.105,
+            },
+        ]
+        with patch.object(signal_tracker, "close_signal", return_value=True) as close:
+            signal_tracker._check_signal(signal, candles)
+
+        close.assert_called_once()
+        self.assertEqual(close.call_args.args[2], 0.0)
+        self.assertEqual(close.call_args.args[3], "EXPIRED")
+
     @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
     def test_duplicate_open_symbol_is_rejected(self):
         original_path = database.DB_PATH
