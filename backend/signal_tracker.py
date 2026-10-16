@@ -64,7 +64,7 @@ def check_open_signals():
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
     # ۱) چک سیگنال‌های منقضی
-    _check_expired_signals(open_signals)
+    expired_ids = _check_expired_signals(open_signals)
 
     # ۲) گروه‌بندی بر اساس نماد
     by_symbol = {}
@@ -79,34 +79,40 @@ def check_open_signals():
                 continue
 
             for sig in signals:
+                if sig["id"] in expired_ids:
+                    continue
                 _check_signal(sig, candles)
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
 
 
-def _check_expired_signals(signals: list):
-    """سیگنال‌های قدیمی رو EXPIRED می‌کنه"""
-    now = datetime.utcnow()
+def _check_expired_signals(signals: list) -> set:
+    """سیگنال‌های قدیمی را می‌بندد و شناسه‌هایشان را برای این چرخه برمی‌گرداند."""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     threshold = now - timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
+    expired_ids = set()
 
     for sig in signals:
         try:
             created = _parse_dt(sig["created_at"])
             if created < threshold:
-                close_signal(
+                # همین snapshot قدیمی نباید دوباره برای TP/SL بررسی شود.
+                expired_ids.add(sig["id"])
+                closed = close_signal(
                     sig["id"],
                     sig["entry"],
                     0.0,
                     "EXPIRED",
                 )
-                logger.info(
-                    f"⏰ EXPIRED: {sig['symbol']} "
-                    f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
-                )
+                if closed:
+                    logger.info(
+                        f"⏰ EXPIRED: {sig['symbol']} "
+                        f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
+                    )
         except Exception as e:
-            logger.error(f"خطا در چک EXPIRED {sig['id']}: {e}")
-
+            logger.error(f"خطا در چک EXPIRED {sig.get('id', '?')}: {e}")
+    return expired_ids
 
 def _check_signal(sig: dict, candles: list):
     """
