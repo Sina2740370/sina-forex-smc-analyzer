@@ -8,6 +8,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 
 from .config import PIP_SIZE, SPREAD
+from engine.tools.signal_gate import currency_pair
 from .data_fetcher import fetch_ohlcv
 from .database import (
     get_open_signals,
@@ -198,9 +199,8 @@ def is_duplicate_signal(symbol: str, direction: str,
 # ============================================================
 
 def extract_currencies(symbol: str):
-    """مثلا 'GBPJPY' یا 'GBP/JPY' -> ('GBP', 'JPY')"""
-    s = symbol.replace("/", "").replace("-", "").upper()
-    return s[:3], s[3:6]
+    """نمادهای جفت‌ارز و طلا را یکسان می‌کند؛ GC=F نیز به XAU/USD نگاشت می‌شود."""
+    return currency_pair(symbol)
 
 
 def has_correlated_open_signal(symbol: str):
