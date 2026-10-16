@@ -9,7 +9,7 @@ from engine.cli import _data_source_label
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, _bar_close_times, build_topdown, load_mt5_csv, resample_ohlc
-from engine.data.fetch_history import _midpoint_ohlc
+from engine.data.fetch_history import _fetch_side, _midpoint_ohlc
 from engine.strategy.smc_topdown import analyze, kill_zone
 
 
@@ -293,4 +293,30 @@ def test_dukascopy_bid_ask_midpoint_rejects_unaligned_bars():
     row = {"open": [1.0], "high": [1.1], "low": [0.9], "close": [1.0], "volume": [1.0]}
     with pytest.raises(ValueError, match="no common timestamps"):
         _midpoint_ohlc(pd.DataFrame(row, index=idx_bid), pd.DataFrame(row, index=idx_ask))
+
+
+def test_dukascopy_fetch_sets_timeout_and_restores_request_handler():
+    from types import SimpleNamespace
+
+    calls = {}
+    def fake_get(url, **kwargs):
+        calls["timeout"] = kwargs.get("timeout")
+        return object()
+
+    class FakeDukascopy:
+        INTERVAL_MIN_15 = "15MIN"
+        requests = SimpleNamespace(get=fake_get)
+
+        @staticmethod
+        def fetch(instrument, interval, offer_side, start, end, max_retries):
+            calls["args"] = (instrument, interval, offer_side, max_retries)
+            FakeDukascopy.requests.get("https://example.invalid")
+            return "bars"
+
+    original_get = FakeDukascopy.requests.get
+    result = _fetch_side(FakeDukascopy, "XAU/USD", "B", "start", "end")
+    assert result == "bars"
+    assert calls["timeout"] == (10, 45)
+    assert calls["args"] == ("XAU/USD", "15MIN", "B", 3)
+    assert FakeDukascopy.requests.get is original_get
 
