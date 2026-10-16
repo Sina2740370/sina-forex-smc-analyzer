@@ -17,10 +17,43 @@ COLS = ["time", "open", "high", "low", "close", "volume"]
 
 
 # ---------------------------------------------------------------- CSV (MT5)
-def load_mt5_csv(path: str, tz_offset_hours: float = 0.0) -> pd.DataFrame:
+def _normalize_mt5_timestamps(
+    ts: pd.Series, tz_offset_hours: float = 0.0, broker_timezone: str | None = None
+) -> pd.Series:
+    """تبدیل زمان CSV به UTC؛ از اعمال دوباره‌ی offset روی زمان aware جلوگیری می‌کند."""
+    if not np.isfinite(tz_offset_hours) or abs(tz_offset_hours) > 14:
+        raise ValueError("tz_offset_hours باید عددی بین -14 و +14 باشد")
+    if broker_timezone and tz_offset_hours != 0:
+        raise ValueError("از broker_timezone یا tz_offset_hours استفاده کن، نه هر دو")
+
+    if ts.dt.tz is not None:
+        if tz_offset_hours != 0 or broker_timezone:
+            raise ValueError(
+                "زمان CSV خودش timezone دارد؛ offset/timezone اضافی باعث جابه‌جایی دوباره می‌شود"
+            )
+        return ts.dt.tz_convert("UTC")
+
+    if broker_timezone:
+        try:
+            # زمان‌های مبهم/ناموجود در تغییر DST عمداً رد می‌شوند تا جابه‌جایی خاموش رخ ندهد.
+            return ts.dt.tz_localize(
+                broker_timezone, ambiguous="raise", nonexistent="raise"
+            ).dt.tz_convert("UTC")
+        except Exception as exc:
+            raise ValueError(
+                f"زمان CSV با منطقه زمانی {broker_timezone!r} قابل تبدیل نیست: {exc}"
+            ) from exc
+
+    return (ts - pd.Timedelta(hours=tz_offset_hours)).dt.tz_localize("UTC")
+
+
+def load_mt5_csv(
+    path: str, tz_offset_hours: float = 0.0, broker_timezone: str | None = None
+) -> pd.DataFrame:
     """
-    خروجی «Export Bars» متاتریدر (<DATE> <TIME> <OPEN> ...) یا CSV عمومی
-    با ستون‌های time/open/high/low/close را می‌خواند.
+    خروجی «Export Bars» متاتریدر یا CSV عمومی را می‌خواند.
+    برای ساعت سرور ثابت از tz_offset_hours؛ برای ساعت دارای DST از منطقه زمانی IANA بروکر استفاده کن.
+    اگر timestamp خودش timezone داشته باشد، به UTC تبدیل می‌شود و offset اضافی مجاز نیست.
     """
     raw = pd.read_csv(path, sep=None, engine="python")
     raw.columns = [str(c).strip().strip("<>").lower() for c in raw.columns]
@@ -32,14 +65,14 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0) -> pd.DataFrame:
         ts = pd.to_datetime(raw["time"])
     else:
         raise ValueError("ستون زمان پیدا نشد (date+time / datetime / time)")
+
+    ts = _normalize_mt5_timestamps(ts, tz_offset_hours, broker_timezone)
     vol = raw["tickvol"] if "tickvol" in raw.columns else raw.get("volume", 0)
     df = pd.DataFrame({
-        "time": ts - pd.Timedelta(hours=tz_offset_hours),
+        "time": ts,
         "open": raw["open"], "high": raw["high"], "low": raw["low"], "close": raw["close"],
         "volume": vol,
     })
-    df["time"] = pd.to_datetime(df["time"]).dt.tz_localize("UTC") \
-        if df["time"].dt.tz is None else df["time"].dt.tz_convert("UTC")
     return _tidy(df)
 
 
