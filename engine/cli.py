@@ -48,7 +48,7 @@ def _load(args, symbol: str) -> dict:
 def _data_source_label(args, symbol: str) -> str:
     """منبع داده را صریح گزارش می‌کند تا proxy فیوچرز با اسپات اشتباه نشود."""
     if args.source == "dukascopy":
-        return f"Dukascopy historical BID data:{symbol}_M15.csv (historical spot feed; spread/slippage still modeled)"
+        return f"Dukascopy BID/ASK-derived midpoint:{symbol}_M15.csv (spot history; midpoint OHLC approximate, spread/slippage still modeled)"
     if args.source == "csv":
         return f"CSV:{symbol}_M15.csv (نوع بازار/بروکر از فایل باید تأیید شود)"
     ticker = INSTRUMENTS[symbol].yf
