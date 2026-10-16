@@ -50,7 +50,7 @@ class SignalLifecycleTests(unittest.TestCase):
         expires_at = now - timedelta(minutes=5)
         created_at = expires_at - timedelta(hours=signal_tracker.MAX_SIGNAL_LIFETIME_HOURS)
         signal = {
-            "id": 25, "symbol": "EURUSD", "direction": "BUY",
+            "id": 25, "symbol": "EURUSD=X", "direction": "BUY",
             "entry": 1.1, "sl": 1.09, "tp": 1.12,
             "created_at": created_at.isoformat(),
         }
