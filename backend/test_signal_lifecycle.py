@@ -1,6 +1,7 @@
 """Regression tests for signal lifecycle safeguards; uses stdlib unittest."""
 import math
 import tempfile
+from datetime import datetime, timedelta, timezone
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -42,6 +43,21 @@ class SignalLifecycleTests(unittest.TestCase):
         self.assertTrue(math.isclose(args[1], 1.10095, abs_tol=1e-9))
         self.assertTrue(math.isclose(args[2], 9.0, abs_tol=1e-9))
         self.assertEqual(args[3], "EXPIRED")
+
+    def test_forming_15m_candle_cannot_close_signal(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        signal = {
+            "id": 24, "symbol": "EURUSD", "direction": "BUY",
+            "entry": 1.1, "sl": 1.099, "tp": 1.102,
+            "created_at": (now - timedelta(hours=1)).isoformat(),
+        }
+        forming_candle = [{
+            "time": (now - timedelta(minutes=5)).isoformat(),
+            "open": 1.101, "high": 1.103, "low": 1.1005, "close": 1.1025,
+        }]
+        with patch.object(signal_tracker, "close_signal") as close:
+            signal_tracker._check_signal(signal, forming_candle)
+        close.assert_not_called()
 
     def test_gold_spread_assumption_matches_engine(self):
         backend_gold_spread = (
