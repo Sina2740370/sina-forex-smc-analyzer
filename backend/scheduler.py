@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .config import (
-    SYMBOLS, SCAN_INTERVAL_MINUTES, TIMEFRAMES
+    SYMBOLS, SCAN_INTERVAL_MINUTES, TIMEFRAMES, ALLOW_GOLD_FUTURES_PROXY_SIGNALS
 )
 from .data_fetcher import fetch_topdown, get_cache_stats
 from .analysis_engine import full_analysis
@@ -254,6 +254,22 @@ async def check_open_signals_and_notify():
                 logger.error(f"خطا در نوتیف بسته شدن: {e}")
 
 
+def _guard_gold_futures_proxy(result, symbol, allow_proxy=False):
+    """Never label COMEX futures as spot XAUUSD; fail closed unless explicitly opted in."""
+    if symbol != "GC=F":
+        return result
+    guarded = dict(result)
+    guarded["data_source"] = "GC=F (COMEX gold futures proxy; not spot XAUUSD)"
+    guarded["spot_data"] = False
+    if not allow_proxy:
+        guarded["direction"] = None
+        guarded["summary"] = "سیگنال طلا مسدود است: منبع فعلی GC=F فیوچرز است، نه اسپات XAUUSD"
+        guarded["reasons"] = list(guarded.get("reasons") or []) + [
+            "سیگنال مسدود: تا اتصال منبع اسپات/بروکر، از دادهٔ فیوچرز به‌عنوان XAUUSD استفاده نشود"
+        ]
+    return guarded
+
+
 async def _scan_symbol(symbol, name, news):
     data = await asyncio.to_thread(fetch_topdown, symbol)
     if "error" in data:
@@ -266,6 +282,9 @@ async def _scan_symbol(symbol, name, news):
         data, symbol,
         news_safe=safe,
         news_reason=news_reason,
+    )
+    result = _guard_gold_futures_proxy(
+        result, symbol, allow_proxy=ALLOW_GOLD_FUTURES_PROXY_SIGNALS
     )
 
     if result.get("score") is None and result.get("score") != 0.0:
