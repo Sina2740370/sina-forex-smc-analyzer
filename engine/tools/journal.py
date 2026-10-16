@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import math
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from numbers import Integral, Real
 from typing import Iterable, Optional
 
 import pandas as pd
@@ -17,11 +19,33 @@ from .risk import trade_r
 MIN_TRADES_MEANINGFUL = 30
 
 
+def _finite_decimal(value, name: str) -> Decimal:
+    if isinstance(value, bool) or not isinstance(value, (Real, Decimal)):
+        raise ValueError(f"{name} باید عددی معتبر باشد")
+    try:
+        result = value if isinstance(value, Decimal) else Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError(f"{name} باید عددی معتبر باشد") from None
+    if not result.is_finite():
+        raise ValueError(f"{name} باید متناهی باشد")
+    return result
+
+
+def _positive_int(value, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral) or value <= 0:
+        raise ValueError(f"{name} باید عدد صحیح و مثبت باشد")
+    return int(value)
+
+
+def _rounded(value: Decimal, places: str = "0.01") -> float:
+    return float(value.quantize(Decimal(places), rounding=ROUND_HALF_UP))
+
+
 def normalize(rows: Iterable[dict]) -> list:
     """هر ردیف: symbol, side, entry, sl, exit, close_time (اختیاری: open_time, tag, note)."""
     out = []
     for r in rows:
-        rr = trade_r(r["side"], float(r["entry"]), float(r["sl"]), float(r["exit"]))
+        rr = trade_r(r["side"], r["entry"], r["sl"], r["exit"])
         ct = pd.Timestamp(r.get("close_time") or r.get("open_time") or pd.Timestamp.now(tz="UTC"))
         if ct.tzinfo is None:
             ct = ct.tz_localize("UTC")
@@ -77,39 +101,69 @@ def daily_guard(today_r: list, max_daily_loss_r: float = 3.0, max_trades: int = 
     نگهبان روزانه بر اساس R معاملات امروز (به ترتیب بسته‌شدن).
     state: ok / warn / stop. stop یعنی «امروز دیگر معامله‌ی جدید باز نکن».
     """
+    values = [_finite_decimal(value, "today_r") for value in today_r]
+    loss_limit = _finite_decimal(max_daily_loss_r, "max_daily_loss_r")
+    if loss_limit <= 0:
+        raise ValueError("max_daily_loss_r باید مثبت باشد")
+    max_trades = _positive_int(max_trades, "max_trades")
+    max_consec_losses = _positive_int(max_consec_losses, "max_consec_losses")
+
     reasons, state = [], "ok"
-    total = sum(today_r)
+    total = sum(values, Decimal("0"))
     consec = 0
-    for x in reversed(today_r):
-        if x < 0:
+    for value in reversed(values):
+        if value < 0:
             consec += 1
         else:
             break
-    if total <= -max_daily_loss_r:
-        state = "stop"; reasons.append(f"ضرر امروز {total:.2f}R به سقف {max_daily_loss_r}R رسید")
-    elif total <= -0.7 * max_daily_loss_r:
-        state = "warn"; reasons.append(f"ضرر امروز {total:.2f}R نزدیک سقف {max_daily_loss_r}R است")
+    if total <= -loss_limit:
+        state = "stop"
+        reasons.append(f"ضرر امروز {total:.2f}R به سقف {loss_limit}R رسید")
+    elif total <= -Decimal("0.7") * loss_limit:
+        state = "warn"
+        reasons.append(f"ضرر امروز {total:.2f}R نزدیک سقف {loss_limit}R است")
     if consec >= max_consec_losses:
-        state = "stop"; reasons.append(f"{consec} ضرر پشت‌سرهم")
-    if len(today_r) >= max_trades:
-        state = "stop"; reasons.append(f"تعداد معاملات امروز به سقف {max_trades} رسید")
-    elif len(today_r) == max_trades - 1 and state == "ok":
-        state = "warn"; reasons.append("یک معامله تا سقف روزانه مانده")
-    return {"state": state, "today_r": round(total, 2), "trades_today": len(today_r),
-            "consecutive_losses": consec, "reasons": reasons}
+        state = "stop"
+        reasons.append(f"{consec} ضرر پشت‌سرهم")
+    if len(values) >= max_trades:
+        state = "stop"
+        reasons.append(f"تعداد معاملات امروز به سقف {max_trades} رسید")
+    elif len(values) == max_trades - 1 and state == "ok":
+        state = "warn"
+        reasons.append("یک معامله تا سقف روزانه مانده")
+    return {
+        "state": state,
+        "today_r": _rounded(total),
+        "trades_today": len(values),
+        "consecutive_losses": consec,
+        "reasons": reasons,
+    }
 
 
 def drawdown_guard(r_series: list, max_dd_r: float = 10.0) -> dict:
     """افت از اوج منحنی R تجمعی؛ اگر به سقف رسید یعنی توقف و بازبینی."""
-    peak = cum = 0.0
-    dd = 0.0
-    for x in r_series:
-        cum += x
+    values = [_finite_decimal(value, "r_series") for value in r_series]
+    limit = _finite_decimal(max_dd_r, "max_dd_r")
+    if limit <= 0:
+        raise ValueError("max_dd_r باید مثبت باشد")
+
+    peak = cum = dd = Decimal("0")
+    for value in values:
+        cum += value
         peak = max(peak, cum)
         dd = max(dd, peak - cum)
     cur = peak - cum
-    state = "stop" if cur >= max_dd_r else "warn" if cur >= 0.7 * max_dd_r else "ok"
-    return {"state": state, "current_dd_r": round(cur, 2), "max_dd_r": round(dd, 2), "total_r": round(cum, 2)}
+    state = (
+        "stop" if cur >= limit
+        else "warn" if cur >= Decimal("0.7") * limit
+        else "ok"
+    )
+    return {
+        "state": state,
+        "current_dd_r": _rounded(cur),
+        "max_dd_r": _rounded(dd),
+        "total_r": _rounded(cum),
+    }
 
 
 def json_safe(obj):
