@@ -16,9 +16,9 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..core.config import EngineConfig, spread_price
-from ..data.providers import TopDownView
-from ..strategy.smc_topdown import Decision, analyze
+from .core.config import EngineConfig, spread_price
+from .data.providers import TopDownView
+from .strategy.smc_topdown import Decision, analyze
 
 
 def check_exit(side: int, sl: float, tp: float, high: float, low: float, half: float):
