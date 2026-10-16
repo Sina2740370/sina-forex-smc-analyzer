@@ -1,6 +1,7 @@
 """Regression tests for the live-to-shared-engine adapter."""
+import asyncio
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 
@@ -97,4 +98,61 @@ def test_gold_futures_proxy_requires_explicit_opt_in_to_emit_signal():
 def test_gold_proxy_guard_does_not_change_fx_signals():
     original = {"direction": "BUY", "score": 0.7}
     assert scheduler._guard_gold_futures_proxy(original, "GBPJPY") is original
+
+
+def test_full_analysis_keeps_shared_engine_direction_when_context_score_disagrees():
+    tech = {
+        "blocked": False, "direction": "BUY", "score": 0.62, "price": 1.1,
+        "sl": 1.09, "tp": 1.12, "trend": "weekly+daily BULLISH",
+        "zone": "DISCOUNT", "atr": 0.01, "reasons": ["core setup confirmed"],
+    }
+    with (
+        patch.object(analysis_engine, "analyze_technical_topdown", return_value=tech),
+        patch(
+            "backend.fundamental_analyzer.calculate_fundamental_score",
+            new=AsyncMock(return_value={"score": -1.0, "reasons": ["opposes buy"]}),
+        ),
+        patch(
+            "backend.market_memory.calculate_memory_score",
+            return_value={"score": -1.0, "reasons": ["negative history"]},
+        ),
+    ):
+        result = asyncio.run(
+            analysis_engine.full_analysis(
+                {}, "EURUSD=X", news_safe=True, news_sentiment=-1.0
+            )
+        )
+
+    assert result["direction"] == "BUY"
+    assert result["score"] == 0.62
+    assert result["context_score"] < 0
+    assert result["decision_source"] == "shared_smc_engine"
+    assert result["suggested_sl"] == 1.09
+    assert result["suggested_tp"] == 1.12
+
+
+def test_full_analysis_still_vetoes_shared_engine_signal_when_news_is_unsafe():
+    tech = {
+        "blocked": False, "direction": "SELL", "score": -0.75, "price": 1.1,
+        "sl": 1.11, "tp": 1.08, "trend": "weekly+daily BEARISH",
+        "zone": "PREMIUM", "atr": 0.01, "reasons": ["core setup confirmed"],
+    }
+    with (
+        patch.object(analysis_engine, "analyze_technical_topdown", return_value=tech),
+        patch(
+            "backend.fundamental_analyzer.calculate_fundamental_score",
+            new=AsyncMock(return_value={"score": 0.0, "reasons": []}),
+        ),
+        patch(
+            "backend.market_memory.calculate_memory_score",
+            return_value={"score": 0.0, "reasons": []},
+        ),
+    ):
+        result = asyncio.run(
+            analysis_engine.full_analysis({}, "EURUSD=X", news_safe=False)
+        )
+
+    assert result["direction"] is None
+    assert result["news_safe"] is False
+    assert result["decision_source"] == "shared_smc_engine"
 
