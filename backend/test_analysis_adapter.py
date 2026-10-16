@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from backend import analysis_engine
+from backend import analysis_engine, scheduler
 
 
 def _records():
@@ -73,3 +73,28 @@ def test_live_adapter_blocks_when_shared_engine_has_no_direction():
     assert result["blocked"] is True
     assert result["sl"] is None and result["tp"] is None
     assert any("CONFLICT" in reason for reason in result["reasons"])
+
+def test_gold_futures_proxy_signal_is_blocked_by_default():
+    original = {
+        "direction": "BUY", "score": 0.9, "reasons": ["SMC confluence"],
+        "summary": "signal",
+    }
+    result = scheduler._guard_gold_futures_proxy(original, "GC=F")
+    assert result["direction"] is None
+    assert result["spot_data"] is False
+    assert "not spot XAUUSD" in result["data_source"]
+    assert any("سیگنال مسدود" in reason for reason in result["reasons"])
+    assert original["direction"] == "BUY"  # helper must not mutate caller's result
+
+
+def test_gold_futures_proxy_requires_explicit_opt_in_to_emit_signal():
+    original = {"direction": "SELL", "score": -0.8, "reasons": []}
+    result = scheduler._guard_gold_futures_proxy(original, "GC=F", allow_proxy=True)
+    assert result["direction"] == "SELL"
+    assert result["spot_data"] is False
+
+
+def test_gold_proxy_guard_does_not_change_fx_signals():
+    original = {"direction": "BUY", "score": 0.7}
+    assert scheduler._guard_gold_futures_proxy(original, "GBPJPY") is original
+
