@@ -15,6 +15,7 @@ import json
 import os
 
 import pandas as pd
+from dotenv import load_dotenv
 
 from .backtest.report import fold_stability, feature_table, random_baseline, walk_forward
 from .backtest.runner import evaluate_gate, run_backtest, summarize
@@ -22,6 +23,17 @@ from .core.config import INSTRUMENTS, EngineConfig
 from .data.providers import (build_topdown, load_mt5_csv, load_yfinance_topdown,
                              staleness_minutes, TopDownView)
 from .strategy.smc_topdown import analyze
+
+load_dotenv()
+
+
+def _engine_config() -> EngineConfig:
+    """Use the same entry-gap policy as the live backend."""
+    try:
+        max_entry_slip_r = float(os.getenv("MAX_ENTRY_SLIP_R", "0.3"))
+    except ValueError as exc:
+        raise ValueError("MAX_ENTRY_SLIP_R must be numeric") from exc
+    return EngineConfig(max_entry_slip_r=max_entry_slip_r)
 
 
 def _strategy(name: str):
@@ -64,7 +76,7 @@ def cmd_fetch(args):
 
 
 def cmd_backtest(args):
-    cfg = EngineConfig()
+    cfg = _engine_config()
     trades = []
     for sym in args.symbols:
         print(f"> {sym} [source={_data_source_label(args, sym)}] ...", flush=True)
@@ -83,7 +95,7 @@ def cmd_backtest(args):
 
 
 def cmd_report(args):
-    cfg = EngineConfig()
+    cfg = _engine_config()
     all_trades, lines = [], []
     for sym in args.symbols:
         print(f"> {sym} [source={_data_source_label(args, sym)}] ...", flush=True)
@@ -113,7 +125,7 @@ def cmd_report(args):
 
 
 def cmd_scan(args):
-    cfg = EngineConfig()
+    cfg = _engine_config()
     now = pd.Timestamp.now(tz="UTC")
     for sym in args.symbols:
         data = _load(args, sym)
