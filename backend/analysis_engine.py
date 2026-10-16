@@ -19,7 +19,8 @@ from engine.data.providers import TopDownView
 from engine.strategy.smc_topdown import analyze as analyze_smc_engine
 
 from .config import (
-    WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
+    MAX_ENTRY_SLIP_R, WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL,
+    WEIGHT_NEWS, WEIGHT_MEMORY,
 )
 
 logger = logging.getLogger(__name__)
@@ -445,7 +446,9 @@ def analyze_technical_topdown(data_dict):
 
         now = pd.Timestamp.now(tz="UTC")
         closed = TopDownView(frames).at(now)
-        decision = analyze_smc_engine(closed, EngineConfig(), now)
+        decision = analyze_smc_engine(
+            closed, EngineConfig(max_entry_slip_r=MAX_ENTRY_SLIP_R), now
+        )
         base["config_hash"] = getattr(decision, "config_hash", None)
         df15 = closed.get("15m", pd.DataFrame())
         price = float(df15["close"].iloc[-1]) if not df15.empty else None
