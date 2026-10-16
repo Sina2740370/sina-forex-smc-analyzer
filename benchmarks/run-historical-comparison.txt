@@ -1,0 +1,1 @@
+Run the fixed-window GBPJPY vs XAUUSD benchmark using seven years of Dukascopy BID/ASK-derived midpoint data. See .github/workflows/market-benchmark.yml. This file is a deliberate trigger for the benchmark workflow.
