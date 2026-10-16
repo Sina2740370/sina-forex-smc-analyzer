@@ -1,5 +1,4 @@
 """Boundary tests for provider-level OHLC validation."""
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -74,3 +73,14 @@ def test_rejects_duplicate_or_unsorted_candle_times():
 def test_rejects_unknown_timeframe():
     with pytest.raises(ValueError, match="تایم‌فریم"):
         resample_ohlc(candle_frame(), "2h")
+
+def test_normalizes_numeric_strings_and_non_utc_aware_timestamps():
+    frame = candle_frame()
+    for column in ("open", "high", "low", "close", "volume"):
+        frame[column] = frame[column].astype(str)
+    frame["time"] = frame["time"].dt.tz_convert("Europe/Amsterdam")
+
+    normalized = resample_ohlc(frame, "15m")
+    assert str(normalized["time"].dt.tz) == "UTC"
+    assert pd.api.types.is_numeric_dtype(normalized["close"])
+    assert normalized.loc[0, "close"] == pytest.approx(1.101)
