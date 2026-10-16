@@ -70,7 +70,7 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
     return {
         "symbol": symbol, "side": "BUY" if pos.side > 0 else "SELL",
         "open_time": pos.open_time, "close_time": t,
-        "entry": pos.entry, "sl": pos.sl, "tp": pos.tp, "exit": exit_price,
+        "entry": pos.entry, "signal_entry": pos.dec.entry, "sl": pos.sl, "tp": pos.tp, "exit": exit_price,
         "status": status, "r": round(float(r), 4), "score": pos.dec.score,
         "features": pos.dec.features, "config_hash": cfg.hash(),
     }
