@@ -289,16 +289,19 @@ def get_all_signals(limit: int = 200):
 
 
 def close_signal(signal_id, exit_price, pnl_pips, status):
-    """بستن سیگنال"""
+    """بستن سیگنال فقط اگر هنوز OPEN است؛ عملیات idempotent."""
     with get_conn() as conn:
-        _execute(conn, """
+        cur = _execute(conn, """
             UPDATE signals
             SET status = ?, exit_price = ?, pnl_pips = ?, closed_at = ?
-            WHERE id = ?
+            WHERE id = ? AND status = 'OPEN'
         """, (
             status, exit_price, pnl_pips,
             datetime.utcnow().isoformat(), signal_id
         ))
+        # rowcount برای SQLite و PostgreSQL مشخص می‌کند که این فراخوانی
+        # واقعاً وضعیت را تغییر داده یا سیگنال قبلاً بسته شده است.
+        return cur.rowcount == 1
 
 
 def get_stats_summary():
