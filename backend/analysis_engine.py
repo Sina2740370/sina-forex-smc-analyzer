@@ -519,27 +519,19 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         mem["score"] * WEIGHT_MEMORY
     )
 
+    # تصمیم، Entry، SL و TP از موتور مشترک SMC می‌آیند.
+    # امتیازهای فاندامنتال/خبر/حافظه گزارش تشخیصی‌اند و اجازه ندارند
+    # جهت موتور را عوض کنند؛ خبر ناایمن همچنان یک veto مستقل است.
+    direction = tech.get("direction")
     if not news_safe:
-        final_score = 0.0
-        logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
-
-    direction = None
-    if final_score >= MIN_SIGNAL_SCORE:
-        direction = "BUY"
-    elif final_score <= -MIN_SIGNAL_SCORE:
-        direction = "SELL"
-
-    # هم‌جهتی اجباری
-    if tech["score"] > 0 and direction == "SELL":
         direction = None
-    if tech["score"] < 0 and direction == "BUY":
-        direction = None
-    if direction and (tech["sl"] is None or tech["tp"] is None):
+        logger.info("%s: خبر ایمن نیست؛ سیگنال مشترک مسدود شد", symbol)
+    if direction and (tech.get("sl") is None or tech.get("tp") is None):
         direction = None
 
     logger.info(
-        "%s: final_score=%.2f tech=%.2f fund=%.2f news=%.2f mem=%.2f direction=%s",
-        symbol, final_score, tech["score"], fund["score"], news_score, mem["score"], direction,
+        "%s: core_score=%.2f context_score=%.2f fund=%.2f news=%.2f mem=%.2f direction=%s",
+        symbol, tech["score"], final_score, fund["score"], news_score, mem["score"], direction,
     )
 
     all_reasons = [f"📈 تکنیکال: {tech['score']:+.2f}"]
@@ -557,11 +549,14 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         all_reasons.extend(mem["reasons"])
 
     return {
-        "score": round(final_score, 2),
+        "score": round(float(tech["score"]), 4),
         "technical_score": tech["score"],
+        "context_score": round(final_score, 4),
         "fundamental_score": fund["score"],
         "news_score": news_score,
         "memory_score": mem["score"],
+        "decision_source": "shared_smc_engine",
+        "news_safe": bool(news_safe),
         "direction": direction,
         "current_price": tech["price"],
         "suggested_sl": tech["sl"],
@@ -570,5 +565,5 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         "zone": tech["zone"],
         "atr": tech["atr"],
         "reasons": all_reasons,
-        "summary": f"امتیاز کل: {final_score:+.2f}" if direction else "در انتظار",
+        "summary": f"سیگنال هسته: {direction} | امتیاز زمینه: {final_score:+.2f}" if direction else "در انتظار",
     }
