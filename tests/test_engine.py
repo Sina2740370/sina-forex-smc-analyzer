@@ -62,10 +62,10 @@ def _zigzag(points, seg=5):
 
 def test_choch_vs_bos_classification():
     # LH+LL (ساختار نزولی) و بعد شکست سقف آخر → CHOCH صعودی
-    r = smc.structure_break(_zigzag([12, 20, 10, 17, 8, 15, 18]), lookback=60)
+    r = smc.structure_break(_zigzag([12, 20, 10, 17, 8, 15, 17.5]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "CHOCH"
     # HH+HL (ساختار صعودی) و بعد شکست سقف آخر → BOS
-    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 19]), lookback=60)
+    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 17.1]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "BOS"
 
 
