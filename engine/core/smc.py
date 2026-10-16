@@ -151,7 +151,7 @@ def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
     """جاروی سقف/کف قبلی توسط فتیله در `recent` کندل آخر؛ extreme = انتهای فتیله."""
     if len(df) < lookback + recent:
         return None
-    ref = df.iloc[-lookback:-recent]
+    ref = df.iloc[-(lookback + recent):-recent]
     prev_high, prev_low = float(ref["high"].max()), float(ref["low"].min())
     # جدیدترین sweep را برگردان؛ انتخاب اولین رخداد پنجره می‌تواند ستاپ قدیمی را جلو بیندازد.
     for i in range(-1, -recent - 1, -1):
