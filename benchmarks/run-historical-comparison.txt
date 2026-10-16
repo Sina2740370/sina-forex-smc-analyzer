@@ -3,3 +3,5 @@ Retry marker: bounded HTTP timeouts are now enabled in the downloader.
 
 Retry marker: shorter connect/read timeouts and bounded retries are active.
 Rerun after canonical next-bar execution, gap-aware fills, shared live decision, config provenance, and aligned random baseline; holdout 2019-12-01 through 2022-11-01.
+
+Final rerun after causal expiry marking and live/backtest deadline alignment; preserve fixed holdout 2019-12-01 through 2022-11-01.
