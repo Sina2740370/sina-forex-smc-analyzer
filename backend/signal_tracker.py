@@ -181,10 +181,27 @@ def _check_signal(sig: dict, candles: list):
         # Intrabar OHLC cannot prove whether a TP/SL was reached before the exact deadline.
         bar_close = candle_time + timedelta(minutes=15)
         if candle_time >= expires_at or bar_close >= expires_at:
-            market_price = (
-                market_open if candle_time >= expires_at
-                else float(candle["close"])
-            )
+            if candle_time >= expires_at:
+                if candle_time - expires_at <= timedelta(minutes=15):
+                    market_price = market_open
+                else:
+                    # Use only a close observed no later than expiry; never price the exit
+                    # from a future candle when history has a gap around the deadline.
+                    pre_expiry = [
+                        (bar_time, bar_data) for bar_time, bar_data in parsed_candles
+                        if bar_time > created_at
+                        and bar_time + timedelta(minutes=15) <= expires_at
+                    ]
+                    if pre_expiry:
+                        market_price = float(pre_expiry[-1][1]["close"])
+                    else:
+                        market_price = effective_entry
+                    logger.warning(
+                        "%s: no candle near expiry; using last pre-expiry close estimate",
+                        symbol,
+                    )
+            else:
+                market_price = float(candle["close"])
             exit_price = (
                 market_price - half_spread if direction == "BUY"
                 else market_price + half_spread

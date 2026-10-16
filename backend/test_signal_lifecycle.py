@@ -43,8 +43,8 @@ class SignalLifecycleTests(unittest.TestCase):
         close.assert_called_once()
         args = close.call_args.args
         self.assertEqual(args[0], 17)
-        self.assertTrue(math.isclose(args[1], 1.10096, abs_tol=1e-9))
-        self.assertTrue(math.isclose(args[2], 9.2, abs_tol=1e-9))
+        self.assertTrue(math.isclose(args[1], 1.09996, abs_tol=1e-9))
+        self.assertTrue(math.isclose(args[2], -0.8, abs_tol=1e-9))
         self.assertEqual(args[3], "EXPIRED")
 
 

@@ -114,7 +114,15 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             # Expiry has priority on a candle that reaches the holding deadline:
             # OHLC cannot establish whether an intrabar TP/SL happened before expiry.
             if t_open >= deadline:
-                status, px = "EXPIRED", float(df15["open"].iloc[i]) - pos.side * half
+                if t_open - deadline <= bar:
+                    expiry_mid = float(df15["open"].iloc[i])
+                else:
+                    prior_i = int(times.searchsorted(deadline - bar, side="right") - 1)
+                    if prior_i >= 0 and times.iloc[prior_i] + bar <= deadline:
+                        expiry_mid = float(cl[prior_i])
+                    else:
+                        expiry_mid = float(df15["open"].iloc[i])
+                status, px = "EXPIRED", expiry_mid - pos.side * half
             elif now >= deadline:
                 status, px = "EXPIRED", cl[i] - pos.side * half
             else:
