@@ -186,7 +186,7 @@ class SignalLifecycleTests(unittest.TestCase):
         }
         candles = [
             {
-                "time": created_at.isoformat(), "open": 1.1,
+                "time": (created_at - timedelta(minutes=15)).isoformat(), "open": 1.1,
                 "high": 1.101, "low": 1.099, "close": 1.1,
             },
             {
