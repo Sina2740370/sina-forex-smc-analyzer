@@ -446,7 +446,7 @@ def analyze_technical_topdown(data_dict):
         now = pd.Timestamp.now(tz="UTC")
         closed = TopDownView(frames).at(now)
         decision = analyze_smc_engine(closed, EngineConfig(), now)
-        base["config_hash"] = decision.config_hash
+        base["config_hash"] = getattr(decision, "config_hash", None)
         df15 = closed.get("15m", pd.DataFrame())
         price = float(df15["close"].iloc[-1]) if not df15.empty else None
         atr = calculate_atr(df15) if len(df15) >= 15 else 0.0
