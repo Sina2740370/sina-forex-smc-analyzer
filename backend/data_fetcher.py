@@ -206,6 +206,30 @@ def _resample_to_4h(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index()
 
 
+# حداکثر عمر کندل 15m بسته‌شده در Live؛ کش قدیمی نباید سیگنال تولید کند.
+MAX_LIVE_15M_AGE_MINUTES = 45
+
+
+def _live_candle_freshness_error(records: list, now=None) -> Optional[str]:
+    """Fail closed when the latest available 15m candle is stale or future-dated."""
+    if not records:
+        return "15m داده‌ای برای بررسی تازگی وجود ندارد"
+    times = pd.to_datetime(
+        [row.get("time") for row in records], utc=True, errors="coerce"
+    ).dropna()
+    if times.empty:
+        return "زمان کندل‌های 15m معتبر نیست"
+    latest_close = times.max() + pd.Timedelta(minutes=15)
+    current = pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)
+    current = current.tz_localize("UTC") if current.tzinfo is None else current.tz_convert("UTC")
+    age_minutes = (current - latest_close).total_seconds() / 60.0
+    if age_minutes < -5:
+        return f"آخرین کندل 15m در آینده است ({age_minutes:.1f} دقیقه)"
+    if age_minutes > MAX_LIVE_15M_AGE_MINUTES:
+        return f"داده 15m کهنه است ({age_minutes:.1f} دقیقه؛ حد {MAX_LIVE_15M_AGE_MINUTES})"
+    return None
+
+
 # ============================================================
 #  دریافت 5 تایم‌فریم
 # ============================================================
@@ -223,6 +247,12 @@ def fetch_topdown(symbol: str) -> dict:
                 result[tf] = data
                 continue
             return {"error": f"{tf} داده کافی نیست"}
+
+        if tf == "15m":
+            freshness_error = _live_candle_freshness_error(data)
+            if freshness_error:
+                logger.warning("%s: %s؛ سیگنال Live مسدود شد", symbol, freshness_error)
+                return {"error": freshness_error}
 
         result[tf] = data
 
