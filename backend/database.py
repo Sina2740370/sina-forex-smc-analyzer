@@ -171,12 +171,20 @@ def init_db():
         cur = conn.cursor()
         if USE_POSTGRES:
             cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS price_at_signal DOUBLE PRECISION")
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS config_hash TEXT")
             conn.commit()
         else:
             try:
                 cur.execute("ALTER TABLE signals ADD COLUMN price_at_signal REAL")
                 conn.commit()
                 logger.info("✅ ستون price_at_signal اضافه شد")
+            except Exception:
+                conn.rollback()  # ستون از قبل وجود داره، مشکلی نیست
+
+        if not USE_POSTGRES:
+            try:
+                cur.execute("ALTER TABLE signals ADD COLUMN config_hash TEXT")
+                conn.commit()
             except Exception:
                 conn.rollback()  # ستون از قبل وجود داره، مشکلی نیست
 
@@ -240,7 +248,7 @@ def _process_rows(cur) -> list:
 #  عملیات‌ها
 # ============================================================
 def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
-                   price_at_signal=None):
+                   price_at_signal=None, config_hash=None):
     """ثبت سیگنال جدید با قفل نماد و جلوگیری از بیش از یک سیگنال باز روی همان نماد."""
     if isinstance(reasons, list):
         reasons_json = json.dumps(reasons, ensure_ascii=False)
@@ -266,11 +274,12 @@ def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
 
         cur = _execute(conn, """
             INSERT INTO signals
-            (symbol, name, direction, entry, sl, tp, score, reasons, price_at_signal, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (symbol, name, direction, entry, sl, tp, score, reasons,
+             price_at_signal, config_hash, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol, name, direction, entry, sl, tp, score,
-            reasons_json, price_at_signal,
+            reasons_json, price_at_signal, config_hash,
             datetime.utcnow().isoformat()
         ))
 
