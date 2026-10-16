@@ -160,13 +160,24 @@ def _bar_close_times(df: pd.DataFrame, tf: str) -> pd.Series:
     بنابراین طول واقعی آن‌ها در تغییر DST می‌تواند 23/25 یا 167/169 ساعت باشد.
     """
     starts = pd.to_datetime(df["time"], utc=True)
-    if tf in ("1d", "1wk"):
-        local_starts = starts.dt.tz_convert(NY_TZ)
-        offset = pd.DateOffset(days=1) if tf == "1d" else pd.DateOffset(weeks=1)
-        return (local_starts + offset).dt.tz_convert("UTC")
     if tf not in TF_MINUTES:
         raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
-    return starts + pd.Timedelta(minutes=TF_MINUTES[tf])
+
+    fixed_closes = starts + pd.Timedelta(minutes=TF_MINUTES[tf])
+    if tf not in ("1d", "1wk"):
+        return fixed_closes
+
+    local_starts = starts.dt.tz_convert(NY_TZ)
+    # فقط کندل‌هایی که واقعاً روی مرز 17:00 نیویورک ساخته شده‌اند،
+    # باید طول تقویمی DST-aware داشته باشند. کندل‌های native یاهو
+    # معمولاً در مرز دیگری هستند و طول ثابت 24h/168h را حفظ می‌کنند.
+    if tf == "1d":
+        session_aligned = local_starts.dt.hour == 17
+        session_closes = (local_starts + pd.DateOffset(days=1)).dt.tz_convert("UTC")
+    else:
+        session_aligned = (local_starts.dt.hour == 17) & (local_starts.dt.dayofweek == 6)
+        session_closes = (local_starts + pd.DateOffset(weeks=1)).dt.tz_convert("UTC")
+    return fixed_closes.where(~session_aligned, session_closes)
 
 
 # ---------------------------------------------------------------- تازگی
