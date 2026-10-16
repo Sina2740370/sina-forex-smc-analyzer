@@ -122,8 +122,8 @@ def _check_signal(sig: dict, candles: list):
             continue
         if candle_time + timedelta(minutes=15) > now_utc:
             continue
-        # Если данные начинаются уже после дедлайна, не проигрываем
-        # TP/SL на свечах после срока жизни: используем ближайший видимый рынок.
+        # اگر تاریخچه فقط پس از مهلت انقضا شروع شود، TP/SL بعد از مهلت را بررسی نمی‌کنیم؛
+        # از نزدیک‌ترین قیمت قابل‌مشاهده برای خروج تقریبی استفاده می‌کنیم.
         if candle_time >= expires_at:
             if candle_time - expires_at <= timedelta(minutes=15):
                 market_price = float(c["open"])
