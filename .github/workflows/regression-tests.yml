@@ -12,6 +12,20 @@ jobs:
   regression-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-password
+          POSTGRES_DB: sina_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sina_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Check out branch
         uses: actions/checkout@v4
@@ -32,3 +46,10 @@ jobs:
           TELEGRAM_CHAT_ID: test-placeholder
           DB_PATH: /tmp/sina-quant-test-signals.db
         run: python -m pytest -q engine/test_engine.py backend/test_signal_lifecycle.py backend/test_analysis_adapter.py
+      - name: Run PostgreSQL integration regression test
+        env:
+          FRED_API_KEY: test-placeholder
+          TELEGRAM_BOT_TOKEN: test-placeholder
+          TELEGRAM_CHAT_ID: test-placeholder
+          DATABASE_URL: postgresql://postgres:test-password@localhost:5432/sina_test
+        run: python -m pytest -q backend/test_postgres_integration.py
