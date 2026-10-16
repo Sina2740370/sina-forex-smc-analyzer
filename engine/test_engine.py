@@ -210,9 +210,9 @@ def test_mt5_csv_broker_timezone_tracks_dst():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "bars.csv"
         path.write_text(
-            "date,time,open,high,low,close,volume\\n"
-            "2025-03-28,12:00:00,1.0,1.1,0.9,1.05,10\\n"
-            "2025-04-01,12:00:00,1.0,1.1,0.9,1.05,10\\n",
+            "date,time,open,high,low,close,volume\n"
+            "2025-03-28,12:00:00,1.0,1.1,0.9,1.05,10\n"
+            "2025-04-01,12:00:00,1.0,1.1,0.9,1.05,10\n",
             encoding="utf-8",
         )
         df = load_mt5_csv(str(path), broker_timezone="Europe/Helsinki")
@@ -224,8 +224,8 @@ def test_mt5_csv_aware_timestamps_are_not_shifted_twice():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "aware.csv"
         path.write_text(
-            "time,open,high,low,close,volume\\n"
-            "2025-07-01T12:00:00+03:00,1.0,1.1,0.9,1.05,10\\n",
+            "time,open,high,low,close,volume\n"
+            "2025-07-01T12:00:00+03:00,1.0,1.1,0.9,1.05,10\n",
             encoding="utf-8",
         )
         df = load_mt5_csv(str(path))
