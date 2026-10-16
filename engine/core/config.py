@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import math
 import json
+from numbers import Real
 from dataclasses import asdict, dataclass
 
 
@@ -53,14 +54,33 @@ class EngineConfig:
     max_entry_slip_r: float = 0.3       # رد ورود بعد از بسته‌شدن کندل اگر گپ از این R بیشتر باشد
 
     def __post_init__(self):
-        finite_values = (
-            self.min_score, self.risk_reward, self.sl_atr1h_mult,
-            self.sl_ob_buffer, self.min_risk_atr1h, self.max_risk_atr4h,
-            self.ob_gate_atr4h, self.fvg_min_gap_ratio, self.cooldown_hours,
-            self.max_entry_slip_r,
+        # Reject booleans, strings, NaN and infinities before any comparisons
+        # or strategy arithmetic. These are dimensionless model parameters;
+        # price-series arithmetic remains vectorized in pandas/NumPy.
+        numeric_names = (
+            "min_score", "risk_reward", "sl_atr1h_mult", "sl_ob_buffer",
+            "min_risk_atr1h", "max_risk_atr4h", "ob_gate_atr4h",
+            "fvg_min_gap_ratio", "w_htf_full", "w_htf_soft", "w_sweep",
+            "w_sweep_against", "w_choch", "w_bos", "w_ob_in", "w_ob_near",
+            "w_ob_mid", "w_pd", "w_fvg", "w_candle", "w_killzone",
+            "w_confluence", "cooldown_hours", "max_entry_slip_r",
         )
-        if not all(math.isfinite(float(value)) for value in finite_values):
-            raise ValueError("پارامترهای EngineConfig باید عدد متناهی باشند")
+        for name in numeric_names:
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise ValueError(f"{name} باید مقدار عددی باشد")
+            if not math.isfinite(float(value)):
+                raise ValueError(f"{name} باید متناهی باشد")
+
+        integer_names = (
+            "sweep_lookback", "break_lookback", "fvg_lookback",
+            "ob_lookback", "pd_lookback", "max_hold_hours", "scan_every_bars",
+        )
+        for name in integer_names:
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError(f"{name} باید عدد صحیح باشد")
+
         if self.min_score < 0:
             raise ValueError("min_score نباید منفی باشد")
         if self.risk_reward <= 0:
@@ -69,17 +89,20 @@ class EngineConfig:
             raise ValueError("ضرایب ریسک و SL باید بزرگ‌تر از صفر باشند")
         if self.sl_ob_buffer < 0 or self.ob_gate_atr4h < 0 or self.fvg_min_gap_ratio < 0:
             raise ValueError("بافرها و آستانه‌های فاصله نباید منفی باشند")
-        if self.max_hold_hours <= 0 or self.cooldown_hours < 0 or self.scan_every_bars < 1:
-            raise ValueError("محدوده‌ی hold/cooldown/scan معتبر نیست")
-        if self.max_entry_slip_r < 0:
-            raise ValueError("max_entry_slip_r نباید منفی باشد")
+        if min(self.sweep_lookback, self.break_lookback, self.fvg_lookback,
+               self.ob_lookback, self.pd_lookback, self.max_hold_hours,
+               self.scan_every_bars) < 1:
+            raise ValueError("پنجره‌ها، مدت نگهداری و scan_every_bars باید مثبت باشند")
+        if self.cooldown_hours < 0 or self.max_entry_slip_r < 0:
+            raise ValueError("cooldown و max_entry_slip_r نباید منفی باشند")
+
         weights = (
             self.w_htf_full, self.w_htf_soft, self.w_sweep, self.w_sweep_against,
             self.w_choch, self.w_bos, self.w_ob_in, self.w_ob_near, self.w_ob_mid,
             self.w_pd, self.w_fvg, self.w_candle, self.w_killzone, self.w_confluence,
         )
-        if not all(math.isfinite(float(value)) and value >= 0 for value in weights):
-            raise ValueError("وزن‌های ویژگی باید متناهی و نامنفی باشند")
+        if any(value < 0 for value in weights):
+            raise ValueError("وزن‌های ویژگی باید نامنفی باشند")
 
     def to_dict(self) -> dict:
         return asdict(self)
