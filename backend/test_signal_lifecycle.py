@@ -144,7 +144,7 @@ class SignalLifecycleTests(unittest.TestCase):
                 database.init_db()
                 first = database.insert_signal(
                     "EURUSD", "Euro/Dollar", "BUY",
-                    1.1, 1.09, 1.12, 0.8, ["first"]
+                    1.1, 1.09, 1.12, 0.8, ["first"], config_hash="cfg-test"
                 )
                 second = database.insert_signal(
                     "EURUSD", "Euro/Dollar", "SELL",
@@ -153,6 +153,8 @@ class SignalLifecycleTests(unittest.TestCase):
                 self.assertIsNotNone(first)
                 self.assertIsNone(second)
                 self.assertEqual(len(database.get_open_signals()), 1)
+                saved = database.get_all_signals(limit=10)[0]
+                self.assertEqual(saved["config_hash"], "cfg-test")
             finally:
                 database.DB_PATH = original_path
 
