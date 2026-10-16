@@ -155,27 +155,34 @@ def _check_signal(sig: dict, candles: list):
         high = c["high"]
         low = c["low"]
 
+        # کندل‌های OHLC این فید قیمت میانی‌اند؛ خروج BUY با bid و خروج
+        # SELL با ask سنجیده می‌شود، همان قرارداد spread-aware موتور بک‌تست.
+        half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
+
         if direction == "BUY":
-            # اول SL (محافظه‌کارانه)
-            if low <= sl:
+            bid_low = low - half_spread
+            bid_high = high - half_spread
+            # در برخورد هم‌زمان، SL محافظه‌کارانه اولویت دارد.
+            if bid_low <= sl:
                 pnl = _to_pips(symbol, sl - effective_entry)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
-            if high >= tp:
+            if bid_high >= tp:
                 pnl = _to_pips(symbol, tp - effective_entry)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
                 return
 
         elif direction == "SELL":
-            # اول SL
-            if high >= sl:
+            ask_high = high + half_spread
+            ask_low = low + half_spread
+            if ask_high >= sl:
                 pnl = _to_pips(symbol, effective_entry - sl)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return
-            if low <= tp:
+            if ask_low <= tp:
                 pnl = _to_pips(symbol, effective_entry - tp)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
