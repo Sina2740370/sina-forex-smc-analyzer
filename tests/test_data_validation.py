@@ -1,4 +1,5 @@
 """Boundary tests for provider-level OHLC validation."""
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -84,3 +85,27 @@ def test_normalizes_numeric_strings_and_non_utc_aware_timestamps():
     assert str(normalized["time"].dt.tz) == "UTC"
     assert pd.api.types.is_numeric_dtype(normalized["close"])
     assert normalized.loc[0, "close"] == pytest.approx(1.101)
+
+def test_backtest_uses_normalized_data_from_provider_boundary():
+    from engine.core.config import EngineConfig
+    from engine.runner import run_backtest
+    from engine.strategy.smc_topdown import Decision
+
+    frame = pd.DataFrame({
+        "time": pd.date_range("2026-01-05 12:00", periods=3, freq="15min", tz="UTC"),
+        "open": ["1.1000", "1.1000", "1.1010"],
+        "high": ["1.1050", "1.1050", "1.1060"],
+        "low": ["1.0950", "1.0950", "1.0960"],
+        "close": ["1.1000", "1.1010", "1.1020"],
+        "volume": ["100", "100", "100"],
+    })
+
+    def fixed_decision(view, cfg, now):
+        return Decision(direction="BUY", entry=1.1, sl=1.09, tp=1.12)
+
+    trades = run_backtest(
+        "EURUSD", {"15m": frame}, EngineConfig(), analyze_fn=fixed_decision
+    )
+    assert len(trades) == 1
+    assert trades[0]["status"] == "EOD"
+    assert np.isfinite(trades[0]["r"])
