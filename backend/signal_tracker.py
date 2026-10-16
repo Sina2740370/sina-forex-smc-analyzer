@@ -128,7 +128,7 @@ def _check_signal(sig: dict, candles: list):
 
     for candle_time, candle in parsed_candles:
         # The signal is not executable on a candle that began before it was created.
-        if candle_time <= created_at:
+        if candle_time < created_at:
             continue
         if candle_time + timedelta(minutes=15) > now_utc:
             continue
