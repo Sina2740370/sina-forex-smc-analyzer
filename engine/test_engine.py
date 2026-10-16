@@ -199,6 +199,41 @@ def test_engine_config_rejects_invalid_risk_and_nonfinite_values():
     with pytest.raises(ValueError, match="متناهی"):
         EngineConfig(min_score=float("nan"))
 
+
+def test_walk_forward_does_not_use_outcome_closed_after_train_boundary(monkeypatch):
+    from engine.backtest import report
+
+    base_time = pd.Timestamp("2020-01-01T00:00:00Z")
+    data = {
+        "15m": pd.DataFrame({
+            "time": pd.date_range(base_time, periods=100 * 96, freq="15min")
+        })
+    }
+
+    def trade(open_day, close_day, r):
+        return {
+            "symbol": "EURUSD",
+            "open_time": base_time + pd.Timedelta(days=open_day),
+            "close_time": base_time + pd.Timedelta(days=close_day),
+            "r": r, "status": "TP",
+        }
+
+    by_threshold = {
+        0.5: [trade(15, 20, 0.1), trade(30, 45, 100.0), trade(42, 48, 1.0)],
+        0.6: [trade(15, 20, 0.5), trade(42, 48, 0.3)],
+    }
+    monkeypatch.setattr(
+        report, "run_backtest",
+        lambda symbol, dataset, cfg: by_threshold[cfg.min_score],
+    )
+    result = report.walk_forward(
+        "EURUSD", data, EngineConfig(), grid=(0.5, 0.6),
+        train_days=30, test_days=10, warmup_days=10, min_train_trades=1,
+    )
+    assert result["windows"]
+    assert result["windows"][0]["chosen_min_score"] == 0.6
+    assert result["windows"][0]["test_exp"] == 0.3
+
 def test_stats_helpers():
     lo, hi = wilson(13, 20)
     assert 0.40 < lo < 0.45 and 0.80 < hi < 0.88
