@@ -364,6 +364,17 @@ def get_stats_summary():
     }
 
 
+def get_recent_closed_signals(hours: int = 12):
+    """سیگنال‌هایی که در N ساعت اخیر بسته شده‌اند (برای دروازه‌ی تکرار و تم ضرر)."""
+    cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+    with get_conn() as conn:
+        cur = _execute(conn, """
+            SELECT * FROM signals
+            WHERE status IN ('WIN', 'LOSS', 'EXPIRED') AND closed_at > ?
+        """, (cutoff,))
+        return _process_rows(cur)
+
+
 def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
     """سیگنال‌های اخیر یه نماد"""
     cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()

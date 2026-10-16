@@ -19,6 +19,7 @@ from .news_fetcher import fetch_news, is_news_safe
 from .signal_tracker import (
     check_open_signals,
     is_duplicate_signal,
+    signal_gate,
     has_correlated_open_signal,
 )
 from .database import insert_signal
@@ -73,7 +74,19 @@ def _mark_signal_sent(symbol: str, direction: str):
     _recent_signals[f"{symbol}:{direction}"] = time.time()
 
 
+_scan_lock = asyncio.Lock()
+
+
 async def scan_market():
+    """اسکن هم‌زمان (زمان‌بندی + /api/scan/force) سیگنال تکراری می‌ساخت؛ قفل آن را سریال می‌کند."""
+    if _scan_lock.locked():
+        logger.info("⏭ اسکن دیگری در حال اجراست؛ این یکی رد شد")
+        return
+    async with _scan_lock:
+        await _scan_market_locked()
+
+
+async def _scan_market_locked():
     global _last_startup_notified
 
     logger.info("=" * 55)
@@ -113,9 +126,10 @@ async def scan_market():
                     duplicates += 1
                     continue
 
-                if is_duplicate_signal(symbol, direction, hours=4):
+                gate = signal_gate(symbol, direction)
+                if gate:
                     duplicates += 1
-                    logger.info(f"⏭ تکرار in-database: {name} {direction}")
+                    logger.info(f"⏭ دروازه‌ی سیگنال ({gate}): {name} {direction}")
                     continue
 
                 # --- فیلتر همبستگی ارزی ---

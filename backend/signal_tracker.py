@@ -11,6 +11,7 @@ from .config import PIP_SIZE, SPREAD
 from .data_fetcher import fetch_ohlcv
 from .database import (
     get_open_signals,
+    get_recent_closed_signals,
     get_recent_signals_for_symbol,
     close_signal,
 )
@@ -168,6 +169,16 @@ def _check_signal(sig: dict, candles: list):
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
                 return
+
+
+def signal_gate(symbol: str, direction: str):
+    """
+    دروازه‌ی صدور: None یعنی مجاز؛ وگرنه کد دلیل ('open_same_symbol' | 'cooldown' | 'loss_theme').
+    کاملاً مبتنی بر دیتابیس است (با ری‌استارت Render از بین نمی‌رود) و سن سیگنال باز را نادیده نمی‌گیرد.
+    """
+    from engine.tools.signal_gate import evaluate, LOSS_THEME_H
+    return evaluate(symbol, direction, get_open_signals(),
+                    get_recent_closed_signals(hours=LOSS_THEME_H))
 
 
 def is_duplicate_signal(symbol: str, direction: str,
