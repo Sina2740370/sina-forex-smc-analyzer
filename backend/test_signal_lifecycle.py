@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from backend import database, signal_tracker
+from backend import config as backend_config, database, signal_tracker
+from engine.core.config import spread_price
 
 
 class SignalLifecycleTests(unittest.TestCase):
@@ -41,6 +42,12 @@ class SignalLifecycleTests(unittest.TestCase):
         self.assertTrue(math.isclose(args[1], 1.10095, abs_tol=1e-9))
         self.assertTrue(math.isclose(args[2], 9.0, abs_tol=1e-9))
         self.assertEqual(args[3], "EXPIRED")
+
+    def test_gold_spread_assumption_matches_engine(self):
+        backend_gold_spread = (
+            backend_config.SPREAD["GC=F"] * backend_config.PIP_SIZE["GC=F"]
+        )
+        self.assertTrue(math.isclose(backend_gold_spread, spread_price("XAUUSD")))
 
     def test_buy_tp_requires_bid_to_reach_target(self):
         signal = {
