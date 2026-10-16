@@ -110,9 +110,18 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         last_i = i
 
         if pos is not None and i >= pos.open_idx:
-            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half, float(df15["open"].iloc[i]))
-            if status is None and now - pos.open_time >= hold:
+            deadline = pos.open_time + hold
+            # Expiry has priority on a candle that reaches the holding deadline:
+            # OHLC cannot establish whether an intrabar TP/SL happened before expiry.
+            if t_open >= deadline:
+                status, px = "EXPIRED", float(df15["open"].iloc[i]) - pos.side * half
+            elif now >= deadline:
                 status, px = "EXPIRED", cl[i] - pos.side * half
+            else:
+                status, px = check_exit(
+                    pos.side, pos.sl, pos.tp, hi[i], lo[i], half,
+                    float(df15["open"].iloc[i])
+                )
             if status:
                 trades.append(_close_trade(symbol, pos, status, px, now, cfg))
                 pos = None

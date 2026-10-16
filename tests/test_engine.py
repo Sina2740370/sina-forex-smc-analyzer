@@ -5,7 +5,7 @@ from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summ
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, build_topdown, resample_ohlc
-from engine.strategy.smc_topdown import analyze
+from engine.strategy.smc_topdown import Decision, analyze
 
 
 def make_15m(days=420, seed=7, base=1.10, vol=0.0004):
@@ -148,3 +148,30 @@ def test_backtest_end_bounds_eod_close():
         side = 1 if t["side"] == "BUY" else -1
         assert pd.Timestamp(t["close_time"]) == last["time"] + bar
         assert abs(float(t["exit"]) - (float(last["close"]) - side * half)) < 1e-6
+
+
+def test_expiry_takes_priority_over_intrabar_tp_on_deadline_bar():
+    m15 = make_15m(days=5, seed=17, base=1.10, vol=0.00001)
+    data = build_topdown(m15)
+    entry = float(data["15m"]["close"].iloc[0])
+    # First eligible entry bar also reaches TP. The position expires at this bar's close.
+    data["15m"].loc[1, "high"] = entry + 0.03
+    data["15m"].loc[1, "low"] = entry - 0.001
+    data["15m"].loc[1, "close"] = entry + 0.005
+
+    cfg = EngineConfig(
+        min_score=0.0, scan_every_bars=1, cooldown_hours=10000,
+        max_hold_hours=0.25, max_entry_slip_r=0.3,
+    )
+    calls = {"n": 0}
+
+    def fixed_decision(view, config, now):
+        calls["n"] += 1
+        price = float(view["15m"]["close"].iloc[-1])
+        return Decision(direction="BUY", score=1.0, entry=price,
+                        sl=price - 0.01, tp=price + 0.02)
+
+    trades = run_backtest("EURUSD", data, cfg, analyze_fn=fixed_decision)
+    assert trades
+    assert trades[0]["status"] == "EXPIRED"
+    assert trades[0]["close_time"] == data["15m"]["time"].iloc[1] + pd.Timedelta(minutes=15)
