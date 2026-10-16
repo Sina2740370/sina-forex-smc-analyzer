@@ -219,12 +219,20 @@ def _live_candle_freshness_error(records: list, now=None) -> Optional[str]:
     ).dropna()
     if times.empty:
         return "زمان کندل‌های 15m معتبر نیست"
-    latest_close = times.max() + pd.Timedelta(minutes=15)
     current = pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)
     current = current.tz_localize("UTC") if current.tzinfo is None else current.tz_convert("UTC")
+    latest_start = times.max()
+    if latest_start > current + pd.Timedelta(minutes=5):
+        return "آخرین کندل 15m زمان آینده دارد"
+
+    # Yahoo معمولاً کندل در حال تشکیل را هم برمی‌گرداند؛ تازگی را بر اساس
+    # آخرین کندل بسته‌شده بسنج، نه close-time پیش‌بینی‌شده‌ی کندل جاری.
+    closed_times = times + pd.Timedelta(minutes=15)
+    closed_times = closed_times[closed_times <= current]
+    if closed_times.empty:
+        return "هنوز کندل بسته‌شده‌ی 15m برای تحلیل وجود ندارد"
+    latest_close = closed_times.max()
     age_minutes = (current - latest_close).total_seconds() / 60.0
-    if age_minutes < -5:
-        return f"آخرین کندل 15m در آینده است ({age_minutes:.1f} دقیقه)"
     if age_minutes > MAX_LIVE_15M_AGE_MINUTES:
         return f"داده 15m کهنه است ({age_minutes:.1f} دقیقه؛ حد {MAX_LIVE_15M_AGE_MINUTES})"
     return None
