@@ -74,9 +74,9 @@ def test_view_never_shows_forming_candles():
     view = TopDownView(data)
     now = data["15m"]["time"].iloc[2000] + pd.Timedelta(minutes=15)
     out = view.at(now)
-    from engine.data.providers import TF_MINUTES
+    from engine.data.providers import _bar_close_times
     for tf, df in out.items():
-        assert (df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf])).max() <= now
+        assert _bar_close_times(df, tf).max() <= now
 
 
 def test_no_lookahead_decision_identical_on_truncated_data():
@@ -174,6 +174,23 @@ def test_daily_bar_across_dst_switch_keeps_17_ny():
     hrs = d.set_index("time").index.tz_convert("America/New_York").hour
     assert (hrs == 17).all()
     assert set(d["time"].dt.hour) == {22, 21}
+
+
+def test_topdown_daily_close_respects_dst_transition():
+    # Spring forward: this NY daily candle is 23 hours long, not 24.
+    spring = pd.DataFrame({
+        "time": pd.to_datetime(["2025-03-08 22:00:00+00:00"]),
+    })
+    spring_view = TopDownView({"1d": spring})
+    assert len(spring_view.at(pd.Timestamp("2025-03-09 21:30:00", tz="UTC"))["1d"]) == 1
+
+    # Fall back: this NY daily candle is 25 hours long; it must not be exposed early.
+    fall = pd.DataFrame({
+        "time": pd.to_datetime(["2025-11-01 21:00:00+00:00"]),
+    })
+    fall_view = TopDownView({"1d": fall})
+    assert len(fall_view.at(pd.Timestamp("2025-11-02 21:30:00", tz="UTC"))["1d"]) == 0
+    assert len(fall_view.at(pd.Timestamp("2025-11-02 22:30:00", tz="UTC"))["1d"]) == 1
 
 
 def test_kill_zone_local_london_and_ny_with_dst():
