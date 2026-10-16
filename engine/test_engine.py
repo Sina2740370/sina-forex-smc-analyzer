@@ -67,12 +67,37 @@ def _zigzag(points, seg=5):
 
 def test_choch_vs_bos_classification():
     # LH+LL (ساختار نزولی) و بعد شکست سقف آخر → CHOCH صعودی
-    r = smc.structure_break(_zigzag([12, 20, 10, 17, 8, 15, 18]), lookback=60)
+    r = smc.structure_break(_zigzag([12, 20, 10, 17, 8, 15, 17.5]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "CHOCH"
     # HH+HL (ساختار صعودی) و بعد شکست سقف آخر → BOS
-    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 19]), lookback=60)
+    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 17.1]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "BOS"
 
+
+
+def test_structure_break_does_not_repeat_after_level_was_already_broken():
+    base = _zigzag([10, 14, 11, 17, 13, 16, 16.9])
+    close = base["close"].iloc[-1]
+    extra = pd.DataFrame({
+        "open": [close, 17.0],
+        "high": [17.3, 17.4],
+        "low": [16.8, 16.9],
+        "close": [17.1, 17.2],
+    })
+    stale = pd.concat([base, extra], ignore_index=True)
+    assert smc.structure_break(stale, lookback=60, fresh_bars=3) is None
+
+
+def test_liquidity_sweep_returns_latest_event_in_recent_window():
+    df = pd.DataFrame({
+        "open":  [5.0, 5.0, 5.0, 2.0, 5.0, 9.5],
+        "high":  [10.0, 9.0, 8.0, 9.0, 9.0, 11.0],
+        "low":   [1.0, 2.0, 3.0, 0.5, 2.0, 8.0],
+        "close": [5.0, 5.0, 5.0, 2.0, 5.0, 9.0],
+    })
+    sweep = smc.liquidity_sweep(df, lookback=3, recent=3)
+    assert sweep is not None
+    assert sweep["type"] == "BEARISH_SWEEP"
 
 def test_view_never_shows_forming_candles():
     data = build_topdown(make_15m(60))
