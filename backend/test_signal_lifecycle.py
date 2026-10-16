@@ -22,8 +22,10 @@ class SignalLifecycleTests(unittest.TestCase):
         # This candle is long after the 72-hour expiry deadline.
         candles = [{
             "time": "2026-10-16T00:00:00",
+            "open": 1.1,
             "high": 1.13,
             "low": 1.08,
+            "close": 1.101,
         }]
 
         with (
