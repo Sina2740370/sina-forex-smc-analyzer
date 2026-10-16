@@ -63,11 +63,8 @@ def check_open_signals():
 
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
-    # ۱) چک سیگنال‌های منقضی
-    # ابتدا خروج‌های رخ‌داده قبل از مهلت انقضا را بررسی می‌کنیم.
-
-
-    # گروه‌بندی بر اساس نماد
+    # گروه‌بندی بر اساس نماد؛ هر سیگنال به‌ترتیب زمانی بررسی می‌شود.
+    # انقضا فقط وقتی ثبت می‌شود که قیمت قابل‌مشاهده برای خروج داشته باشیم.
     by_symbol = {}
     for sig in open_signals:
         by_symbol.setdefault(sig["symbol"], []).append(sig)
@@ -84,36 +81,6 @@ def check_open_signals():
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
-
-    _check_expired_signals(open_signals)
-
-
-def _check_expired_signals(signals: list) -> set:
-    """سیگنال‌های قدیمی را می‌بندد و شناسه‌هایشان را برای این چرخه برمی‌گرداند."""
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    threshold = now - timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
-    expired_ids = set()
-
-    for sig in signals:
-        try:
-            created = _parse_dt(sig["created_at"])
-            if created < threshold:
-                # همین snapshot قدیمی نباید دوباره برای TP/SL بررسی شود.
-                expired_ids.add(sig["id"])
-                closed = close_signal(
-                    sig["id"],
-                    sig["entry"],
-                    0.0,
-                    "EXPIRED",
-                )
-                if closed:
-                    logger.info(
-                        f"⏰ EXPIRED: {sig['symbol']} "
-                        f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
-                    )
-        except Exception as e:
-            logger.error(f"خطا در چک EXPIRED {sig.get('id', '?')}: {e}")
-    return expired_ids
 
 def _check_signal(sig: dict, candles: list):
     """
@@ -137,10 +104,11 @@ def _check_signal(sig: dict, candles: list):
     # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
 
-    # پس از مهلت ۷۲ ساعته، برخوردهای بعدی TP/SL نباید نتیجه را تغییر دهند.
+    # پس از مهلت ۷۲ ساعته، خروج با قیمت بازار و هزینه‌ی اسپرد ثبت می‌شود.
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
+    half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
 
-    # مرور کندل‌ها به ترتیب زمانی؛ فقط کندل‌هایی که قبل از انقضا شروع شده‌اند.
+    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا هیچ برخورد TP/SL پذیرفته نیست.
     for c in candles:
         try:
             candle_time = _parse_dt(c["time"])
@@ -150,14 +118,26 @@ def _check_signal(sig: dict, candles: list):
         if candle_time <= created_at:
             continue
         if candle_time >= expires_at:
-            break
+            # اگر کندل نزدیک به زمان انقضا باشد، open بهترین تقریب موجود است.
+            # اگر تاریخچه به‌دلیل محدودیت فید ناقص باشد، آخرین close موجود را
+            # به‌عنوان mark-to-market می‌گیریم؛ این قیمت دقیقِ لحظه‌ی انقضا نیست.
+            if candle_time - expires_at <= timedelta(minutes=15):
+                market_price = float(c["open"])
+            else:
+                market_price = float(candles[-1]["close"])
+                logger.warning(
+                    f"تاریخچه برای انقضای دقیق {symbol} ناقص است؛ "
+                    "آخرین close موجود برای mark-to-market استفاده شد."
+                )
+            exit_price = market_price - half_spread if direction == "BUY" else market_price + half_spread
+            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            pnl = _to_pips(symbol, pnl_diff)
+            close_signal(sig_id, exit_price, pnl, "EXPIRED")
+            logger.info(f"⏰ EXPIRED: {symbol} {pnl:+.1f} pips")
+            return
 
         high = c["high"]
         low = c["low"]
-
-        # کندل‌های OHLC این فید قیمت میانی‌اند؛ خروج BUY با bid و خروج
-        # SELL با ask سنجیده می‌شود، همان قرارداد spread-aware موتور بک‌تست.
-        half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
 
         if direction == "BUY":
             bid_low = low - half_spread
