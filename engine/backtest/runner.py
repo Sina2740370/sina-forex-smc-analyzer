@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -60,7 +60,8 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
 
 
 def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
-                 start: Optional[str] = None, end: Optional[str] = None) -> list:
+                 start: Optional[str] = None, end: Optional[str] = None,
+                 analyze_fn: Callable = analyze) -> list:
     """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict)."""
     view = TopDownView(data)
     df15 = data["15m"]
@@ -74,7 +75,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     hold = pd.Timedelta(hours=cfg.max_hold_hours)
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
 
-    trades, pos, last_signal = [], None, {}
+    trades, pos, last_close_time = [], None, None
     last_i = None
     for i in range(len(df15)):
         t_open = times.iloc[i]
@@ -92,13 +93,15 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             if status:
                 trades.append(_close_trade(symbol, pos, status, px, now, cfg))
                 pos = None
+                last_close_time = now
 
         if pos is not None or i % cfg.scan_every_bars:
             continue
-        if now - last_signal.get("t", now - cooldown - bar) < cooldown:
+        # Cooldown از زمان بسته‌شدن معامله محاسبه می‌شود، نه زمان صدور سیگنال.
+        if last_close_time is not None and now - last_close_time < cooldown:
             continue
 
-        dec = analyze(view.at(now), cfg, now)
+        dec = analyze_fn(view.at(now), cfg, now)
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
@@ -106,7 +109,6 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if (entry - dec.sl) * side <= 0:
             continue
         pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
-        last_signal["t"] = now
 
     if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
         trades.append(_close_trade(
