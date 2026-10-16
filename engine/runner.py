@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 
-from .core.config import EngineConfig, spread_price
+from .core.config import INSTRUMENTS, EngineConfig, spread_price
 from .data.providers import TopDownView
 from .strategy.smc_topdown import Decision, analyze
 
@@ -26,7 +27,34 @@ def check_exit(
     open_price: Optional[float] = None,
 ):
     """خروج با سمت اجرایی قیمت؛ SL اولویت دارد و گپ نامطلوب با open پر می‌شود."""
+    if isinstance(side, bool) or not isinstance(side, (int, np.integer)) or side not in (-1, 1):
+        raise ValueError("side باید یکی از -1 یا 1 باشد")
+    values = {"sl": sl, "tp": tp, "high": high, "low": low, "half": half}
     if open_price is not None:
+        values["open_price"] = open_price
+    normalized = {}
+    for name, value in values.items():
+        if isinstance(value, bool):
+            raise ValueError(f"{name} باید عددی معتبر باشد")
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError(f"{name} باید عددی معتبر باشد") from None
+        if not math.isfinite(number):
+            raise ValueError(f"{name} باید متناهی باشد")
+        normalized[name] = number
+    sl, tp = normalized["sl"], normalized["tp"]
+    high, low, half = normalized["high"], normalized["low"], normalized["half"]
+    if min(sl, tp, high, low) <= 0 or half < 0 or half >= low:
+        raise ValueError("قیمت‌ها باید مثبت و نیم‌اسپرد باید در محدوده‌ی معتبر باشد")
+    if high < low:
+        raise ValueError("high نباید از low کمتر باشد")
+    if (side > 0 and sl >= tp) or (side < 0 and sl <= tp):
+        raise ValueError("SL و TP در سمت معتبر معامله نیستند")
+    if open_price is not None:
+        open_price = normalized["open_price"]
+        if not low <= open_price <= high:
+            raise ValueError("open_price باید بین low و high باشد")
         if side > 0:
             bid_open = open_price - half
             if bid_open <= sl:
@@ -65,13 +93,21 @@ class _Pos:
 
 
 def _close_trade(symbol, pos, status, exit_price, t, cfg):
-    risk = (pos.entry - pos.sl) * pos.side
-    r = (exit_price - pos.entry) * pos.side / risk
+    # Decimal is used for the realized R calculation; the market-data/execution
+    # model remains float-based because its inputs are pandas OHLC values.
+    entry_d, sl_d, exit_d = (Decimal(str(value)) for value in (pos.entry, pos.sl, exit_price))
+    risk_d = (entry_d - sl_d) * Decimal(pos.side)
+    if not risk_d.is_finite() or risk_d <= 0 or not exit_d.is_finite() or exit_d <= 0:
+        raise ValueError("قیمت خروج یا ریسک اولیه برای محاسبه‌ی R معتبر نیست")
+    r_d = (exit_d - entry_d) * Decimal(pos.side) / risk_d
+    if not r_d.is_finite():
+        raise ValueError("R محاسبه‌شده متناهی نیست")
+    r = float(r_d.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP))
     return {
         "symbol": symbol, "side": "BUY" if pos.side > 0 else "SELL",
         "open_time": pos.open_time, "close_time": t,
         "entry": pos.entry, "signal_entry": pos.dec.entry, "sl": pos.sl, "tp": pos.tp, "exit": exit_price,
-        "status": status, "r": round(float(r), 4), "score": pos.dec.score,
+        "status": status, "r": r, "score": pos.dec.score,
         "features": pos.dec.features, "config_hash": cfg.hash(),
     }
 
@@ -81,8 +117,12 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
                  analyze_fn=None) -> list:
     """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict).
     analyze_fn: تابع (view_dict, cfg, now) -> Decision؛ پیش‌فرض همان analyze (SMC)."""
+    if symbol not in INSTRUMENTS:
+        raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
     analyze_fn = analyze_fn or analyze
     view = TopDownView(data)
+    if "15m" not in view.data or view.data["15m"].empty:
+        raise ValueError("داده‌ی تایم‌فریم 15m خالی یا موجود نیست")
     # Use the validated, numeric, UTC-normalized frames from TopDownView.
     df15 = view.data["15m"]
     half = spread_price(symbol) / 2.0
@@ -143,7 +183,21 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         dec = analyze_fn(view.at(now), cfg, now)
         if dec.direction is None:
             continue
+        if dec.direction not in ("BUY", "SELL"):
+            continue
         if dec.entry is None or dec.sl is None or dec.tp is None:
+            continue
+        try:
+            entry_signal, stop_signal, target_signal = (
+                float(dec.entry), float(dec.sl), float(dec.tp)
+            )
+            score_signal = float(dec.score)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if not all(math.isfinite(value) and value > 0
+                   for value in (entry_signal, stop_signal, target_signal)):
+            continue
+        if not math.isfinite(score_signal):
             continue
         side = 1 if dec.direction == "BUY" else -1
         # تصمیم در close کندل i معلوم می‌شود؛ ورود زودتر از open کندل بعدی مجاز نیست.
@@ -154,8 +208,8 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if next_open_time + bar > t1:
             continue
 
-        signal_entry = float(dec.entry)
-        stop_distance = (signal_entry - float(dec.sl)) * side
+        signal_entry = entry_signal
+        stop_distance = (signal_entry - stop_signal) * side
         if not np.isfinite(stop_distance) or stop_distance <= 0:
             continue
         next_open = float(df15["open"].iloc[next_i])
@@ -164,10 +218,10 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             continue
 
         entry = next_open + side * half  # BUY روی ask، SELL روی bid
-        if (entry - dec.sl) * side <= 0 or (dec.tp - entry) * side <= 0:
+        if (entry - stop_signal) * side <= 0 or (target_signal - entry) * side <= 0:
             continue
 
-        pos = _Pos(side, next_open_time, next_i, entry, dec.sl, dec.tp, dec)
+        pos = _Pos(side, next_open_time, next_i, entry, stop_signal, target_signal, dec)
         last_signal["t"] = now
 
     if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
