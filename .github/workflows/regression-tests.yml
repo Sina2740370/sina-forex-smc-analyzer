@@ -31,4 +31,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: test-placeholder
           TELEGRAM_CHAT_ID: test-placeholder
           DB_PATH: /tmp/sina-quant-test-signals.db
-        run: python -m pytest -q engine/test_engine.py backend/test_signal_lifecycle.py
+        run: python -m pytest -q engine/test_engine.py backend/test_signal_lifecycle.py backend/test_analysis_adapter.py
