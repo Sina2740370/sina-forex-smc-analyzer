@@ -33,7 +33,7 @@ def _strategy(name: str):
 
 
 def _load(args, symbol: str) -> dict:
-    if args.source == "csv":
+    if args.source in ("csv", "dukascopy"):
         path = os.path.join(args.csv_dir, f"{symbol}_M15.csv")
         if not os.path.exists(path):
             path = os.path.join(args.csv_dir, f"{symbol}_i_M15.csv")
@@ -47,6 +47,8 @@ def _load(args, symbol: str) -> dict:
 
 def _data_source_label(args, symbol: str) -> str:
     """منبع داده را صریح گزارش می‌کند تا proxy فیوچرز با اسپات اشتباه نشود."""
+    if args.source == "dukascopy":
+        return f"Dukascopy historical BID data:{symbol}_M15.csv (historical spot feed; spread/slippage still modeled)"
     if args.source == "csv":
         return f"CSV:{symbol}_M15.csv (نوع بازار/بروکر از فایل باید تأیید شود)"
     ticker = INSTRUMENTS[symbol].yf
@@ -136,7 +138,7 @@ def main():
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
         sp = sub.add_parser(name)
         sp.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
-        sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
+        sp.add_argument("--source", choices=["csv", "yfinance", "dukascopy"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
         sp.add_argument("--tz-offset", type=float, default=0.0,
