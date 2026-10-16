@@ -3,6 +3,7 @@
 """
 import os
 from dotenv import load_dotenv
+from engine.core.config import EngineConfig
 
 load_dotenv()
 
@@ -67,10 +68,12 @@ MAX_DRAWDOWN = float(os.getenv("MAX_DRAWDOWN", 0.15))
 # ============================================================
 #  آستانه سیگنال (تعدیل‌شده)
 # ============================================================
-MIN_SIGNAL_SCORE = 0.40
-RISK_REWARD = 2.0
-SL_ATR_MULTIPLIER = 1.5
-SL_OB_BUFFER = 0.3
+# مقادیر استراتژی از تنظیمات canonical موتور می‌آیند تا Backend تنظیمات موازی نداشته باشد.
+_ENGINE_DEFAULTS = EngineConfig()
+MIN_SIGNAL_SCORE = _ENGINE_DEFAULTS.min_score
+RISK_REWARD = _ENGINE_DEFAULTS.risk_reward
+SL_ATR_MULTIPLIER = _ENGINE_DEFAULTS.sl_atr1h_mult
+SL_OB_BUFFER = _ENGINE_DEFAULTS.sl_ob_buffer
 
 # ============================================================
 #  کش هوشمند
