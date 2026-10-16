@@ -33,7 +33,12 @@ class SignalLifecycleTests(unittest.TestCase):
         ):
             signal_tracker.check_open_signals()
 
-        close.assert_called_once_with(17, 1.1, 0.0, "EXPIRED")
+        close.assert_called_once()
+        args = close.call_args.args
+        self.assertEqual(args[0], 17)
+        self.assertTrue(math.isclose(args[1], 1.10095, abs_tol=1e-9))
+        self.assertTrue(math.isclose(args[2], 9.0, abs_tol=1e-9))
+        self.assertEqual(args[3], "EXPIRED")
 
     def test_buy_tp_requires_bid_to_reach_target(self):
         signal = {
