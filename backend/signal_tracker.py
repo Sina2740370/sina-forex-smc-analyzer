@@ -140,8 +140,8 @@ def _check_signal(sig: dict, candles: list):
                     market_open - half_spread if direction == "BUY"
                     else market_open + half_spread
                 )
-                close_signal(sig_id, exit_price, 0.0, "EXPIRED")
-                logger.info("EXPIRED without entry: %s; no eligible bar before expiry", symbol)
+                close_signal(sig_id, exit_price, 0.0, "REJECTED")
+                logger.info("REJECTED without entry: %s; no eligible bar before expiry", symbol)
                 return
 
             if candle_time - created_at > timedelta(minutes=MAX_ENTRY_DELAY_MINUTES):
@@ -173,7 +173,7 @@ def _check_signal(sig: dict, candles: list):
 
             effective_entry = _apply_spread(symbol, market_open, direction)
             if (effective_entry - sl) * side <= 0 or (tp - effective_entry) * side <= 0:
-                close_signal(sig_id, effective_entry, 0.0, "EXPIRED")
+                close_signal(sig_id, effective_entry, 0.0, "REJECTED")
                 logger.warning("%s: entry rejected because executable price crossed SL/TP", symbol)
                 return
 
