@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from engine.tools.signal_gate import evaluate, exposure, norm_symbol
+from engine.tools.signal_gate import currency_pair, evaluate, exposure, norm_symbol
 
 NOW = datetime(2026, 10, 12, 12, 0, 0)
 
@@ -14,6 +14,9 @@ def test_exposure_and_norm():
     assert exposure("USDCAD", "BUY") == {"USD": 1, "CAD": -1}
     assert exposure("EURUSD=X", "SELL") == {"EUR": -1, "USD": 1}
     assert norm_symbol("USD/CAD") == "USDCAD" and norm_symbol("GC=F") == "XAUUSD"
+    assert currency_pair("GC=F") == ("XAU", "USD")
+    assert currency_pair("XAU/USD") == ("XAU", "USD")
+    assert currency_pair("GBPJPY") == ("GBP", "JPY")
 
 
 def test_old_open_signal_still_blocks_stacking():
