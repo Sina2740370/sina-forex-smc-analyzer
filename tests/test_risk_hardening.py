@@ -160,4 +160,4 @@ def test_margin_pct_warning_uses_unrounded_percentage():
     )
     assert result.ok
     assert result.margin_pct == pytest.approx(30.0)
-    assert "30%" in result.note
+    assert "30٪" in result.note

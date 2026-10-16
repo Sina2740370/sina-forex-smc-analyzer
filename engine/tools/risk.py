@@ -169,6 +169,10 @@ def position_size(
     if ent == stop:
         raise ValueError("entry و sl نباید برابر باشند")
 
+    margin_pct_limit = _decimal(max_margin_pct, "max_margin_pct")
+    if not ZERO < margin_pct_limit <= HUNDRED:
+        raise ValueError("max_margin_pct باید بزرگ‌تر از صفر و حداکثر 100 باشد")
+
     step = _positive(lot_step, "lot_step")
     minimum = _positive(min_lot, "min_lot")
     maximum = _positive(max_lot, "max_lot")
@@ -181,11 +185,17 @@ def position_size(
     distance = abs(ent - stop)
     conversion = _quote_to_usd_rate(symbol, ent, quote_to_account_rate)
     risk_budget = bal * rp / HUNDRED
-    loss_per_lot = distance * contract_size * conversion
+    if spec["base"] == "USD" and quote_to_account_rate is None:
+        # Keep the division until after multiplying the risk budget; this avoids
+        # flooring 0.300000... to 0.29 for exact-boundary USD-base cases (e.g. USDJPY).
+        loss_per_lot = distance * contract_size / ent
+        raw_lots = (risk_budget * ent) / (distance * contract_size)
+    else:
+        loss_per_lot = distance * contract_size * conversion
+        raw_lots = risk_budget / loss_per_lot
     if not loss_per_lot.is_finite() or loss_per_lot <= ZERO:
         raise ValueError("زیان هر لات باید مثبت و متناهی باشد")
 
-    raw_lots = risk_budget / loss_per_lot
     lots = min(_floor_to_step(raw_lots, step), _floor_to_step(maximum, step))
     margin_limited = False
     lev = None
@@ -193,9 +203,6 @@ def position_size(
 
     if leverage is not None:
         lev = _positive(leverage, "leverage")
-        margin_pct_limit = _decimal(max_margin_pct, "max_margin_pct")
-        if not ZERO < margin_pct_limit <= HUNDRED:
-            raise ValueError("max_margin_pct باید بزرگ‌تر از صفر و حداکثر 100 باشد")
         margin_per = _margin_per_lot_decimal(symbol, ent, lev, contract_size)
         allowed_margin = bal * margin_pct_limit / HUNDRED
         margin_lots = _floor_to_step(allowed_margin / margin_per, step)

@@ -147,6 +147,11 @@ def premium_discount(df: pd.DataFrame, lookback: int = 60) -> str:
 # ---------------------------------------------------------------- نقدینگی و کندل
 def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
     """جاروی سقف/کف قبلی توسط فتیله در `recent` کندل آخر؛ extreme = انتهای فتیله."""
+    for name, value in (("lookback", lookback), ("recent", recent)):
+        if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or value < 1:
+            raise ValueError(f"{name} باید عدد صحیح مثبت باشد")
+    if recent >= lookback:
+        raise ValueError("recent باید از lookback کوچک‌تر باشد")
     if len(df) < lookback + recent:
         return None
     ref = df.iloc[-lookback:-recent]

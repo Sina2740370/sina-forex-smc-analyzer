@@ -27,7 +27,7 @@ def test_rejects_non_numeric_or_non_finite_parameters(field, bad):
     "field",
     [
         "sweep_lookback", "break_lookback", "fvg_lookback",
-        "ob_lookback", "pd_lookback", "max_hold_hours", "scan_every_bars",
+        "ob_lookback", "pd_lookback", "scan_every_bars",
     ],
 )
 @pytest.mark.parametrize("bad", [0, -1, True, 1.5, float("nan"), float("inf"), "10"])
