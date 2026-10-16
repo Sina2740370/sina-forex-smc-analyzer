@@ -78,9 +78,11 @@ def structure_break(df: pd.DataFrame, lookback: int = 40, fresh_bars: int = 3):
     last, prev = closes[-1], closes[-1 - fresh_bars:-1]
     prior_bear = h1 < h0 and l1 < l0
     prior_bull = h1 > h0 and l1 > l0
-    if last > h1 and (prev <= h1).any():
+    # Breakout باید تازه باشد: تمام کلوزهای قبلی در پنجره‌ی تازگی
+    # باید هنوز در سمت پیش از شکست باشند؛ در غیر این صورت شکست قدیمی دوباره صادر می‌شود.
+    if last > h1 and np.all(prev <= h1):
         return {"kind": "CHOCH" if prior_bear else "BOS", "dir": "BULL", "level": h1}
-    if last < l1 and (prev >= l1).any():
+    if last < l1 and np.all(prev >= l1):
         return {"kind": "CHOCH" if prior_bull else "BOS", "dir": "BEAR", "level": l1}
     return None
 
@@ -151,7 +153,8 @@ def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
         return None
     ref = df.iloc[-lookback:-recent]
     prev_high, prev_low = float(ref["high"].max()), float(ref["low"].min())
-    for i in range(-recent, 0):
+    # جدیدترین sweep را برگردان؛ انتخاب اولین رخداد پنجره می‌تواند ستاپ قدیمی را جلو بیندازد.
+    for i in range(-1, -recent - 1, -1):
         c = df.iloc[i]
         if c["high"] > prev_high and c["close"] < prev_high:
             return {"type": "BEARISH_SWEEP", "level": prev_high,
