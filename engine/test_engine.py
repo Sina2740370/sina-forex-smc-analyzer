@@ -259,3 +259,10 @@ def test_native_yfinance_daily_bar_keeps_fixed_utc_boundary():
     view = TopDownView({"1d": native})
     assert len(view.at(pd.Timestamp("2025-03-09T23:30:00Z"))["1d"]) == 0
     assert len(view.at(pd.Timestamp("2025-03-10T00:30:00Z"))["1d"]) == 1
+
+def test_dukascopy_source_label_distinguishes_spot_history_from_futures_proxy():
+    from argparse import Namespace
+    label = _data_source_label(Namespace(source="dukascopy"), "XAUUSD")
+    assert "Dukascopy historical BID data" in label
+    assert "GC=F" not in label
+
