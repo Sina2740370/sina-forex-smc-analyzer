@@ -34,6 +34,8 @@ def test_check_exit_sl_wins_ties_and_spread():
     assert check_exit(1, 99, 102, 103, 99.5, 0.0) == ("TP", 102)
     assert check_exit(-1, 101, 98, 100.5, 97, 0.0) == ("TP", 98)
     assert check_exit(1, 99, 102, 102.2, 99.8, 0.5) == (None, None)  # اسپرد TP را دور می‌کند
+    assert check_exit(1, 99, 102, 100, 98, 0.5, 98) == ("SL", 97.5)  # گپ نامطلوب روی open
+    assert check_exit(-1, 101, 98, 103, 100, 0.5, 102) == ("SL", 102.5)
 
 
 def test_resample_weekly_and_daily_align_to_fx_week():
@@ -134,6 +136,58 @@ def test_backtest_runs_and_invariants():
             assert abs(t["r"] + 1) < 1e-3
     assert s["max_drawdown_r"] >= 0
 
+
+
+def test_backtest_enters_next_bar_open_and_includes_final_bar_close():
+    data = build_topdown(make_15m(days=5, seed=17))
+    df15 = data["15m"]
+    signal_entry = float(df15["close"].iloc[0])
+    cfg = EngineConfig(
+        cooldown_hours=10000, max_hold_hours=10000, max_entry_slip_r=0.3
+    )
+    state = {"sent": False}
+
+    def first_only(view, config, now):
+        if state["sent"]:
+            return Decision()
+        state["sent"] = True
+        return Decision(
+            direction="BUY", score=0.8, entry=signal_entry,
+            sl=signal_entry - 0.05, tp=signal_entry + 0.1,
+        )
+
+    trades = run_backtest("EURUSD", data, cfg, analyze_fn=first_only)
+    assert len(trades) == 1
+    trade = trades[0]
+    assert trade["open_time"] == df15["time"].iloc[1]
+    assert math.isclose(
+        trade["entry"], float(df15["open"].iloc[1]) + spread_price("EURUSD") / 2,
+        abs_tol=1e-9,
+    )
+    assert trade["status"] == "EOD"
+    assert trade["close_time"] == df15["time"].iloc[-1] + pd.Timedelta(minutes=15)
+
+
+def test_backtest_rejects_entry_after_excessive_open_gap():
+    data = build_topdown(make_15m(days=2, seed=19))
+    df15 = data["15m"]
+    signal_entry = float(df15["close"].iloc[0])
+    df15.loc[1, "open"] = signal_entry + 0.02
+    cfg = EngineConfig(
+        cooldown_hours=10000, max_hold_hours=10000, max_entry_slip_r=0.3
+    )
+    state = {"sent": False}
+
+    def first_only(view, config, now):
+        if state["sent"]:
+            return Decision()
+        state["sent"] = True
+        return Decision(
+            direction="BUY", score=0.8, entry=signal_entry,
+            sl=signal_entry - 0.01, tp=signal_entry + 0.02,
+        )
+
+    assert run_backtest("EURUSD", data, cfg, analyze_fn=first_only) == []
 
 def test_stats_helpers():
     lo, hi = wilson(13, 20)
