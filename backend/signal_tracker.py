@@ -164,7 +164,7 @@ def _check_signal(sig: dict, candles: list):
                     market_open - half_spread if direction == "BUY"
                     else market_open + half_spread
                 )
-                close_signal(sig_id, exit_price, 0.0, "EXPIRED")
+                close_signal(sig_id, exit_price, 0.0, "REJECTED")
                 logger.warning(
                     "%s: entry rejected; next eligible open exceeded max slippage or signal risk was invalid",
                     symbol,
@@ -177,16 +177,14 @@ def _check_signal(sig: dict, candles: list):
                 logger.warning("%s: entry rejected because executable price crossed SL/TP", symbol)
                 return
 
-        # Once entered, never count TP/SL events from candles after the 72h deadline.
-        if candle_time >= expires_at:
-            if candle_time - expires_at <= timedelta(minutes=15):
-                market_price = market_open
-            else:
-                market_price = float(parsed_candles[-1][1]["close"])
-                logger.warning(
-                    "%s: incomplete history at expiry; using last available close as an estimate",
-                    symbol,
-                )
+        # If a completed candle reaches the expiry deadline, mark to market at its close.
+        # Intrabar OHLC cannot prove whether a TP/SL was reached before the exact deadline.
+        bar_close = candle_time + timedelta(minutes=15)
+        if candle_time >= expires_at or bar_close >= expires_at:
+            market_price = (
+                market_open if candle_time >= expires_at
+                else float(candle["close"])
+            )
             exit_price = (
                 market_price - half_spread if direction == "BUY"
                 else market_price + half_spread
@@ -219,22 +217,6 @@ def _check_signal(sig: dict, candles: list):
                 "❌ LOSS" if final_status == "LOSS" else "✅ WIN",
                 symbol, pnl,
             )
-            return
-
-        bar_close = candle_time + timedelta(minutes=15)
-        if bar_close >= expires_at:
-            market_price = float(candle["close"])
-            exit_price = (
-                market_price - half_spread if direction == "BUY"
-                else market_price + half_spread
-            )
-            pnl_diff = (
-                exit_price - effective_entry if direction == "BUY"
-                else effective_entry - exit_price
-            )
-            pnl = _to_pips(symbol, pnl_diff)
-            close_signal(sig_id, exit_price, pnl, "EXPIRED")
-            logger.info("⏰ EXPIRED: %s %+.1f pips", symbol, pnl)
             return
 
 

@@ -57,11 +57,16 @@ class SignalLifecycleTests(unittest.TestCase):
             "entry": 1.1, "sl": 1.09, "tp": 1.12,
             "created_at": created_at.isoformat(),
         }
-        candle_time = expires_at - timedelta(minutes=15)
-        candle = [{
-            "time": candle_time.isoformat(), "open": 1.100,
-            "high": 1.105, "low": 1.095, "close": 1.101,
-        }]
+        candle = [
+            {
+                "time": (created_at + timedelta(minutes=15)).isoformat(),
+                "open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1005,
+            },
+            {
+                "time": (expires_at - timedelta(minutes=15)).isoformat(),
+                "open": 1.100, "high": 1.105, "low": 1.095, "close": 1.101,
+            },
+        ]
         half_spread = (
             backend_config.SPREAD["EURUSD=X"] * backend_config.PIP_SIZE["EURUSD=X"] / 2
         )
