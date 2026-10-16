@@ -45,6 +45,16 @@ def _load(args, symbol: str) -> dict:
     return load_yfinance_topdown(INSTRUMENTS[symbol].yf)
 
 
+def _data_source_label(args, symbol: str) -> str:
+    """منبع داده را صریح گزارش می‌کند تا proxy فیوچرز با اسپات اشتباه نشود."""
+    if args.source == "csv":
+        return f"CSV:{symbol}_M15.csv (نوع بازار/بروکر از فایل باید تأیید شود)"
+    ticker = INSTRUMENTS[symbol].yf
+    if symbol == "XAUUSD" and ticker == "GC=F":
+        return "GC=F (COMEX gold futures proxy; not spot XAUUSD)"
+    return ticker
+
+
 def cmd_fetch(args):
     from .data.fetch_history import fetch_symbol
     for sym in args.symbols:
@@ -55,11 +65,13 @@ def cmd_backtest(args):
     cfg = EngineConfig()
     trades = []
     for sym in args.symbols:
-        print(f"> {sym} ...", flush=True)
+        print(f"> {sym} [source={_data_source_label(args, sym)}] ...", flush=True)
         trades += run_backtest(sym, _load(args, sym), cfg, args.start, args.end,
                                analyze_fn=_strategy(args.strategy))
     s = summarize(trades)
-    print(json.dumps({"config": cfg.hash(), "summary": s, "gate": evaluate_gate(s)},
+    print(json.dumps({"config": cfg.hash(),
+                      "data_sources": {sym: _data_source_label(args, sym) for sym in args.symbols},
+                      "summary": s, "gate": evaluate_gate(s)},
                      indent=2, default=str, ensure_ascii=False))
     if trades:
         os.makedirs(args.out, exist_ok=True)
@@ -72,12 +84,13 @@ def cmd_report(args):
     cfg = EngineConfig()
     all_trades, lines = [], []
     for sym in args.symbols:
-        print(f"> {sym} ...", flush=True)
+        print(f"> {sym} [source={_data_source_label(args, sym)}] ...", flush=True)
         data = _load(args, sym)
         trades = run_backtest(sym, data, cfg, args.start, args.end,
                               analyze_fn=_strategy(args.strategy))
         all_trades += trades
         lines.append(f"\n===== {sym} =====")
+        lines.append("منبع داده: " + _data_source_label(args, sym))
         lines.append("خلاصه: " + json.dumps(summarize(trades), default=str, ensure_ascii=False))
         lines.append("مقایسه با ورود تصادفی: " + json.dumps(
             random_baseline(sym, data["15m"], trades, cfg, args.sims), ensure_ascii=False))
