@@ -9,7 +9,7 @@ from backend import database, signal_tracker
 
 
 class SignalLifecycleTests(unittest.TestCase):
-    def test_expired_snapshot_is_not_rechecked_for_tp_sl(self):
+    def test_post_expiry_tp_sl_cannot_overwrite_expired_status(self):
         signal = {
             "id": 17,
             "symbol": "EURUSD",
@@ -19,6 +19,7 @@ class SignalLifecycleTests(unittest.TestCase):
             "tp": 1.12,
             "created_at": "2020-01-01T00:00:00",
         }
+        # This candle is long after the 72-hour expiry deadline.
         candles = [{
             "time": "2026-10-16T00:00:00",
             "high": 1.13,
@@ -28,12 +29,11 @@ class SignalLifecycleTests(unittest.TestCase):
         with (
             patch.object(signal_tracker, "get_open_signals", return_value=[signal]),
             patch.object(signal_tracker, "fetch_ohlcv", return_value=candles),
-            patch.object(signal_tracker, "_check_expired_signals", return_value={17}),
-            patch.object(signal_tracker, "_check_signal") as check_signal,
+            patch.object(signal_tracker, "close_signal", return_value=True) as close,
         ):
             signal_tracker.check_open_signals()
 
-        check_signal.assert_not_called()
+        close.assert_called_once_with(17, 1.1, 0.0, "EXPIRED")
 
     @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
     def test_close_signal_only_changes_an_open_signal_once(self):
