@@ -7,7 +7,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 
-from .config import MAX_ENTRY_SLIP_R, PIP_SIZE, SPREAD
+from .config import MAX_ENTRY_DELAY_MINUTES, MAX_ENTRY_SLIP_R, PIP_SIZE, SPREAD
 from .data_fetcher import fetch_ohlcv
 from .database import (
     get_open_signals,
@@ -142,6 +142,18 @@ def _check_signal(sig: dict, candles: list):
                 )
                 close_signal(sig_id, exit_price, 0.0, "EXPIRED")
                 logger.info("EXPIRED without entry: %s; no eligible bar before expiry", symbol)
+                return
+
+            if candle_time - created_at > timedelta(minutes=MAX_ENTRY_DELAY_MINUTES):
+                exit_price = (
+                    market_open - half_spread if direction == "BUY"
+                    else market_open + half_spread
+                )
+                close_signal(sig_id, exit_price, 0.0, "EXPIRED")
+                logger.warning(
+                    "%s: entry rejected because the first eligible bar arrived after %s minutes",
+                    symbol, MAX_ENTRY_DELAY_MINUTES,
+                )
                 return
 
             if (
