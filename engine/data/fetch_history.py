@@ -39,13 +39,13 @@ def _fetch_side(dk, instrument: str, offer_side: str, start: datetime, end: date
     original_get = dk.requests.get
 
     def timeout_get(*args, **kwargs):
-        kwargs.setdefault("timeout", (10, 45))
+        kwargs.setdefault("timeout", (5, 20))
         return original_get(*args, **kwargs)
 
     dk.requests.get = timeout_get
     try:
         return dk.fetch(
-            instrument, dk.INTERVAL_MIN_15, offer_side, start, end, max_retries=3
+            instrument, dk.INTERVAL_MIN_15, offer_side, start, end, max_retries=1
         )
     finally:
         dk.requests.get = original_get
