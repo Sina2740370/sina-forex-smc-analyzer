@@ -200,3 +200,12 @@ def test_backend_and_engine_spread_models_match_for_all_supported_symbols():
         )
         assert abs(backend_spread - spread_price(engine_symbol)) < 1e-12
 
+
+def test_live_data_feed_ignores_forming_bar_when_recent_closed_bar_exists():
+    now = pd.Timestamp("2026-10-17T12:00:00Z")
+    records = [
+        {"time": (now - pd.Timedelta(minutes=20)).isoformat()},  # closes 5m ago
+        {"time": (now - pd.Timedelta(minutes=5)).isoformat()},   # still forming
+    ]
+    assert data_fetcher._live_candle_freshness_error(records, now) is None
+
