@@ -15,64 +15,110 @@ import numpy as np
 import pandas as pd
 
 from ..core.config import EngineConfig, spread_price
-from .runner import run_backtest, summarize
+from .runner import check_exit, run_backtest, summarize
 
 
 # ---------------------------------------------------------------- ۱) رندوم
-def _simulate(side, mid, risk_dist, rr, hi, lo, cl, half, n):
-    """همان قواعد runner: SL اولویت دارد، EXPIRED با قیمت بازار در کندل n‌ام."""
-    h, l = hi[:n], lo[:n]
-    sl = mid - side * risk_dist
-    tp = mid + side * risk_dist * rr
-    if side > 0:
-        sl_hit, tp_hit = l - half <= sl, h - half >= tp
-    else:
-        sl_hit, tp_hit = h + half >= sl, l + half <= tp
-    fs = int(sl_hit.argmax()) if sl_hit.any() else n + 1
-    ft = int(tp_hit.argmax()) if tp_hit.any() else n + 1
-    entry = mid + side * half
+def _simulate(
+    side, signal_mid, risk_dist, rr, opens, highs, lows, closes, half, max_entry_slip_r
+):
+    """Random trade using the same next-open, spread, gap, SL/TP and expiry rules as runner."""
+    if risk_dist <= 0 or len(opens) == 0:
+        return None
+    first_open = float(opens[0])
+    if abs(first_open - signal_mid) > max_entry_slip_r * risk_dist:
+        return None
+
+    sl = signal_mid - side * risk_dist
+    tp = signal_mid + side * risk_dist * rr
+    entry = first_open + side * half
+    if (entry - sl) * side <= 0 or (tp - entry) * side <= 0:
+        return None
     risk = (entry - sl) * side
-    if fs <= ft and fs < n:
-        exit_px = sl
-    elif ft < n:
-        exit_px = tp
-    else:
-        exit_px = cl[n - 1] - side * half
-    return (exit_px - entry) * side / risk
+
+    for i in range(len(opens)):
+        status, exit_px = check_exit(
+            side, sl, tp, float(highs[i]), float(lows[i]), half, float(opens[i])
+        )
+        if status is not None:
+            return (float(exit_px) - entry) * side / risk, i + 1
+
+    exit_px = float(closes[-1]) - side * half
+    return (exit_px - entry) * side / risk, len(opens)
 
 
 def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineConfig,
                     n_sims: int = 300, seed: int = 1) -> dict:
-    ts = [t for t in trades if t["symbol"] == symbol]
+    ts = [
+        t for t in trades
+        if t["symbol"] == symbol and t.get("signal_entry") is not None
+    ]
     if len(ts) < 5:
         return {"n": len(ts), "note": "تعداد معامله برای مقایسه کافی نیست"}
+    if n_sims < 1:
+        raise ValueError("n_sims باید حداقل 1 باشد")
+
     half = spread_price(symbol) / 2.0
     times = df15["time"]
-    hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
+    opens, hi, lo, cl = (
+        df15[k].to_numpy() for k in ("open", "high", "low", "close")
+    )
     nb = cfg.max_hold_hours * 4
     bar = pd.Timedelta(minutes=15)
     j = [int(times.searchsorted(t["open_time"] - bar)) for t in ts]
-    j_lo, j_hi = min(j), min(max(j), len(df15) - nb - 2)
-    risks = np.array([(((t["entry"] - (1 if t["side"] == "BUY" else -1) * half) - t["sl"])
-                       * (1 if t["side"] == "BUY" else -1)) for t in ts])
-    real = float(np.mean([t["r"] for t in ts]))
+    j_lo = max(0, min(j))
+    j_hi = min(max(j), len(df15) - nb - 1)
+    if j_hi < j_lo or nb < 1:
+        return {"n": len(ts), "note": "داده‌ی کافی برای ساخت baseline هم‌شرایط وجود ندارد"}
 
+    risks = np.array([
+        abs(float(t["signal_entry"]) - float(t["sl"])) for t in ts
+    ])
+    real = float(np.mean([t["r"] for t in ts]))
     rng = np.random.default_rng(seed)
     sims = np.empty(n_sims)
-    for s in range(n_sims):
+    invalid_entries = 0
+
+    for sim_i in range(n_sims):
         rs = []
-        for rd in risks:
-            k = int(rng.integers(j_lo, j_hi + 1))
-            side = 1 if rng.random() < 0.5 else -1
-            rs.append(_simulate(side, cl[k], rd, cfg.risk_reward,
-                                hi[k + 1:k + 1 + nb], lo[k + 1:k + 1 + nb], cl[k + 1:k + 1 + nb],
-                                half, nb))
-        sims[s] = np.mean(rs)
+        next_signal_i = j_lo
+        for risk_dist in risks:
+            outcome = None
+            chosen_k = None
+            for _ in range(100):
+                lo_k = max(j_lo, next_signal_i)
+                if lo_k > j_hi:
+                    break
+                k = int(rng.integers(lo_k, j_hi + 1))
+                side = 1 if rng.random() < 0.5 else -1
+                outcome = _simulate(
+                    side, float(cl[k]), float(risk_dist), cfg.risk_reward,
+                    opens[k + 1:k + 1 + nb],
+                    hi[k + 1:k + 1 + nb],
+                    lo[k + 1:k + 1 + nb],
+                    cl[k + 1:k + 1 + nb],
+                    half, cfg.max_entry_slip_r,
+                )
+                if outcome is not None:
+                    chosen_k = k
+                    break
+            if outcome is None or chosen_k is None:
+                invalid_entries += 1
+                rs.append(0.0)
+                next_signal_i = min(j_hi + 1, next_signal_i + 1)
+                continue
+            r_value, held_bars = outcome
+            rs.append(float(r_value))
+            # Random trades cannot overlap; next decision occurs at/after exit-bar close.
+            next_signal_i = chosen_k + held_bars
+        sims[sim_i] = float(np.mean(rs))
+
     return {
         "n": len(ts), "real_expectancy_r": round(real, 4),
         "random_mean_r": round(float(sims.mean()), 4),
         "random_p95_r": round(float(np.percentile(sims, 95)), 4),
         "p_value": round((int((sims >= real).sum()) + 1) / (n_sims + 1), 4),
+        "invalid_random_entries": invalid_entries,
     }
 
 
