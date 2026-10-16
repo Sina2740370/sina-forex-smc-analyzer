@@ -19,8 +19,6 @@ from engine.data.providers import TopDownView
 from engine.strategy.smc_topdown import analyze as analyze_smc_engine
 
 from .config import (
-    MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
-    SL_ATR_MULTIPLIER, SL_OB_BUFFER,
     WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
 )
 
