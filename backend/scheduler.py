@@ -152,6 +152,7 @@ async def _scan_market_locked():
                     score=result["score"],
                     reasons=result.get("reasons", []),
                     price_at_signal=result["current_price"],
+                    config_hash=result.get("config_hash"),
                 )
                 if signal_id is None:
                     duplicates += 1
