@@ -83,7 +83,8 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     analyze_fn: تابع (view_dict, cfg, now) -> Decision؛ پیش‌فرض همان analyze (SMC)."""
     analyze_fn = analyze_fn or analyze
     view = TopDownView(data)
-    df15 = data["15m"]
+    # Use the validated, numeric, UTC-normalized frames from TopDownView.
+    df15 = view.data["15m"]
     half = spread_price(symbol) / 2.0
     times = df15["time"]
     hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
