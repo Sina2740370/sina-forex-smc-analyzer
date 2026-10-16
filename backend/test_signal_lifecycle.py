@@ -44,6 +44,32 @@ class SignalLifecycleTests(unittest.TestCase):
         self.assertTrue(math.isclose(args[2], 9.0, abs_tol=1e-9))
         self.assertEqual(args[3], "EXPIRED")
 
+
+    def test_expiry_uses_close_of_bar_that_reaches_deadline(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        expires_at = now - timedelta(minutes=5)
+        created_at = expires_at - timedelta(hours=signal_tracker.MAX_SIGNAL_LIFETIME_HOURS)
+        signal = {
+            "id": 25, "symbol": "EURUSD", "direction": "BUY",
+            "entry": 1.1, "sl": 1.09, "tp": 1.12,
+            "created_at": created_at.isoformat(),
+        }
+        candle_time = expires_at - timedelta(minutes=15)
+        candle = [{
+            "time": candle_time.isoformat(), "open": 1.100,
+            "high": 1.105, "low": 1.095, "close": 1.101,
+        }]
+        half_spread = (
+            backend_config.SPREAD["EURUSD"] * backend_config.PIP_SIZE["EURUSD"] / 2
+        )
+        with patch.object(signal_tracker, "close_signal", return_value=True) as close:
+            signal_tracker._check_signal(signal, candle)
+        close.assert_called_once()
+        args = close.call_args.args
+        self.assertEqual(args[0], 25)
+        self.assertTrue(math.isclose(args[1], 1.101 - half_spread, abs_tol=1e-9))
+        self.assertEqual(args[3], "EXPIRED")
+
     def test_forming_15m_candle_cannot_close_signal(self):
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         signal = {
