@@ -79,12 +79,12 @@ def check_open_signals():
                 continue
 
             for sig in signals:
-                if sig["id"] in expired_ids:
-                    continue
                 _check_signal(sig, candles)
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
+
+    _check_expired_signals(open_signals)
 
 
 def _check_expired_signals(signals: list) -> set:
@@ -136,16 +136,20 @@ def _check_signal(sig: dict, candles: list):
     # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
 
-    # مرور کندل‌ها
+    # پس از مهلت ۷۲ ساعته، برخوردهای بعدی TP/SL نباید نتیجه را تغییر دهند.
+    expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
+
+    # مرور کندل‌ها به ترتیب زمانی؛ فقط کندل‌هایی که قبل از انقضا شروع شده‌اند.
     for c in candles:
         try:
             candle_time = _parse_dt(c["time"])
         except Exception:
             continue
 
-        # فقط کندل‌های بعد از ساخته شدن سیگنال
         if candle_time <= created_at:
             continue
+        if candle_time >= expires_at:
+            break
 
         high = c["high"]
         low = c["low"]
