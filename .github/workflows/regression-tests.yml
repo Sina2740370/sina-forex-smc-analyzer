@@ -25,4 +25,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
       - name: Run engine and lifecycle regression tests
+        env:
+          # Tests use only local/mocked data; these satisfy import-time config validation.
+          FRED_API_KEY: test-placeholder
+          TELEGRAM_BOT_TOKEN: test-placeholder
+          TELEGRAM_CHAT_ID: test-placeholder
+          DB_PATH: /tmp/sina-quant-test-signals.db
         run: python -m pytest -q engine/test_engine.py backend/test_signal_lifecycle.py
