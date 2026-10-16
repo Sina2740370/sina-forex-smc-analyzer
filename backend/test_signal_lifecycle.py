@@ -196,6 +196,26 @@ class SignalLifecycleTests(unittest.TestCase):
         self.assertEqual(close.call_args.args[2], 0.0)
         self.assertEqual(close.call_args.args[3], "EXPIRED")
 
+
+    def test_signal_tracker_rejects_late_entry_even_when_price_is_near_signal(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        created_at = now - timedelta(minutes=60)
+        signal = {
+            "id": 33, "symbol": "EURUSD=X", "direction": "BUY",
+            "entry": 1.1, "sl": 1.09, "tp": 1.12,
+            "created_at": created_at.isoformat(),
+        }
+        candles = [{
+            "time": (now - timedelta(minutes=15)).isoformat(),
+            "open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1,
+        }]
+        with patch.object(signal_tracker, "close_signal", return_value=True) as close:
+            signal_tracker._check_signal(signal, candles)
+
+        close.assert_called_once()
+        self.assertEqual(close.call_args.args[2], 0.0)
+        self.assertEqual(close.call_args.args[3], "EXPIRED")
+
     @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
     def test_duplicate_open_symbol_is_rejected(self):
         original_path = database.DB_PATH
