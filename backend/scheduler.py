@@ -142,8 +142,7 @@ async def _scan_market_locked():
                     )
                     continue
 
-                _mark_signal_sent(symbol, direction)
-                insert_signal(
+                signal_id = insert_signal(
                     symbol=symbol,
                     name=name,
                     direction=direction,
@@ -154,6 +153,13 @@ async def _scan_market_locked():
                     reasons=result.get("reasons", []),
                     price_at_signal=result["current_price"],
                 )
+                if signal_id is None:
+                    duplicates += 1
+                    logger.info("⏭ درج سیگنال %s رد شد؛ سیگنال باز دیگری وجود دارد", symbol)
+                    continue
+
+                # فقط بعد از درج موفق، cooldown حافظه‌ای و اعلان فعال شوند.
+                _mark_signal_sent(symbol, direction)
                 signals_created += 1
 
                 if conflict:
