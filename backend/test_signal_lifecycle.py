@@ -22,13 +22,16 @@ class SignalLifecycleTests(unittest.TestCase):
             "created_at": "2020-01-01T00:00:00",
         }
         # This candle is long after the 72-hour expiry deadline.
-        candles = [{
-            "time": "2026-10-16T00:00:00",
-            "open": 1.1,
-            "high": 1.13,
-            "low": 1.08,
-            "close": 1.101,
-        }]
+        candles = [
+            {
+                "time": "2020-01-01T00:15:00",
+                "open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1,
+            },
+            {
+                "time": "2026-10-16T00:00:00",
+                "open": 1.1, "high": 1.13, "low": 1.08, "close": 1.101,
+            },
+        ]
 
         with (
             patch.object(signal_tracker, "get_open_signals", return_value=[signal]),
@@ -40,8 +43,8 @@ class SignalLifecycleTests(unittest.TestCase):
         close.assert_called_once()
         args = close.call_args.args
         self.assertEqual(args[0], 17)
-        self.assertTrue(math.isclose(args[1], 1.10095, abs_tol=1e-9))
-        self.assertTrue(math.isclose(args[2], 9.0, abs_tol=1e-9))
+        self.assertTrue(math.isclose(args[1], 1.10096, abs_tol=1e-9))
+        self.assertTrue(math.isclose(args[2], 9.2, abs_tol=1e-9))
         self.assertEqual(args[3], "EXPIRED")
 
 
