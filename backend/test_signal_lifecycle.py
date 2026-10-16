@@ -194,7 +194,7 @@ class SignalLifecycleTests(unittest.TestCase):
 
         close.assert_called_once()
         self.assertEqual(close.call_args.args[2], 0.0)
-        self.assertEqual(close.call_args.args[3], "EXPIRED")
+        self.assertEqual(close.call_args.args[3], "REJECTED")
 
 
     def test_signal_tracker_rejects_late_entry_even_when_price_is_near_signal(self):
