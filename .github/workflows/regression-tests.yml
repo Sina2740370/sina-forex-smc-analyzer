@@ -34,4 +34,4 @@ jobs:
         run: >-
           python -m pytest -q
           backend/test_signal_lifecycle.py engine/test_engine.py
-          -k "test_post_expiry or test_close_signal or test_view_never_shows_forming_candles or test_no_lookahead_decision_identical_on_truncated_data or test_topdown_daily_close_respects_dst_transition or test_daily_bar_starts_at_ny_1700_winter_and_summer or test_daily_bar_across_dst_switch_keeps_17_ny or test_buy_tp or test_sell_stop"
+          -k "test_post_expiry or test_close_signal or test_view_never_shows_forming_candles or test_no_lookahead_decision_identical_on_truncated_data or test_topdown_daily_close_respects_dst_transition or test_daily_bar_starts_at_ny_1700_winter_and_summer or test_daily_bar_across_dst_switch_keeps_17_ny or test_buy_tp or test_sell_stop or test_gold_spread_assumption"
