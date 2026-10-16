@@ -73,7 +73,7 @@ def test_choch_vs_bos_classification():
     r = smc.structure_break(_zigzag([12, 20, 10, 17, 8, 15, 17.5]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "CHOCH"
     # HH+HL (ساختار صعودی) و بعد شکست سقف آخر → BOS
-    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 17.1]), lookback=60)
+    r = smc.structure_break(_zigzag([10, 14, 11, 17, 13, 16, 17.5]), lookback=60)
     assert r and r["dir"] == "BULL" and r["kind"] == "BOS"
 
 
@@ -82,10 +82,10 @@ def test_structure_break_does_not_repeat_after_level_was_already_broken():
     base = _zigzag([10, 14, 11, 17, 13, 16, 16.9])
     close = base["close"].iloc[-1]
     extra = pd.DataFrame({
-        "open": [close, 17.0],
-        "high": [17.3, 17.4],
-        "low": [16.8, 16.9],
-        "close": [17.1, 17.2],
+        "open": [close, 17.3],
+        "high": [17.5, 17.6],
+        "low": [17.0, 17.1],
+        "close": [17.3, 17.4],
     })
     stale = pd.concat([base, extra], ignore_index=True)
     assert smc.structure_break(stale, lookback=60, fresh_bars=3) is None
