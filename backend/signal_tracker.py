@@ -64,9 +64,10 @@ def check_open_signals():
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
     # ۱) چک سیگنال‌های منقضی
-    expired_ids = _check_expired_signals(open_signals)
+    # ابتدا خروج‌های رخ‌داده قبل از مهلت انقضا را بررسی می‌کنیم.
 
-    # ۲) گروه‌بندی بر اساس نماد
+
+    # گروه‌بندی بر اساس نماد
     by_symbol = {}
     for sig in open_signals:
         by_symbol.setdefault(sig["symbol"], []).append(sig)
