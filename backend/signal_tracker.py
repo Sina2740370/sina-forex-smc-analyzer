@@ -16,6 +16,8 @@ from .database import (
     close_signal,
 )
 
+from engine.runner import check_exit as engine_check_exit
+
 logger = logging.getLogger(__name__)
 
 # حداکثر عمر سیگنال (ساعت) - بعدش EXPIRED می‌شه
@@ -120,17 +122,16 @@ def _check_signal(sig: dict, candles: list):
             continue
         if candle_time + timedelta(minutes=15) > now_utc:
             continue
+        # Если данные начинаются уже после дедлайна, не проигрываем
+        # TP/SL на свечах после срока жизни: используем ближайший видимый рынок.
         if candle_time >= expires_at:
-            # اگر کندل نزدیک به زمان انقضا باشد، open بهترین تقریب موجود است.
-            # اگر تاریخچه به‌دلیل محدودیت فید ناقص باشد، آخرین close موجود را
-            # به‌عنوان mark-to-market می‌گیریم؛ این قیمت دقیقِ لحظه‌ی انقضا نیست.
             if candle_time - expires_at <= timedelta(minutes=15):
                 market_price = float(c["open"])
             else:
                 market_price = float(candles[-1]["close"])
                 logger.warning(
-                    f"تاریخچه برای انقضای دقیق {symbol} ناقص است؛ "
-                    "آخرین close موجود برای mark-to-market استفاده شد."
+                    f"История для точного истечения {symbol} неполная; "
+                    "использован последний доступный close."
                 )
             exit_price = market_price - half_spread if direction == "BUY" else market_price + half_spread
             pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
@@ -139,37 +140,32 @@ def _check_signal(sig: dict, candles: list):
             logger.info(f"⏰ EXPIRED: {symbol} {pnl:+.1f} pips")
             return
 
-        high = c["high"]
-        low = c["low"]
+        high = float(c["high"])
+        low = float(c["low"])
+        side = 1 if direction == "BUY" else -1
+        status, exit_price = engine_check_exit(side, float(sl), float(tp), high, low, half_spread)
+        if status is not None:
+            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            pnl = _to_pips(symbol, pnl_diff)
+            final_status = "LOSS" if status == "SL" else "WIN"
+            close_signal(sig_id, exit_price, pnl, final_status)
+            logger.info(
+                f"{'❌ LOSS' if final_status == 'LOSS' else '✅ WIN'}: "
+                f"{symbol} {pnl:+.1f} pips"
+            )
+            return
 
-        if direction == "BUY":
-            bid_low = low - half_spread
-            bid_high = high - half_spread
-            # در برخورد هم‌زمان، SL محافظه‌کارانه اولویت دارد.
-            if bid_low <= sl:
-                pnl = _to_pips(symbol, sl - effective_entry)
-                close_signal(sig_id, sl, pnl, "LOSS")
-                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
-                return
-            if bid_high >= tp:
-                pnl = _to_pips(symbol, tp - effective_entry)
-                close_signal(sig_id, tp, pnl, "WIN")
-                logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
-                return
-
-        elif direction == "SELL":
-            ask_high = high + half_spread
-            ask_low = low + half_spread
-            if ask_high >= sl:
-                pnl = _to_pips(symbol, effective_entry - sl)
-                close_signal(sig_id, sl, pnl, "LOSS")
-                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
-                return
-            if ask_low <= tp:
-                pnl = _to_pips(symbol, effective_entry - tp)
-                close_signal(sig_id, tp, pnl, "WIN")
-                logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
-                return
+        # همان لحظه‌ی بسته‌شدن کندل را ملاک انقضا می‌گیریم؛ این با موتور بک‌تست
+        # هم‌راستاست و از یک کندل کامل اضافه پس از deadline جلوگیری می‌کند.
+        bar_close = candle_time + timedelta(minutes=15)
+        if bar_close >= expires_at:
+            market_price = float(c["close"])
+            exit_price = market_price - half_spread if direction == "BUY" else market_price + half_spread
+            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            pnl = _to_pips(symbol, pnl_diff)
+            close_signal(sig_id, exit_price, pnl, "EXPIRED")
+            logger.info(f"⏰ EXPIRED: {symbol} {pnl:+.1f} pips")
+            return
 
 
 def signal_gate(symbol: str, direction: str):
