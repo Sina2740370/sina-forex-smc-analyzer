@@ -119,12 +119,29 @@ def load_yfinance_topdown(yf_symbol: str) -> dict:
     return data
 
 
+# ---------------------------------------------------------------- زمان بسته‌شدن کندل
+def _bar_close_times(df: pd.DataFrame, tf: str) -> pd.Series:
+    """زمان بسته‌شدن کندل‌ها را با لحاظ DST محاسبه می‌کند.
+
+    کندل‌های روزانه و هفتگی فارکس در 17:00 نیویورک بسته می‌شوند؛
+    بنابراین طول واقعی آن‌ها در تغییر DST می‌تواند 23/25 یا 167/169 ساعت باشد.
+    """
+    starts = pd.to_datetime(df["time"], utc=True)
+    if tf in ("1d", "1wk"):
+        local_starts = starts.dt.tz_convert(NY_TZ)
+        offset = pd.DateOffset(days=1) if tf == "1d" else pd.DateOffset(weeks=1)
+        return (local_starts + offset).dt.tz_convert("UTC")
+    if tf not in TF_MINUTES:
+        raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
+    return starts + pd.Timedelta(minutes=TF_MINUTES[tf])
+
+
 # ---------------------------------------------------------------- تازگی
 def staleness_minutes(df: pd.DataFrame, tf: str, now: pd.Timestamp) -> float:
     """چند دقیقه از بسته‌شدن آخرین کندل گذشته؛ برای رد داده‌ی کهنه در live."""
     if df.empty:
         return float("inf")
-    last_close = df["time"].iloc[-1] + pd.Timedelta(minutes=TF_MINUTES[tf])
+    last_close = _bar_close_times(df.tail(1), tf).iloc[0]
     return (now - last_close).total_seconds() / 60.0
 
 
@@ -138,7 +155,7 @@ class TopDownView:
     def __init__(self, data: dict):
         self.data = data
         self._close = {
-            tf: (df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf]))
+            tf: _bar_close_times(df, tf)
             .dt.tz_convert("UTC").dt.tz_localize(None).to_numpy(dtype="datetime64[ns]")
             for tf, df in data.items()
         }
