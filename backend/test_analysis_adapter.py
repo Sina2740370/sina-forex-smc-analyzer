@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 
-from backend import analysis_engine, scheduler
+from backend import analysis_engine, data_fetcher, scheduler
 
 
 def _records():
@@ -155,4 +155,24 @@ def test_full_analysis_still_vetoes_shared_engine_signal_when_news_is_unsafe():
     assert result["direction"] is None
     assert result["news_safe"] is False
     assert result["decision_source"] == "shared_smc_engine"
+
+
+def test_live_data_feed_rejects_stale_15m_candles():
+    now = pd.Timestamp("2026-10-17T12:00:00Z")
+    stale = [{"time": (now - pd.Timedelta(hours=3)).isoformat()}]
+    error = data_fetcher._live_candle_freshness_error(stale, now)
+    assert error is not None and "کهنه" in error
+
+
+def test_live_data_feed_accepts_recent_closed_15m_candle():
+    now = pd.Timestamp("2026-10-17T12:00:00Z")
+    recent = [{"time": (now - pd.Timedelta(minutes=20)).isoformat()}]
+    assert data_fetcher._live_candle_freshness_error(recent, now) is None
+
+
+def test_live_data_feed_rejects_future_dated_15m_candles():
+    now = pd.Timestamp("2026-10-17T12:00:00Z")
+    future = [{"time": (now + pd.Timedelta(minutes=30)).isoformat()}]
+    error = data_fetcher._live_candle_freshness_error(future, now)
+    assert error is not None and "آینده" in error
 
