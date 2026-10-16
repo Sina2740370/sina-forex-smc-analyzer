@@ -17,6 +17,19 @@ COLS = ["time", "open", "high", "low", "close", "volume"]
 
 
 # ---------------------------------------------------------------- CSV (MT5)
+def _parse_mt5_timestamps(values: pd.Series) -> pd.Series:
+    """Parse timestamps with consistent awareness; mixed aware/naive rows are rejected."""
+    flags = []
+    for value in values:
+        stamp = pd.Timestamp(value)
+        flags.append(stamp.tzinfo is not None and stamp.utcoffset() is not None)
+    if any(flags) and not all(flags):
+        raise ValueError("CSV دارای ترکیب زمان‌های timezone-aware و naive است")
+    if flags and all(flags):
+        return pd.Series(pd.to_datetime(values, utc=True, errors="raise"), index=values.index)
+    return pd.Series(pd.to_datetime(values, errors="raise"), index=values.index)
+
+
 def _normalize_mt5_timestamps(
     ts: pd.Series, tz_offset_hours: float = 0.0, broker_timezone: str | None = None
 ) -> pd.Series:
@@ -58,11 +71,11 @@ def load_mt5_csv(
     raw = pd.read_csv(path, sep=None, engine="python")
     raw.columns = [str(c).strip().strip("<>").lower() for c in raw.columns]
     if "date" in raw.columns and "time" in raw.columns:
-        ts = pd.to_datetime(raw["date"].astype(str) + " " + raw["time"].astype(str))
+        ts = _parse_mt5_timestamps(raw["date"].astype(str) + " " + raw["time"].astype(str))
     elif "datetime" in raw.columns:
-        ts = pd.to_datetime(raw["datetime"])
+        ts = _parse_mt5_timestamps(raw["datetime"])
     elif "time" in raw.columns:
-        ts = pd.to_datetime(raw["time"])
+        ts = _parse_mt5_timestamps(raw["time"])
     else:
         raise ValueError("ستون زمان پیدا نشد (date+time / datetime / time)")
 
