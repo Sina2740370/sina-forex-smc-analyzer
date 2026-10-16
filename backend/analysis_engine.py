@@ -14,6 +14,10 @@ from datetime import datetime, timezone
 import pandas as pd
 import numpy as np
 
+from engine.core.config import EngineConfig
+from engine.data.providers import TopDownView
+from engine.strategy.smc_topdown import analyze as analyze_smc_engine
+
 from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
@@ -411,320 +415,73 @@ def _drop_forming(df, minutes):
 
 def analyze_technical_topdown(data_dict):
     """
-    تحلیل تکنیکال نسخه ۴.۳
-    اولویت‌بندی بر اساس روش ICT/SMC حرفه‌ای:
-    1. HTF Bias
-    2. Liquidity Sweep
-    3. Structure Shift (CHOCH)
-    4. Entry در FVG یا Order Block
+    Adapter لایو به موتور SMC مشترک با Backtest/Paper.
+    ورودی همچنان قرارداد قدیمی backend است، اما منطق تصمیم‌گیری فقط از
+    engine.strategy.smc_topdown.analyze می‌آید؛ داده‌ی در حال تشکیل حذف می‌شود.
     """
-    price = None
-    atr = 0.0
-    zone = "-"
-    df_4h = df_1h = df_15m = None
-
-    try:
-        df_15m = pd.DataFrame(data_dict["15m"])
-        if len(df_15m) > 0:
-            price = float(df_15m["close"].iloc[-1])
-            atr = calculate_atr(df_15m)
-    except Exception:
-        pass
-
-    try:
-        df_4h = pd.DataFrame(data_dict["4h"])
-        if len(df_4h) >= 20:
-            pd_zone = get_premium_discount(df_4h, lookback=60)
-            zone = pd_zone["zone"]
-    except Exception:
-        pass
-
-    try:
-        df_1h = pd.DataFrame(data_dict["1h"])
-    except Exception:
-        pass
-
-    td_dir, td_reason, wk_trend, d_trend, soft = top_down_filter(data_dict)
-
     base = {
-        "score": 0.0,
-        "direction": None,
-        "price": price,
-        "sl": None,
-        "tp": None,
-        "trend": td_dir if td_dir in ("BULLISH", "BEARISH") else (wk_trend or "RANGING"),
-        "wk_trend": wk_trend,
-        "d_trend": d_trend,
-        "zone": zone,
-        "atr": round(atr, 6) if atr else 0,
-        "reasons": [],
-        "blocked": False,
+        "score": 0.0, "direction": None, "price": None, "sl": None, "tp": None,
+        "trend": "-", "wk_trend": "-", "d_trend": "-", "zone": "-",
+        "atr": 0.0, "reasons": [], "blocked": True,
     }
+    try:
+        frames = {}
+        for tf in ("1wk", "1d", "4h", "1h", "15m"):
+            df = pd.DataFrame(data_dict.get(tf, []))
+            if df.empty or "time" not in df.columns:
+                base["reasons"] = [f"داده کافی نیست: {tf}"]
+                return base
+            df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+            for col in ("open", "high", "low", "close"):
+                if col not in df.columns:
+                    base["reasons"] = [f"ستون {col} در {tf} وجود ندارد"]
+                    return base
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            if "volume" not in df.columns:
+                df["volume"] = 0.0
+            df["volume"] = pd.to_numeric(df["volume"], errors="coerce").fillna(0.0)
+            frames[tf] = (
+                df.dropna(subset=["time", "open", "high", "low", "close"])
+                .drop_duplicates("time").sort_values("time").reset_index(drop=True)
+            )
 
-    # فقط تضاد مستقیم سخت بلاک می‌شود
-    if td_dir == "CONFLICT":
-        base["reasons"] = [f"🚫 {td_reason}", f"هفتگی: {wk_trend}", f"روزانه: {d_trend}"]
-        base["blocked"] = True
-        logger.info("بلاک شد (CONFLICT): wk=%s d=%s", wk_trend, d_trend)
-        return base
-
-    if td_dir == "NEUTRAL":
-        base["reasons"] = [f"⏸ {td_reason}"]
-        base["blocked"] = True
-        logger.debug("بلاک شد (NEUTRAL): wk=%s d=%s", wk_trend, d_trend)
-        return base
-
-    if df_4h is None or df_1h is None or df_15m is None:
-        base["reasons"] = ["داده کافی نیست"]
-        base["blocked"] = True
-        return base
-
-    if len(df_4h) < 30 or len(df_1h) < MIN_CANDLES or len(df_15m) < MIN_CANDLES:
-        base["reasons"] = ["داده کافی نیست"]
-        base["blocked"] = True
-        return base
-
-    if atr == 0 or price is None:
-        base["reasons"] = ["ATR یا قیمت نامعتبر"]
-        base["blocked"] = True
-        return base
-
-    # آماده‌سازی داده‌ها
-    df_1h = _drop_forming(df_1h, 60)
-    df_15m = _drop_forming(df_15m, 15)
-    htf_obs = find_order_blocks(df_4h, lookback=60)
-    htf_pd = get_premium_discount(df_4h, lookback=60)
-    ltf_fvg = detect_fvg(df_15m, lookback=15)
-    sweep = detect_liquidity_sweep(df_15m, lookback=30)
-    choch = detect_choch(df_1h, lookback=20)
-    unicorn = detect_unicorn_setup(df_4h, df_1h, df_15m)
-    sweep_mult = sweep_strength_multiplier(sweep, atr)
-    session = current_session_label()
-
-    score = 0.0
-    reasons = [f"🎯 فیلتر محیطی: {td_reason}"]
-    base["session"] = session
-
-    # جریمه حالت soft
-    if soft:
-        score -= 0.10
-        reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه -۰.۱۰)")
-
-    # بونوس کوچک و غیرمسدودکننده برای معامله داخل کیل‌زون (فقط تقویت، نه فیلتر سخت)
-    if session == "KILLZONE":
-        reasons.append("⏰ داخل کیل‌زون لندن/نیویورک")
-
-    direction = None
-    sl = tp = None
-
-    # ============================================================
-    #  BUY Logic
-    # ============================================================
-    if td_dir == "BULLISH":
-        # ۱. امتیاز پایه هم‌راستایی HTF
-        score += 0.15
-        reasons.append("هم‌راستایی صعودی HTF (+۰.۱۵)")
-
-        # ۲. Liquidity Sweep (مهم‌ترین تریگر از نظر ICT) — امتیاز متناسب با قدرت Sweep
-        if sweep and sweep["type"] == "BULLISH_SWEEP":
-            add = round(0.25 * sweep_mult, 4)
-            score += add
-            reasons.append(f"🔄 Liquidity Sweep صعودی ×{sweep_mult:.2f} (+{add:.2f})")
-        elif sweep and sweep["type"] == "BEARISH_SWEEP":
-            pen = round(0.08 * sweep_mult, 4)
-            score -= pen
-            reasons.append(f"Sweep مخالف جهت (جریمه -{pen:.2f})")
-
-        # کیل‌زون: بونوس کوچک غیرمسدودکننده
-        if session == "KILLZONE":
-            score += 0.05
-            reasons.append("⏰ کیل‌زون فعال (+۰.۰۵)")
-
-        # ۳. Structure Shift (CHOCH)
-        if choch and choch["type"] == "BULLISH_CHOCH":
-            score += 0.18
-            reasons.append("CHOCH صعودی (+۰.۱۸)")
-
-        # ۴. Order Block + فاصله
-        ob = htf_obs.get("bullish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
-
-        if ob:
-            if dist == 0.0:
-                score += 0.30
-                reasons.append("داخل OB صعودی 4H (+۰.۳۰)")
-            elif dist <= 0.50:
-                score += 0.20
-                reasons.append(f"نزدیک OB صعودی ({dist:.2f} ATR) (+۰.۲۰)")
-            elif dist <= 1.0:
-                score += 0.10
-                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (+۰.۱۰)")
-            else:
-                reasons.append(f"دور از OB صعودی ({dist:.2f} ATR)")
-        else:
-            reasons.append("OB صعودی 4H پیدا نشد")
-
-        # ۵. Premium / Discount (نرم)
-        if htf_pd["zone"] == "DISCOUNT":
-            score += 0.12
-            reasons.append("ناحیه Discount (+۰.۱۲)")
-        else:
-            score -= 0.12
-            reasons.append("ناحیه PREMIUM (جریمه -۰.۱۲)")
-
-        # ۶. FVG
-        if ltf_fvg and ltf_fvg["type"] == "BULLISH":
-            score += 0.12
-            reasons.append("FVG صعودی 15m (+۰.۱۲)")
-
-        # ۷. Unicorn کامل (بالاترین confluence)
-        if unicorn and unicorn["direction"] == "BUY":
-            score += 0.22
-            reasons.append("🦄 ستاپ Unicorn کامل صعودی (+۰.۲۲)")
-
-        # ۸. تأیید کندلی
-        if get_candle_confirmation(df_15m, "BUY"):
-            score += 0.10
-            reasons.append("تأییدیه کندلی (+۰.۱۰)")
-
-        # صدور جهت فقط با confluence کافی
-        # شرط: امتیاز کافی + (نزدیک OB یا Unicorn یا Sweep+CHOCH)
-        strong_confluence = (
-            (ob and dist <= 0.75) or
-            (unicorn and unicorn["direction"] == "BUY") or
-            (sweep and sweep["type"] == "BULLISH_SWEEP" and choch and choch["type"] == "BULLISH_CHOCH")
+        now = pd.Timestamp.now(tz="UTC")
+        closed = TopDownView(frames).at(now)
+        decision = analyze_smc_engine(closed, EngineConfig(), now)
+        df15 = closed.get("15m", pd.DataFrame())
+        price = float(df15["close"].iloc[-1]) if not df15.empty else None
+        atr = calculate_atr(df15) if len(df15) >= 15 else 0.0
+        zone = next(
+            (r for r in decision.reasons if r in ("PREMIUM", "DISCOUNT")), "-"
         )
+        base.update({
+            "price": decision.entry if decision.entry is not None else price,
+            "sl": decision.sl,
+            "tp": decision.tp,
+            "trend": decision.bias,
+            "wk_trend": decision.bias,
+            "d_trend": decision.bias,
+            "zone": zone,
+            "atr": round(atr, 6) if atr else 0.0,
+            "reasons": list(decision.reasons),
+        })
+        if decision.direction not in ("BUY", "SELL"):
+            base["reasons"].append(f"مسدود توسط موتور مشترک: {decision.blocked or 'بدون جهت معتبر'}")
+            return base
 
-        if score >= MIN_SIGNAL_SCORE and strong_confluence:
-            direction = "BUY"
-            # SL منطقی: زیر OB یا زیر سطح Sweep
-            if ob:
-                ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
-                sl = round(ob["low"] - buf, 6)
-            elif sweep:
-                sl = round(sweep["level"] - atr * SL_ATR_MULTIPLIER, 6)
-            else:
-                sl = round(price - atr * SL_ATR_MULTIPLIER * 1.5, 6)
-
-            risk = price - sl
-            min_risk = atr * MIN_RISK_ATR_RATIO
-            if risk <= 0:
-                direction = None
-                sl = None
-                reasons.append("ریسک نامعتبر")
-                logger.warning("BUY: ریسک نامعتبر (risk=%.6f)", risk)
-            elif risk < min_risk:
-                direction = None
-                sl = None
-                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
-                logger.warning("BUY: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
-            else:
-                tp = round(price + risk * RISK_REWARD, 6)
-
-    # ============================================================
-    #  SELL Logic
-    # ============================================================
-    elif td_dir == "BEARISH":
-        score -= 0.15
-        reasons.append("هم‌راستایی نزولی HTF (-۰.۱۵)")
-
-        if sweep and sweep["type"] == "BEARISH_SWEEP":
-            add = round(0.25 * sweep_mult, 4)
-            score -= add
-            reasons.append(f"🔄 Liquidity Sweep نزولی ×{sweep_mult:.2f} (-{add:.2f})")
-        elif sweep and sweep["type"] == "BULLISH_SWEEP":
-            pen = round(0.08 * sweep_mult, 4)
-            score += pen
-            reasons.append(f"Sweep مخالف جهت (جریمه +{pen:.2f})")
-
-        if session == "KILLZONE":
-            score -= 0.05
-            reasons.append("⏰ کیل‌زون فعال (-۰.۰۵)")
-
-        if choch and choch["type"] == "BEARISH_CHOCH":
-            score -= 0.18
-            reasons.append("CHOCH نزولی (-۰.۱۸)")
-
-        ob = htf_obs.get("bearish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
-
-        if ob:
-            if dist == 0.0:
-                score -= 0.30
-                reasons.append("داخل OB نزولی 4H (-۰.۳۰)")
-            elif dist <= 0.50:
-                score -= 0.20
-                reasons.append(f"نزدیک OB نزولی ({dist:.2f} ATR) (-۰.۲۰)")
-            elif dist <= 1.0:
-                score -= 0.10
-                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (-۰.۱۰)")
-            else:
-                reasons.append(f"دور از OB نزولی ({dist:.2f} ATR)")
-        else:
-            reasons.append("OB نزولی 4H پیدا نشد")
-
-        if htf_pd["zone"] == "PREMIUM":
-            score -= 0.12
-            reasons.append("ناحیه Premium (-۰.۱۲)")
-        else:
-            score += 0.12
-            reasons.append("ناحیه DISCOUNT (جریمه معکوس +۰.۱۲)")
-
-        if ltf_fvg and ltf_fvg["type"] == "BEARISH":
-            score -= 0.12
-            reasons.append("FVG نزولی 15m (-۰.۱۲)")
-
-        if unicorn and unicorn["direction"] == "SELL":
-            score -= 0.22
-            reasons.append("🦄 ستاپ Unicorn کامل نزولی (-۰.۲۲)")
-
-        if get_candle_confirmation(df_15m, "SELL"):
-            score -= 0.10
-            reasons.append("تأییدیه کندلی (-۰.۱۰)")
-
-        strong_confluence = (
-            (ob and dist <= 0.75) or
-            (unicorn and unicorn["direction"] == "SELL") or
-            (sweep and sweep["type"] == "BEARISH_SWEEP" and choch and choch["type"] == "BEARISH_CHOCH")
-        )
-
-        if score <= -MIN_SIGNAL_SCORE and strong_confluence:
-            direction = "SELL"
-            if ob:
-                ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
-                sl = round(ob["high"] + buf, 6)
-            elif sweep:
-                sl = round(sweep["level"] + atr * SL_ATR_MULTIPLIER, 6)
-            else:
-                sl = round(price + atr * SL_ATR_MULTIPLIER * 1.5, 6)
-
-            risk = sl - price
-            min_risk = atr * MIN_RISK_ATR_RATIO
-            if risk <= 0:
-                direction = None
-                sl = None
-                reasons.append("ریسک نامعتبر")
-                logger.warning("SELL: ریسک نامعتبر (risk=%.6f)", risk)
-            elif risk < min_risk:
-                direction = None
-                sl = None
-                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
-                logger.warning("SELL: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
-            else:
-                tp = round(price - risk * RISK_REWARD, 6)
-
-    base.update({
-        "score": round(score, 2),
-        "direction": direction,
-        "sl": sl,
-        "tp": tp,
-        "zone": htf_pd["zone"],
-        "reasons": reasons,
-    })
-    return base
-
+        # جهت و سطوح ورود/خروج همگی از یک Decision مشترک می‌آیند.
+        signed_score = abs(float(decision.score))
+        base.update({
+            "score": signed_score if decision.direction == "BUY" else -signed_score,
+            "direction": decision.direction,
+            "price": decision.entry if decision.entry is not None else price,
+            "blocked": False,
+        })
+        return base
+    except Exception:
+        logger.exception("خطا در adapter موتور SMC مشترک")
+        base["reasons"] = ["خطا در آماده‌سازی داده برای موتور SMC مشترک"]
+        return base
 
 # ============================================================
 #  تحلیل کامل ۴ لایه
