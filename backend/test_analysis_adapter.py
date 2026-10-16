@@ -41,7 +41,7 @@ def test_live_adapter_uses_shared_engine_decision_and_maps_buy():
     decision = SimpleNamespace(
         direction="BUY", score=0.82, entry=1.019, sl=1.010, tp=1.037,
         bias="weekly+daily BULLISH", reasons=["DISCOUNT", "sweep", "CHOCH"],
-        blocked=None,
+        blocked=None, config_hash="test-hash",
     )
     with (
         patch.object(analysis_engine, "TopDownView") as view_cls,
@@ -57,6 +57,7 @@ def test_live_adapter_uses_shared_engine_decision_and_maps_buy():
     assert result["sl"] == 1.010 and result["tp"] == 1.037
     assert result["zone"] == "DISCOUNT"
     assert result["blocked"] is False
+    assert result["config_hash"] == "test-hash"
 
 
 def test_live_adapter_blocks_when_shared_engine_has_no_direction():
@@ -107,6 +108,7 @@ def test_full_analysis_keeps_shared_engine_direction_when_context_score_disagree
         "blocked": False, "direction": "BUY", "score": 0.62, "price": 1.1,
         "sl": 1.09, "tp": 1.12, "trend": "weekly+daily BULLISH",
         "zone": "DISCOUNT", "atr": 0.01, "reasons": ["core setup confirmed"],
+        "config_hash": "cfg-abc",
     }
     with (
         patch.object(analysis_engine, "analyze_technical_topdown", return_value=tech),
@@ -129,6 +131,7 @@ def test_full_analysis_keeps_shared_engine_direction_when_context_score_disagree
     assert result["score"] == 0.62
     assert result["context_score"] < 0
     assert result["decision_source"] == "shared_smc_engine"
+    assert result["config_hash"] == "cfg-abc"
     assert result["suggested_sl"] == 1.09
     assert result["suggested_tp"] == 1.12
 
