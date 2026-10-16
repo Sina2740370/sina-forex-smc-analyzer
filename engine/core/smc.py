@@ -4,13 +4,32 @@ DataFrame ستون‌های time, open, high, low, close دارد و فقط شا
 """
 from __future__ import annotations
 
+import math
+from numbers import Integral, Real
+
 import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
 
+def _positive_int(value, name: str, minimum: int = 1) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+        raise ValueError(f"{name} باید عدد صحیح و حداقل {minimum} باشد")
+    return int(value)
+
+
+def _finite_number(value, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"{name} باید عددی معتبر باشد")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} باید متناهی باشد")
+    return result
+
+
 # ---------------------------------------------------------------- اندیکاتور
 def atr(df: pd.DataFrame, period: int = 14) -> float:
+    period = _positive_int(period, "period")
     if len(df) < period + 1:
         return 0.0
     h = df["high"].to_numpy()[-(period + 1):]
@@ -22,6 +41,7 @@ def atr(df: pd.DataFrame, period: int = 14) -> float:
 
 
 def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
+    period = _positive_int(period, "period")
     if len(df) < period + 3:
         return "UNCLEAR"
     e = df["close"].ewm(span=period, adjust=False).mean()
@@ -35,6 +55,8 @@ def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
 # ---------------------------------------------------------------- ساختار
 def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     """سوئینگ‌ها: لیست (index, price). یک سوئینگ تا `right` کندل بعدش تأیید نمی‌شود."""
+    left = _positive_int(left, "left")
+    right = _positive_int(right, "right")
     w = left + right + 1
     if len(df) < w:
         return [], []
@@ -68,6 +90,10 @@ def structure_break(df: pd.DataFrame, lookback: int = 40, fresh_bars: int = 3):
       BOS   = شکست هم‌جهت با ساختار قبلی
     «تازه» یعنی یکی از `fresh_bars` کلوز قبلی هنوز آن‌طرف سطح نبوده.
     """
+    lookback = _positive_int(lookback, "lookback")
+    fresh_bars = _positive_int(fresh_bars, "fresh_bars")
+    if fresh_bars >= lookback:
+        raise ValueError("fresh_bars باید از lookback کمتر باشد")
     w = df.tail(lookback).reset_index(drop=True)
     highs, lows = swings(w, 2, 2)
     if len(highs) < 2 or len(lows) < 2 or len(w) < 6:
@@ -90,6 +116,7 @@ def structure_break(df: pd.DataFrame, lookback: int = 40, fresh_bars: int = 3):
 # ---------------------------------------------------------------- نواحی
 def order_blocks(df: pd.DataFrame, lookback: int = 60):
     """آخرین OB معتبر (تخفیف‌نخورده با کلوز) صعودی/نزولی."""
+    lookback = _positive_int(lookback, "lookback")
     w = df.tail(lookback + 2).reset_index(drop=True)
     o, h, l, c = (w[k].to_numpy() for k in ("open", "high", "low", "close"))
     n = len(w)
@@ -116,14 +143,26 @@ def order_blocks(df: pd.DataFrame, lookback: int = 60):
 
 def ob_distance(price: float, ob: dict, atr_ref: float) -> float:
     """فاصله تا OB بر حسب ATR مرجع (ATR هم‌تایم‌فریم OB، نه 15m)."""
-    if ob["low"] <= price <= ob["high"]:
+    price = _finite_number(price, "price")
+    atr_ref = _finite_number(atr_ref, "atr_ref")
+    if not isinstance(ob, dict) or "low" not in ob or "high" not in ob:
+        raise ValueError("ob باید شامل low و high باشد")
+    low = _finite_number(ob["low"], "ob.low")
+    high = _finite_number(ob["high"], "ob.high")
+    if low > high:
+        raise ValueError("ob.low نباید از ob.high بیشتر باشد")
+    if low <= price <= high:
         return 0.0
-    gap = ob["low"] - price if price < ob["low"] else price - ob["high"]
+    gap = low - price if price < low else price - high
     return gap / atr_ref if atr_ref > 0 else 999.0
 
 
 def fvgs(df: pd.DataFrame, lookback: int = 15, min_gap_ratio: float = 0.15):
     """آخرین FVG تخفیف‌نخورده‌ی هر نوع؛ دیگر یکی نوع دیگری را نمی‌پوشاند."""
+    lookback = _positive_int(lookback, "lookback")
+    min_gap_ratio = _finite_number(min_gap_ratio, "min_gap_ratio")
+    if min_gap_ratio < 0:
+        raise ValueError("min_gap_ratio نباید منفی باشد")
     out = {"BULLISH": None, "BEARISH": None}
     n = len(df)
     if n < 5:
@@ -141,6 +180,9 @@ def fvgs(df: pd.DataFrame, lookback: int = 15, min_gap_ratio: float = 0.15):
 
 
 def premium_discount(df: pd.DataFrame, lookback: int = 60) -> str:
+    lookback = _positive_int(lookback, "lookback")
+    if df.empty:
+        return "UNCLEAR"
     w = df.tail(lookback)
     eq = (float(w["high"].max()) + float(w["low"].min())) / 2
     return "PREMIUM" if float(df["close"].iloc[-1]) > eq else "DISCOUNT"
@@ -149,6 +191,8 @@ def premium_discount(df: pd.DataFrame, lookback: int = 60) -> str:
 # ---------------------------------------------------------------- نقدینگی و کندل
 def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
     """جاروی سقف/کف قبلی توسط فتیله در `recent` کندل آخر؛ extreme = انتهای فتیله."""
+    lookback = _positive_int(lookback, "lookback")
+    recent = _positive_int(recent, "recent")
     if len(df) < lookback + recent:
         return None
     ref = df.iloc[-(lookback + recent):-recent]
@@ -166,12 +210,22 @@ def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
 
 
 def sweep_multiplier(sweep, atr_ref: float) -> float:
-    if not sweep or not atr_ref:
+    atr_ref = _finite_number(atr_ref, "atr_ref")
+    if not sweep:
         return 1.0
-    return max(0.5, min(1.6, 0.5 + 0.7 * sweep["size"] / atr_ref))
+    if atr_ref <= 0:
+        return 1.0
+    if not isinstance(sweep, dict) or "size" not in sweep:
+        raise ValueError("sweep باید شامل size باشد")
+    size = _finite_number(sweep["size"], "sweep.size")
+    if size < 0:
+        raise ValueError("sweep.size نباید منفی باشد")
+    return max(0.5, min(1.6, 0.5 + 0.7 * size / atr_ref))
 
 
 def candle_confirmation(df: pd.DataFrame, side: int) -> bool:
+    if isinstance(side, bool) or not isinstance(side, Integral) or side not in (-1, 1):
+        raise ValueError("side باید یکی از -1 یا 1 باشد")
     if len(df) < 3:
         return False
     a, p = df.iloc[-1], df.iloc[-2]
