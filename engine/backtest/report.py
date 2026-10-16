@@ -169,13 +169,22 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
         a, b = s + pd.Timedelta(days=train_days), s + pd.Timedelta(days=train_days + test_days)
         best, best_exp = None, -1e9
         for ms, tr in runs.items():
-            tt = [t for t in tr if s <= t["open_time"] < a]
+            # فقط معامله‌هایی که تا انتهای train واقعاً بسته شده‌اند،
+            # می‌توانند در انتخاب پارامتر train اثر بگذارند.
+            tt = [
+                t for t in tr
+                if s <= t["open_time"] < a and t["close_time"] <= a
+            ]
             if len(tt) >= min_train_trades:
                 e = float(np.mean([t["r"] for t in tt]))
                 if e > best_exp:
                     best, best_exp = ms, e
         if best is not None:
-            test = [t for t in runs[best] if a <= t["open_time"] < b]
+            # خروجی test هم باید تا انتهای پنجره‌ی test قابل مشاهده شده باشد.
+            test = [
+                t for t in runs[best]
+                if a <= t["open_time"] < b and t["close_time"] <= b
+            ]
             oos += test
             windows.append({"test_from": str(a)[:10], "chosen_min_score": best,
                             "train_exp": round(best_exp, 3), "test_n": len(test),
