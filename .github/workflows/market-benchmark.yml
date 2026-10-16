@@ -1,0 +1,43 @@
+name: Historical GBPJPY vs XAUUSD benchmark
+
+on:
+  push:
+    branches:
+      - fix/lifecycle-data-safety
+    paths:
+      - benchmarks/run-historical-comparison.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Download 7 years of Dukascopy BID/ASK history
+        run: python -m engine.cli fetch --symbols GBPJPY XAUUSD --years 7 --out data_duka
+      - name: Run fixed 2019-12 to 2022-11 comparison
+        run: |
+          python -m engine.cli report --source dukascopy --csv-dir data_duka --symbols GBPJPY XAUUSD --start 2019-12-01 --end 2022-11-01 --out reports
+      - name: Upload comparison reports and trade logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: gbpjpy-xauusd-holdout-comparison
+          path: |
+            reports/
+            data_duka/GBPJPY_M15.csv
+            data_duka/XAUUSD_M15.csv
+          if-no-files-found: error
