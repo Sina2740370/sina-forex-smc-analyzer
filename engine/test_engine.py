@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+import tempfile
+from pathlib import Path
 
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
-from engine.data.providers import TopDownView, build_topdown, resample_ohlc
+from engine.data.providers import TopDownView, build_topdown, load_mt5_csv, resample_ohlc
 from engine.strategy.smc_topdown import analyze, kill_zone
 
 
@@ -201,3 +203,37 @@ def test_kill_zone_local_london_and_ny_with_dst():
     # تابستان: لندن 06-09 UTC، نیویورک 11-14 UTC
     assert kill_zone(ts("2025-07-15 06:00")) and kill_zone(ts("2025-07-15 11:00"))
     assert not kill_zone(ts("2025-07-15 09:00")) and not kill_zone(ts("2025-07-15 14:00"))
+
+
+def test_mt5_csv_broker_timezone_tracks_dst():
+    # Helsinki server time changes UTC offset across the spring DST boundary.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "bars.csv"
+        path.write_text(
+            "date,time,open,high,low,close,volume\\n"
+            "2025-03-28,12:00:00,1.0,1.1,0.9,1.05,10\\n"
+            "2025-04-01,12:00:00,1.0,1.1,0.9,1.05,10\\n",
+            encoding="utf-8",
+        )
+        df = load_mt5_csv(str(path), broker_timezone="Europe/Helsinki")
+        assert df["time"].dt.hour.tolist() == [10, 9]
+        assert str(df["time"].dt.tz) == "UTC"
+
+
+def test_mt5_csv_aware_timestamps_are_not_shifted_twice():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "aware.csv"
+        path.write_text(
+            "time,open,high,low,close,volume\\n"
+            "2025-07-01T12:00:00+03:00,1.0,1.1,0.9,1.05,10\\n",
+            encoding="utf-8",
+        )
+        df = load_mt5_csv(str(path))
+        assert df["time"].iloc[0] == pd.Timestamp("2025-07-01 09:00:00", tz="UTC")
+
+        try:
+            load_mt5_csv(str(path), tz_offset_hours=3)
+        except ValueError as exc:
+            assert "timezone" in str(exc)
+        else:
+            raise AssertionError("Expected a guard against applying a second offset")
