@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 import tempfile
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from engine.cli import _data_source_label
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, _bar_close_times, build_topdown, load_mt5_csv, resample_ohlc
+from engine.data.fetch_history import _midpoint_ohlc
 from engine.strategy.smc_topdown import analyze, kill_zone
 
 
@@ -263,6 +265,32 @@ def test_native_yfinance_daily_bar_keeps_fixed_utc_boundary():
 def test_dukascopy_source_label_distinguishes_spot_history_from_futures_proxy():
     from argparse import Namespace
     label = _data_source_label(Namespace(source="dukascopy"), "XAUUSD")
-    assert "Dukascopy historical BID data" in label
+    assert "Dukascopy BID/ASK-derived midpoint" in label
     assert "GC=F" not in label
+
+
+def test_dukascopy_bid_ask_bars_are_midpoint_approximated():
+    idx = pd.date_range("2025-01-01", periods=2, freq="15min", tz="UTC")
+    bid = pd.DataFrame({
+        "open": [100.0, 101.0], "high": [102.0, 103.0],
+        "low": [99.0, 100.0], "close": [101.0, 102.0], "volume": [10.0, 12.0],
+    }, index=idx)
+    ask = pd.DataFrame({
+        "open": [100.2, 101.2], "high": [102.2, 103.2],
+        "low": [99.2, 100.2], "close": [101.2, 102.2], "volume": [14.0, 16.0],
+    }, index=idx)
+    mid = _midpoint_ohlc(bid, ask)
+    assert mid["open"].tolist() == [100.1, 101.1]
+    assert mid["high"].tolist() == [102.1, 103.1]
+    assert mid["low"].tolist() == [99.1, 100.1]
+    assert mid["close"].tolist() == [101.1, 102.1]
+    assert mid["volume"].tolist() == [12.0, 14.0]
+
+
+def test_dukascopy_bid_ask_midpoint_rejects_unaligned_bars():
+    idx_bid = pd.date_range("2025-01-01", periods=1, freq="15min", tz="UTC")
+    idx_ask = pd.date_range("2025-01-01T00:15:00Z", periods=1, freq="15min", tz="UTC")
+    row = {"open": [1.0], "high": [1.1], "low": [0.9], "close": [1.0], "volume": [1.0]}
+    with pytest.raises(ValueError, match="no common timestamps"):
+        _midpoint_ohlc(pd.DataFrame(row, index=idx_bid), pd.DataFrame(row, index=idx_ask))
 
