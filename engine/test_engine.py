@@ -234,6 +234,16 @@ def test_walk_forward_does_not_use_outcome_closed_after_train_boundary(monkeypat
     assert result["windows"][0]["chosen_min_score"] == 0.6
     assert result["windows"][0]["test_exp"] == 0.3
 
+
+def test_cli_and_live_use_the_same_entry_slippage_environment_value(monkeypatch):
+    from engine.cli import _engine_config
+
+    monkeypatch.setenv("MAX_ENTRY_SLIP_R", "0.45")
+    assert _engine_config().max_entry_slip_r == 0.45
+    monkeypatch.setenv("MAX_ENTRY_SLIP_R", "-1")
+    with pytest.raises(ValueError, match="max_entry_slip_r"):
+        _engine_config()
+
 def test_stats_helpers():
     lo, hi = wilson(13, 20)
     assert 0.40 < lo < 0.45 and 0.80 < hi < 0.88
