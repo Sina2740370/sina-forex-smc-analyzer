@@ -169,12 +169,16 @@ def init_db():
     # روی نسخه‌های قدیمی‌تر SQLite پشتیبانی نمی‌شه.
     with get_conn() as conn:
         cur = conn.cursor()
-        try:
-            cur.execute(_q("ALTER TABLE signals ADD COLUMN price_at_signal REAL"))
+        if USE_POSTGRES:
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS price_at_signal DOUBLE PRECISION")
             conn.commit()
-            logger.info("✅ ستون price_at_signal اضافه شد")
-        except Exception:
-            conn.rollback()  # ستون از قبل وجود داره، مشکلی نیست
+        else:
+            try:
+                cur.execute("ALTER TABLE signals ADD COLUMN price_at_signal REAL")
+                conn.commit()
+                logger.info("✅ ستون price_at_signal اضافه شد")
+            except Exception:
+                conn.rollback()  # ستون از قبل وجود داره، مشکلی نیست
 
 
 # ============================================================
