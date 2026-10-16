@@ -107,8 +107,9 @@ def _check_signal(sig: dict, candles: list):
     # پس از مهلت ۷۲ ساعته، خروج با قیمت بازار و هزینه‌ی اسپرد ثبت می‌شود.
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
     half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    # مرور کندل‌ها به ترتیب زمانی؛ پس از انقضا هیچ برخورد TP/SL پذیرفته نیست.
+    # مرور کندل‌ها به ترتیب زمانی؛ کندل 15m تا زمان بسته‌شدن کامل معتبر نیست.
     for c in candles:
         try:
             candle_time = _parse_dt(c["time"])
@@ -116,6 +117,8 @@ def _check_signal(sig: dict, candles: list):
             continue
 
         if candle_time <= created_at:
+            continue
+        if candle_time + timedelta(minutes=15) > now_utc:
             continue
         if candle_time >= expires_at:
             # اگر کندل نزدیک به زمان انقضا باشد، open بهترین تقریب موجود است.
