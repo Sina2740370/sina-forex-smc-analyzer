@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import json
 from dataclasses import asdict, dataclass
 
@@ -50,6 +51,35 @@ class EngineConfig:
     cooldown_hours: float = 4.0
     scan_every_bars: int = 1
     max_entry_slip_r: float = 0.3       # رد ورود بعد از بسته‌شدن کندل اگر گپ از این R بیشتر باشد
+
+    def __post_init__(self):
+        finite_values = (
+            self.min_score, self.risk_reward, self.sl_atr1h_mult,
+            self.sl_ob_buffer, self.min_risk_atr1h, self.max_risk_atr4h,
+            self.ob_gate_atr4h, self.fvg_min_gap_ratio, self.cooldown_hours,
+            self.max_entry_slip_r,
+        )
+        if not all(math.isfinite(float(value)) for value in finite_values):
+            raise ValueError("پارامترهای EngineConfig باید عدد متناهی باشند")
+        if self.min_score < 0:
+            raise ValueError("min_score نباید منفی باشد")
+        if self.risk_reward <= 0:
+            raise ValueError("risk_reward باید بزرگ‌تر از صفر باشد")
+        if min(self.sl_atr1h_mult, self.min_risk_atr1h, self.max_risk_atr4h) <= 0:
+            raise ValueError("ضرایب ریسک و SL باید بزرگ‌تر از صفر باشند")
+        if self.sl_ob_buffer < 0 or self.ob_gate_atr4h < 0 or self.fvg_min_gap_ratio < 0:
+            raise ValueError("بافرها و آستانه‌های فاصله نباید منفی باشند")
+        if self.max_hold_hours <= 0 or self.cooldown_hours < 0 or self.scan_every_bars < 1:
+            raise ValueError("محدوده‌ی hold/cooldown/scan معتبر نیست")
+        if self.max_entry_slip_r < 0:
+            raise ValueError("max_entry_slip_r نباید منفی باشد")
+        weights = (
+            self.w_htf_full, self.w_htf_soft, self.w_sweep, self.w_sweep_against,
+            self.w_choch, self.w_bos, self.w_ob_in, self.w_ob_near, self.w_ob_mid,
+            self.w_pd, self.w_fvg, self.w_candle, self.w_killzone, self.w_confluence,
+        )
+        if not all(math.isfinite(float(value)) and value >= 0 for value in weights):
+            raise ValueError("وزن‌های ویژگی باید متناهی و نامنفی باشند")
 
     def to_dict(self) -> dict:
         return asdict(self)
