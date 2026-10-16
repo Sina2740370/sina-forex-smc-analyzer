@@ -1,144 +1,273 @@
 """
-ابزار ریسک برای معامله‌ی دستی (خالص، بدون I/O).
+Risk and position-sizing helpers.
 
-فرض‌ها (قابل تغییر با پارامتر): حساب به دلار؛ لات استاندارد 100,000 واحد؛ طلا 100 اونس.
-مشخصات واقعی بروکر (contract size، گام لات، حداقل لات) را از MT5 چک کن؛ این‌جا فقط پیش‌فرض است.
+Defaults assume a USD-denominated account. SPECS are generic defaults, not
+broker-authoritative metadata. Fees, slippage, stop gaps, and execution-price
+differences are excluded from risk estimates.
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, ROUND_FLOOR
 from typing import Optional
 
-# quote: ارز دوم جفت؛ pip: اندازه‌ی یک پیپ؛ contract: اندازه‌ی لات
+D = Decimal
+ZERO = D("0")
+ONE = D("1")
+HUNDRED = D("100")
+CENT = D("0.01")
+
+# Defaults only. Live trading must use the broker's actual symbol metadata.
 SPECS = {
-    "EURUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
-    "GBPUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
-    "AUDUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
-    "NZDUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
-    "USDJPY": {"pip": 0.01, "contract": 100_000, "quote": "JPY"},
-    "USDCAD": {"pip": 0.0001, "contract": 100_000, "quote": "CAD"},
-    "USDCHF": {"pip": 0.0001, "contract": 100_000, "quote": "CHF"},
-    "XAUUSD": {"pip": 0.1, "contract": 100, "quote": "USD"},
+    "EURUSD": {"pip": D("0.0001"), "contract": D("100000"), "base": "EUR", "quote": "USD"},
+    "GBPUSD": {"pip": D("0.0001"), "contract": D("100000"), "base": "GBP", "quote": "USD"},
+    "AUDUSD": {"pip": D("0.0001"), "contract": D("100000"), "base": "AUD", "quote": "USD"},
+    "NZDUSD": {"pip": D("0.0001"), "contract": D("100000"), "base": "NZD", "quote": "USD"},
+    "USDJPY": {"pip": D("0.01"), "contract": D("100000"), "base": "USD", "quote": "JPY"},
+    "USDCAD": {"pip": D("0.0001"), "contract": D("100000"), "base": "USD", "quote": "CAD"},
+    "USDCHF": {"pip": D("0.0001"), "contract": D("100000"), "base": "USD", "quote": "CHF"},
+    "XAUUSD": {"pip": D("0.1"), "contract": D("100"), "base": "XAU", "quote": "USD"},
 }
+
+
+def _decimal(value, name: str) -> Decimal:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} باید عددی معتبر باشد")
+    try:
+        result = value if isinstance(value, Decimal) else D(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValueError(f"{name} باید عددی معتبر باشد") from None
+    if not result.is_finite():
+        raise ValueError(f"{name} باید متناهی باشد")
+    return result
+
+
+def _positive(value, name: str) -> Decimal:
+    result = _decimal(value, name)
+    if result <= ZERO:
+        raise ValueError(f"{name} باید مثبت باشد")
+    return result
+
+
+def _money(value: Decimal) -> float:
+    return float(value.quantize(CENT, rounding=ROUND_HALF_UP))
+
+
+def _floor_to_step(value: Decimal, step: Decimal) -> Decimal:
+    if value <= ZERO:
+        return ZERO
+    return (value / step).to_integral_value(rounding=ROUND_FLOOR) * step
+
+
+def _step_decimals(step: Decimal) -> int:
+    return max(0, -step.normalize().as_tuple().exponent)
+
+
+def _instrument(symbol: str) -> dict:
+    if not isinstance(symbol, str) or symbol not in SPECS:
+        raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
+    return SPECS[symbol]
+
+
+def _contract_for(symbol: str, contract) -> Decimal:
+    spec = _instrument(symbol)
+    return _positive(spec["contract"] if contract is None else contract, "contract")
+
+
+def _quote_to_usd_rate(symbol: str, price: Decimal, supplied_rate=None) -> Decimal:
+    """USD value of one quote-currency unit for a USD account."""
+    spec = _instrument(symbol)
+    if spec["quote"] == "USD":
+        if supplied_rate is not None and _positive(supplied_rate, "quote_to_account_rate") != ONE:
+            raise ValueError("برای نمادهای با مظنه USD و حساب USD، نرخ تبدیل باید 1 باشد")
+        return ONE
+    if supplied_rate is not None:
+        return _positive(supplied_rate, "quote_to_account_rate")
+    if spec["base"] == "USD":
+        return ONE / price
+    raise ValueError(
+        f"برای تبدیل ارز مظنه {spec['quote']} به USD باید quote_to_account_rate ارائه شود"
+    )
 
 
 @dataclass(frozen=True)
 class SizeResult:
     ok: bool
     lots: float
-    risk_amount: float          # ریسک درخواستی (دلار)
-    actual_risk: float          # ریسک واقعی با لات رُندشده (دلار)
-    sl_distance: float          # فاصله‌ی SL به واحد قیمت
+    risk_amount: float
+    actual_risk: float
+    sl_distance: float
     sl_pips: float
     rr: Optional[float]
     note: str = ""
-    margin: Optional[float] = None       # مارجین لازم (دلار)، فقط اگر leverage داده شده
-    margin_pct: Optional[float] = None   # مارجین به درصد موجودی
-    free_margin: Optional[float] = None  # مارجین آزاد پس از ورود
-    margin_limited: bool = False         # حجم به‌خاطر سقف مارجین کم شده؟
+    margin: Optional[float] = None
+    margin_pct: Optional[float] = None
+    free_margin: Optional[float] = None
+    margin_limited: bool = False
 
 
-def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] = None) -> float:
-    """زیان یک لات برای حرکت یک واحد قیمت، به دلار."""
-    sp = SPECS[symbol]
-    c = contract if contract is not None else sp["contract"]
-    if sp["quote"] == "USD":
-        return c
-    if symbol.startswith("USD"):          # USDJPY/USDCAD/USDCHF: ارزش به ارز دوم است
-        return c / price
-    raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
+def loss_per_lot_per_unit(
+    symbol: str,
+    price: float,
+    contract: Optional[float] = None,
+    quote_to_account_rate: Optional[float] = None,
+) -> float:
+    """USD loss for one lot per 1.0 price-unit move, before trading costs."""
+    spec = _instrument(symbol)
+    p = _positive(price, "price")
+    c = _contract_for(symbol, contract)
+    return float(c * _quote_to_usd_rate(symbol, p, quote_to_account_rate))
 
 
-def _decimals(step: float) -> int:
-    """تعداد رقم اعشار گام لات (0.01 → 2، 0.1 → 1، 0.001 → 3)."""
-    return max(0, -int(math.floor(math.log10(step) + 1e-9)))
+def _margin_per_lot_decimal(
+    symbol: str, price: Decimal, leverage: Decimal, contract: Decimal
+) -> Decimal:
+    spec = _instrument(symbol)
+    if spec["quote"] != "USD" and spec["base"] != "USD":
+        raise ValueError("برای محاسبه مارجین این نماد، تبدیل ارز و مشخصات بروکر لازم است")
+    notional_usd = contract if spec["base"] == "USD" else contract * price
+    return notional_usd / leverage
 
 
-def margin_per_lot(symbol: str, price: float, leverage: float,
-                   contract: Optional[float] = None) -> float:
-    """مارجین یک لات به دلار: ارزش اسمی موقعیت ÷ اهرم."""
-    if symbol not in SPECS:
-        raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
-    if leverage <= 0:
-        raise ValueError("leverage باید مثبت باشد")
-    c = contract if contract is not None else SPECS[symbol]["contract"]
-    notional = c if symbol.startswith("USD") else c * price   # USD-base: ارزش اسمی خودش دلار است
-    return notional / leverage
+def margin_per_lot(
+    symbol: str,
+    price: float,
+    leverage: float,
+    contract: Optional[float] = None,
+) -> float:
+    """Approximate USD margin per lot; broker-specific adjustments are excluded."""
+    p = _positive(price, "price")
+    lev = _positive(leverage, "leverage")
+    c = _contract_for(symbol, contract)
+    return float(_margin_per_lot_decimal(symbol, p, lev, c))
 
 
-def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl: float,
-                  tp: Optional[float] = None, lot_step: float = 0.01, min_lot: float = 0.01,
-                  max_lot: float = 100.0, contract: Optional[float] = None,
-                  leverage: Optional[float] = None, max_margin_pct: float = 50.0) -> SizeResult:
-    """
-    حجم معامله برای ریسک درصدی ثابت. همیشه به پایین رُند می‌شود (هرگز ریسک بیشتر از خواسته).
-    اگر leverage داده شود، مارجین هم حساب می‌شود و حجم طوری سقف می‌خورد که مارجین از
-    max_margin_pct درصد موجودی بیشتر نشود (با SL خیلی نزدیک، حجم ریسکی ممکن است بیش از توان مارجین باشد).
-    """
-    if symbol not in SPECS:
-        raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
-    if balance <= 0 or not (0 < risk_pct <= 100):
-        raise ValueError("balance باید مثبت و risk_pct بین 0 و 100 باشد")
-    dist = abs(entry - sl)
-    if dist <= 0:
+def position_size(
+    symbol: str,
+    balance: float,
+    risk_pct: float,
+    entry: float,
+    sl: float,
+    tp: Optional[float] = None,
+    lot_step: float = 0.01,
+    min_lot: float = 0.01,
+    max_lot: float = 100.0,
+    contract: Optional[float] = None,
+    leverage: Optional[float] = None,
+    max_margin_pct: float = 50.0,
+    quote_to_account_rate: Optional[float] = None,
+) -> SizeResult:
+    """Size a trade for a USD account, flooring volume to the broker lot step."""
+    spec = _instrument(symbol)
+    bal = _positive(balance, "balance")
+    rp = _decimal(risk_pct, "risk_pct")
+    if not ZERO < rp <= HUNDRED:
+        raise ValueError("risk_pct باید بزرگ‌تر از صفر و حداکثر 100 باشد")
+
+    ent = _positive(entry, "entry")
+    stop = _positive(sl, "sl")
+    if ent == stop:
         raise ValueError("entry و sl نباید برابر باشند")
-    risk_amount = balance * risk_pct / 100.0
-    per_lot = loss_per_lot_per_unit(symbol, entry, contract) * dist
-    raw = risk_amount / per_lot
-    lots = math.floor(raw / lot_step + 1e-9) * lot_step
-    lots = round(min(lots, max_lot), 8)
+
+    step = _positive(lot_step, "lot_step")
+    minimum = _positive(min_lot, "min_lot")
+    maximum = _positive(max_lot, "max_lot")
+    if maximum < minimum:
+        raise ValueError("max_lot نباید از min_lot کمتر باشد")
+    if _floor_to_step(minimum, step) != minimum:
+        raise ValueError("min_lot باید مضرب دقیق lot_step باشد")
+
+    contract_size = _contract_for(symbol, contract)
+    distance = abs(ent - stop)
+    conversion = _quote_to_usd_rate(symbol, ent, quote_to_account_rate)
+    risk_budget = bal * rp / HUNDRED
+    loss_per_lot = distance * contract_size * conversion
+    if not loss_per_lot.is_finite() or loss_per_lot <= ZERO:
+        raise ValueError("زیان هر لات باید مثبت و متناهی باشد")
+
+    raw_lots = risk_budget / loss_per_lot
+    lots = min(_floor_to_step(raw_lots, step), _floor_to_step(maximum, step))
     margin_limited = False
+    lev = None
+    margin_per = None
+
     if leverage is not None:
-        mpl = margin_per_lot(symbol, entry, leverage, contract)
-        cap = math.floor((balance * max_margin_pct / 100.0) / mpl / lot_step + 1e-9) * lot_step
-        if lots > cap:
-            lots, margin_limited = round(cap, 8), True
-    rr, tp_note = None, ""
+        lev = _positive(leverage, "leverage")
+        margin_pct_limit = _decimal(max_margin_pct, "max_margin_pct")
+        if not ZERO < margin_pct_limit <= HUNDRED:
+            raise ValueError("max_margin_pct باید بزرگ‌تر از صفر و حداکثر 100 باشد")
+        margin_per = _margin_per_lot_decimal(symbol, ent, lev, contract_size)
+        allowed_margin = bal * margin_pct_limit / HUNDRED
+        margin_lots = _floor_to_step(allowed_margin / margin_per, step)
+        if lots > margin_lots:
+            lots = margin_lots
+            margin_limited = True
+
+    rr = None
+    notes = []
     if tp is not None:
-        if (tp - entry) * (entry - sl) > 0:
-            rr = round(abs(tp - entry) / dist, 2)
+        target = _positive(tp, "tp")
+        if (target - ent) * (ent - stop) > ZERO:
+            rr = float((abs(target - ent) / distance).quantize(CENT, rounding=ROUND_HALF_UP))
         else:
-            tp_note = "TP در سمت اشتباه است (باید خلاف جهت SL باشد)؛ R:R محاسبه نشد"
-    pips = dist / SPECS[symbol]["pip"]
-    if lots < min_lot:
-        why = ("مارجین/اهرم اجازه‌ی حداقل لات را نمی‌دهد؛ اهرم یا موجودی را بالا ببر یا SL را دورتر بگذار"
-               if margin_limited else
-               "حجم کمتر از حداقل لات است؛ SL را دورتر بگذار یا ریسک/موجودی را بالا ببر")
-        return SizeResult(False, 0.0, risk_amount, 0.0, dist, round(pips, 1), rr, why)
-    actual = lots * per_lot
-    notes = [tp_note] if tp_note else []
-    if margin_limited:
-        notes.append("حجم به‌خاطر سقف مارجین کم شد؛ ریسک واقعی کمتر از ریسک خواسته است")
-    if actual > risk_amount * 1.0001:
-        notes.append("ریسک واقعی از خواسته بیشتر شد")
-    margin = margin_pct = free = None
-    if leverage is not None:
-        margin = lots * margin_per_lot(symbol, entry, leverage, contract)
-        margin_pct = margin / balance * 100.0
-        free = balance - margin
-        if margin_pct > 30 and not margin_limited:
-            notes.append("بیش از ۳۰٪ موجودی درگیر مارجین می‌شود؛ جا برای افت کم است")
-    return SizeResult(True, round(lots, _decimals(lot_step)), round(risk_amount, 2), round(actual, 2), dist,
-                      round(pips, 1), rr, "؛ ".join(notes),
-                      None if margin is None else round(margin, 2),
-                      None if margin_pct is None else round(margin_pct, 1),
-                      None if free is None else round(free, 2), margin_limited)
+            notes.append("TP در سمت اشتباه است؛ R:R محاسبه نشد")
+
+    pips = distance / spec["pip"]
+    if lots < minimum:
+        reason = (
+            "مارجین/اهرم اجازه حداقل لات را نمی‌دهد"
+            if margin_limited
+            else "حجم کمتر از حداقل لات است؛ ریسک، فاصله SL یا موجودی را بازبینی کن"
+        )
+        return SizeResult(
+            False, 0.0, _money(risk_budget), 0.0, float(distance),
+            float(pips.quantize(D("0.1"), rounding=ROUND_HALF_UP)), rr, reason,
+            margin_limited=margin_limited,
+        )
+
+    actual_risk_exact = lots * loss_per_lot
+    if actual_risk_exact > risk_budget:
+        raise ArithmeticError("Invariant violated: actual risk exceeds risk budget")
+
+    margin = margin_pct = free_margin = None
+    if lev is not None and margin_per is not None:
+        margin_exact = lots * margin_per
+        margin_pct_exact = margin_exact / bal * HUNDRED
+        margin = _money(margin_exact)
+        margin_pct = float(margin_pct_exact.quantize(D("0.1"), rounding=ROUND_HALF_UP))
+        free_margin = _money(bal - margin_exact)
+        if margin_limited:
+            notes.append("حجم به‌خاطر سقف مارجین کاهش یافت")
+        elif margin_pct_exact > D("30"):
+            notes.append("بیش از 30٪ موجودی درگیر مارجین می‌شود")
+
+    lots_display = lots.quantize(D(1).scaleb(-_step_decimals(step)))
+    return SizeResult(
+        True, float(lots_display), _money(risk_budget), _money(actual_risk_exact),
+        float(distance), float(pips.quantize(D("0.1"), rounding=ROUND_HALF_UP)),
+        rr, "؛ ".join(notes), margin, margin_pct, free_margin, margin_limited,
+    )
 
 
 def breakeven_winrate(rr: float) -> float:
-    """حداقل win rate برای سربه‌سر شدن (بدون هزینه) در نسبت ریسک به ریوارد rr."""
-    if rr <= 0:
-        raise ValueError("rr باید مثبت باشد")
-    return 1.0 / (1.0 + rr)
+    """Break-even win rate before fees, spread, and slippage."""
+    ratio = _positive(rr, "rr")
+    return float(ONE / (ONE + ratio))
 
 
 def trade_r(side: str, entry: float, sl: float, exit_price: float) -> float:
-    """R معامله: (خروج-ورود)·جهت / ریسک اولیه. side: BUY یا SELL."""
-    s = 1 if side.upper() == "BUY" else -1 if side.upper() == "SELL" else 0
-    if s == 0:
+    """Realized R multiple before trading costs."""
+    if not isinstance(side, str):
         raise ValueError("side باید BUY یا SELL باشد")
-    risk = (entry - sl) * s
-    if risk <= 0:
+    normalized = side.upper()
+    direction = ONE if normalized == "BUY" else D("-1") if normalized == "SELL" else ZERO
+    if direction == ZERO:
+        raise ValueError("side باید BUY یا SELL باشد")
+
+    ent = _positive(entry, "entry")
+    stop = _positive(sl, "sl")
+    exit_ = _positive(exit_price, "exit_price")
+    initial_risk = (ent - stop) * direction
+    if initial_risk <= ZERO:
         raise ValueError("SL باید در سمت زیان باشد (BUY: زیر ورود، SELL: بالای ورود)")
-    return (exit_price - entry) * s / risk
+    return float((exit_ - ent) * direction / initial_risk)
