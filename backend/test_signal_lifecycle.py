@@ -60,7 +60,7 @@ class SignalLifecycleTests(unittest.TestCase):
             "high": 1.105, "low": 1.095, "close": 1.101,
         }]
         half_spread = (
-            backend_config.SPREAD["EURUSD"] * backend_config.PIP_SIZE["EURUSD"] / 2
+            backend_config.SPREAD["EURUSD=X"] * backend_config.PIP_SIZE["EURUSD=X"] / 2
         )
         with patch.object(signal_tracker, "close_signal", return_value=True) as close:
             signal_tracker._check_signal(signal, candle)
