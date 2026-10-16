@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
+from engine.cli import _data_source_label
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
 from engine.data.providers import TopDownView, build_topdown, load_mt5_csv, resample_ohlc
@@ -237,3 +238,11 @@ def test_mt5_csv_aware_timestamps_are_not_shifted_twice():
             assert "timezone" in str(exc)
         else:
             raise AssertionError("Expected a guard against applying a second offset")
+
+
+def test_gold_futures_proxy_is_labeled_in_reports():
+    from argparse import Namespace
+
+    label = _data_source_label(Namespace(source="yfinance"), "XAUUSD")
+    assert "GC=F" in label
+    assert "not spot XAUUSD" in label
