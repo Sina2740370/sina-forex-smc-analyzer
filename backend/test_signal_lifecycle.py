@@ -35,6 +35,50 @@ class SignalLifecycleTests(unittest.TestCase):
 
         close.assert_called_once_with(17, 1.1, 0.0, "EXPIRED")
 
+    def test_buy_tp_requires_bid_to_reach_target(self):
+        signal = {
+            "id": 21, "symbol": "EURUSD", "direction": "BUY",
+            "entry": 1.1, "sl": 1.099, "tp": 1.102,
+            "created_at": "2026-10-15T00:00:00",
+        }
+        candles = [{
+            "time": "2026-10-15T00:15:00", "high": 1.10203,
+            "low": 1.1005, "close": 1.101,
+        }]
+        # Mid/high crosses TP, but bid (high - half-spread) does not.
+        with patch.object(signal_tracker, "close_signal") as close:
+            signal_tracker._check_signal(signal, candles)
+        close.assert_not_called()
+
+    def test_buy_tp_closes_when_bid_reaches_target(self):
+        signal = {
+            "id": 22, "symbol": "EURUSD", "direction": "BUY",
+            "entry": 1.1, "sl": 1.099, "tp": 1.102,
+            "created_at": "2026-10-15T00:00:00",
+        }
+        candles = [{
+            "time": "2026-10-15T00:15:00", "high": 1.10206,
+            "low": 1.1005, "close": 1.101,
+        }]
+        with patch.object(signal_tracker, "close_signal") as close:
+            signal_tracker._check_signal(signal, candles)
+        close.assert_called_once_with(22, 1.102, unittest.mock.ANY, "WIN")
+
+    def test_sell_stop_triggers_when_ask_reaches_stop(self):
+        signal = {
+            "id": 23, "symbol": "EURUSD", "direction": "SELL",
+            "entry": 1.1, "sl": 1.102, "tp": 1.098,
+            "created_at": "2026-10-15T00:00:00",
+        }
+        candles = [{
+            "time": "2026-10-15T00:15:00", "high": 1.10196,
+            "low": 1.099, "close": 1.100,
+        }]
+        # Mid/high stays below SL; ask (high + half-spread) crosses it.
+        with patch.object(signal_tracker, "close_signal") as close:
+            signal_tracker._check_signal(signal, candles)
+        close.assert_called_once_with(23, 1.102, unittest.mock.ANY, "LOSS")
+
     @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
     def test_close_signal_only_changes_an_open_signal_once(self):
         original_path = database.DB_PATH
