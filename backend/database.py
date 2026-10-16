@@ -237,18 +237,29 @@ def _process_rows(cur) -> list:
 # ============================================================
 def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
                    price_at_signal=None):
-    """ثبت سیگنال جدید
-
-    price_at_signal: قیمت لحظه‌ای بازار در لحظه صدور سیگنال (اختیاری).
-    جدا از entry نگه داشته می‌شه چون entry می‌تونه یه سطح تحلیلی SMC
-    (مثلا وسط یک Order Block) باشه، نه لزوما قیمت جاری بازار.
-    """
+    """ثبت سیگنال جدید با قفل نماد و جلوگیری از بیش از یک سیگنال باز روی همان نماد."""
     if isinstance(reasons, list):
         reasons_json = json.dumps(reasons, ensure_ascii=False)
     else:
         reasons_json = json.dumps([str(reasons)], ensure_ascii=False)
 
     with get_conn() as conn:
+        # قفل تراکنشی نماد مانع race بین بررسی و درج در چند worker می‌شود.
+        if USE_POSTGRES:
+            _execute(conn, "SELECT pg_advisory_xact_lock(hashtext(?))", (symbol,))
+        else:
+            # SQLite باید قفل نوشتن را قبل از SELECT بگیرد، نه بعد از آن.
+            _execute(conn, "BEGIN IMMEDIATE")
+
+        existing = _execute(conn, """
+            SELECT id FROM signals
+            WHERE symbol = ? AND status = 'OPEN'
+            LIMIT 1
+        """, (symbol,)).fetchone()
+        if existing is not None:
+            logger.info("رد سیگنال تکراری برای نماد باز %s (id=%s)", symbol, existing[0])
+            return None
+
         cur = _execute(conn, """
             INSERT INTO signals
             (symbol, name, direction, entry, sl, tp, score, reasons, price_at_signal, created_at)
@@ -265,9 +276,7 @@ def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
                 return cur.fetchone()[0]
             except Exception:
                 return None
-        else:
-            return cur.lastrowid
-
+        return cur.lastrowid
 
 def get_open_signals():
     """همه سیگنال‌های باز"""
