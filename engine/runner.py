@@ -76,7 +76,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
     t0 = _utc_bound(start) if start else times.iloc[0]
-    t1 = _utc_bound(end) if end else times.iloc[-1]
+    t1 = _utc_bound(end) if end else times.iloc[-1] + pd.Timedelta(minutes=15)
     bar = pd.Timedelta(minutes=15)
     hold = pd.Timedelta(hours=cfg.max_hold_hours)
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
@@ -92,7 +92,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             break
         last_i = i
 
-        if pos is not None and i > pos.open_idx:
+        if pos is not None and i >= pos.open_idx:
             status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
             if status is None and now - pos.open_time >= hold:
                 status, px = "EXPIRED", cl[i] - pos.side * half
@@ -109,10 +109,28 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
-        entry = dec.entry + side * half         # BUY روی ask، SELL روی bid
-        if (entry - dec.sl) * side <= 0:
+        # تصمیم در close کندل i معلوم می‌شود؛ ورود زودتر از open کندل بعدی مجاز نیست.
+        next_i = i + 1
+        if next_i >= len(df15):
             continue
-        pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
+        next_open_time = times.iloc[next_i]
+        if next_open_time + bar > t1:
+            continue
+
+        signal_entry = float(dec.entry)
+        stop_distance = (signal_entry - float(dec.sl)) * side
+        if not np.isfinite(stop_distance) or stop_distance <= 0:
+            continue
+        next_open = float(df15["open"].iloc[next_i])
+        # اگر بازار از محدوده‌ی قابل قبول دور شده، سیگنال قدیمی را دنبال نکن.
+        if abs(next_open - signal_entry) > cfg.max_entry_slip_r * stop_distance:
+            continue
+
+        entry = next_open + side * half  # BUY روی ask، SELL روی bid
+        if (entry - dec.sl) * side <= 0 or (dec.tp - entry) * side <= 0:
+            continue
+
+        pos = _Pos(side, next_open_time, next_i, entry, dec.sl, dec.tp, dec)
         last_signal["t"] = now
 
     if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
