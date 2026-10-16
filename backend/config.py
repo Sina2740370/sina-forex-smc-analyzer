@@ -135,5 +135,8 @@ BROKER_SUFFIX = os.getenv("BROKER_SUFFIX", "")                 # پسوند نم
 GOLD_SYMBOL = os.getenv("GOLD_SYMBOL", "XAUUSD")               # اسم طلا تو MT5 (مثلاً "GOLD")
 ALLOW_GOLD_FUTURES_PROXY_SIGNALS = os.getenv("ALLOW_GOLD_FUTURES_PROXY_SIGNALS", "0") == "1"  # opt-in صریح؛ GC=F اسپات نیست
 MAX_ENTRY_SLIP_R = float(os.getenv("MAX_ENTRY_SLIP_R", 0.3))   # حداکثر فاصله ورود، نسبت به فاصله SL
+MAX_ENTRY_DELAY_MINUTES = int(os.getenv("MAX_ENTRY_DELAY_MINUTES", "30"))
+if MAX_ENTRY_DELAY_MINUTES < 1:
+    raise ValueError("MAX_ENTRY_DELAY_MINUTES باید حداقل 1 باشد")
 if not math.isfinite(MAX_ENTRY_SLIP_R) or MAX_ENTRY_SLIP_R < 0:
     raise ValueError("MAX_ENTRY_SLIP_R باید عدد متناهی و نامنفی باشد")
