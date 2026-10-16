@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 
-from backend import analysis_engine, data_fetcher, scheduler
+from engine.core.config import EngineConfig, spread_price
+
+from backend import analysis_engine, config as backend_config, data_fetcher, scheduler
 
 
 def _records():
@@ -175,4 +177,26 @@ def test_live_data_feed_rejects_future_dated_15m_candles():
     future = [{"time": (now + pd.Timedelta(minutes=30)).isoformat()}]
     error = data_fetcher._live_candle_freshness_error(future, now)
     assert error is not None and "آینده" in error
+
+
+def test_backend_strategy_defaults_match_canonical_engine_config():
+    cfg = EngineConfig()
+    assert backend_config.MIN_SIGNAL_SCORE == cfg.min_score
+    assert backend_config.RISK_REWARD == cfg.risk_reward
+    assert backend_config.SL_ATR_MULTIPLIER == cfg.sl_atr1h_mult
+    assert backend_config.SL_OB_BUFFER == cfg.sl_ob_buffer
+
+
+def test_backend_and_engine_spread_models_match_for_all_supported_symbols():
+    mapping = {
+        "EURUSD=X": "EURUSD", "GBPUSD=X": "GBPUSD", "USDJPY=X": "USDJPY",
+        "AUDUSD=X": "AUDUSD", "USDCAD=X": "USDCAD", "NZDUSD=X": "NZDUSD",
+        "USDCHF=X": "USDCHF", "EURGBP=X": "EURGBP", "EURJPY=X": "EURJPY",
+        "GBPJPY=X": "GBPJPY", "GC=F": "XAUUSD",
+    }
+    for backend_symbol, engine_symbol in mapping.items():
+        backend_spread = (
+            backend_config.SPREAD[backend_symbol] * backend_config.PIP_SIZE[backend_symbol]
+        )
+        assert abs(backend_spread - spread_price(engine_symbol)) < 1e-12
 
