@@ -34,6 +34,23 @@ def _midpoint_ohlc(bid: pd.DataFrame, ask: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _fetch_side(dk, instrument: str, offer_side: str, start: datetime, end: datetime):
+    """Fetch one side with a network timeout; upstream defaults can block indefinitely."""
+    original_get = dk.requests.get
+
+    def timeout_get(*args, **kwargs):
+        kwargs.setdefault("timeout", (10, 45))
+        return original_get(*args, **kwargs)
+
+    dk.requests.get = timeout_get
+    try:
+        return dk.fetch(
+            instrument, dk.INTERVAL_MIN_15, offer_side, start, end, max_retries=3
+        )
+    finally:
+        dk.requests.get = original_get
+
+
 def _quarters(start: datetime, end: datetime):
     cur = start
     while cur < end:
@@ -61,8 +78,8 @@ def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) 
             continue
         if verbose:
             print(f"  {symbol} {a:%Y-%m-%d} -> {b:%Y-%m-%d} ...", flush=True)
-        bid = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b, max_retries=3)
-        ask = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_ASK, a, b, max_retries=3)
+        bid = _fetch_side(dk, pair, dk.OFFER_SIDE_BID, a, b)
+        ask = _fetch_side(dk, pair, dk.OFFER_SIDE_ASK, a, b)
         df = _midpoint_ohlc(bid, ask)
         if fresh:
             df.to_csv(f)
