@@ -7,7 +7,7 @@ from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summ
 from engine.cli import _data_source_label
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
-from engine.data.providers import TopDownView, build_topdown, load_mt5_csv, resample_ohlc
+from engine.data.providers import TopDownView, _bar_close_times, build_topdown, load_mt5_csv, resample_ohlc
 from engine.strategy.smc_topdown import analyze, kill_zone
 
 
@@ -246,3 +246,16 @@ def test_gold_futures_proxy_is_labeled_in_reports():
     label = _data_source_label(Namespace(source="yfinance"), "XAUUSD")
     assert "GC=F" in label
     assert "not spot XAUUSD" in label
+
+
+def test_native_yfinance_daily_bar_keeps_fixed_utc_boundary():
+    # Native Yahoo bars at 00:00 UTC must not be reinterpreted as 17:00 New York.
+    native = pd.DataFrame({
+        "time": pd.to_datetime(["2025-03-09T00:00:00Z"]),
+    })
+    closes = _bar_close_times(native, "1d")
+    assert closes.iloc[0] == pd.Timestamp("2025-03-10T00:00:00Z")
+
+    view = TopDownView({"1d": native})
+    assert len(view.at(pd.Timestamp("2025-03-09T23:30:00Z"))["1d"]) == 0
+    assert len(view.at(pd.Timestamp("2025-03-10T00:30:00Z"))["1d"]) == 1
