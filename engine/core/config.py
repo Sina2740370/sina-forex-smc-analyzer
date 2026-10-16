@@ -90,9 +90,10 @@ class EngineConfig:
         if self.sl_ob_buffer < 0 or self.ob_gate_atr4h < 0 or self.fvg_min_gap_ratio < 0:
             raise ValueError("بافرها و آستانه‌های فاصله نباید منفی باشند")
         if min(self.sweep_lookback, self.break_lookback, self.fvg_lookback,
-               self.ob_lookback, self.pd_lookback, self.max_hold_hours,
-               self.scan_every_bars) < 1:
-            raise ValueError("پنجره‌ها، مدت نگهداری و scan_every_bars باید مثبت باشند")
+               self.ob_lookback, self.pd_lookback, self.scan_every_bars) < 1:
+            raise ValueError("پنجره‌ها و scan_every_bars باید مثبت باشند")
+        if self.max_hold_hours <= 0:
+            raise ValueError("مدت نگهداری باید مثبت باشد")
         if self.cooldown_hours < 0 or self.max_entry_slip_r < 0:
             raise ValueError("cooldown و max_entry_slip_r نباید منفی باشند")
 
