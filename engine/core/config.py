@@ -48,7 +48,7 @@ class EngineConfig:
     w_confluence: float = 0.10       # Sweep + CHOCH + (FVG یا OB) با هم
 
     # --- مدیریت معامله ---
-    max_hold_hours: int = 72
+    max_hold_hours: float = 72.0
     cooldown_hours: float = 4.0
     scan_every_bars: int = 1
     max_entry_slip_r: float = 0.3       # رد ورود بعد از بسته‌شدن کندل اگر گپ از این R بیشتر باشد
@@ -63,7 +63,7 @@ class EngineConfig:
             "fvg_min_gap_ratio", "w_htf_full", "w_htf_soft", "w_sweep",
             "w_sweep_against", "w_choch", "w_bos", "w_ob_in", "w_ob_near",
             "w_ob_mid", "w_pd", "w_fvg", "w_candle", "w_killzone",
-            "w_confluence", "cooldown_hours", "max_entry_slip_r",
+            "w_confluence", "cooldown_hours", "max_entry_slip_r", "max_hold_hours",
         )
         for name in numeric_names:
             value = getattr(self, name)
@@ -74,7 +74,7 @@ class EngineConfig:
 
         integer_names = (
             "sweep_lookback", "break_lookback", "fvg_lookback",
-            "ob_lookback", "pd_lookback", "max_hold_hours", "scan_every_bars",
+            "ob_lookback", "pd_lookback", "scan_every_bars",
         )
         for name in integer_names:
             value = getattr(self, name)

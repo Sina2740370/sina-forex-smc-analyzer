@@ -174,6 +174,10 @@ def test_backtest_rejects_entry_after_excessive_open_gap():
     df15 = data["15m"]
     signal_entry = float(df15["close"].iloc[0])
     df15.loc[1, "open"] = signal_entry + 0.02
+    df15.loc[1, "high"] = max(
+        float(df15.loc[1, "high"]), float(df15.loc[1, "open"]),
+        float(df15.loc[1, "close"]),
+    )
     cfg = EngineConfig(
         cooldown_hours=10000, max_hold_hours=10000, max_entry_slip_r=0.3
     )
@@ -319,6 +323,7 @@ def test_topdown_daily_close_respects_dst_transition():
     # Spring forward: this NY daily candle is 23 hours long, not 24.
     spring = pd.DataFrame({
         "time": pd.to_datetime(["2025-03-08 22:00:00+00:00"]),
+        "open": [1.0], "high": [1.1], "low": [0.9], "close": [1.0], "volume": [1.0],
     })
     spring_view = TopDownView({"1d": spring})
     assert len(spring_view.at(pd.Timestamp("2025-03-09 21:30:00", tz="UTC"))["1d"]) == 1
@@ -326,6 +331,7 @@ def test_topdown_daily_close_respects_dst_transition():
     # Fall back: this NY daily candle is 25 hours long; it must not be exposed early.
     fall = pd.DataFrame({
         "time": pd.to_datetime(["2025-11-01 21:00:00+00:00"]),
+        "open": [1.0], "high": [1.1], "low": [0.9], "close": [1.0], "volume": [1.0],
     })
     fall_view = TopDownView({"1d": fall})
     assert len(fall_view.at(pd.Timestamp("2025-11-02 21:30:00", tz="UTC"))["1d"]) == 0
@@ -417,6 +423,7 @@ def test_native_yfinance_daily_bar_keeps_fixed_utc_boundary():
     # Native Yahoo bars at 00:00 UTC must not be reinterpreted as 17:00 New York.
     native = pd.DataFrame({
         "time": pd.to_datetime(["2025-03-09T00:00:00Z"]),
+        "open": [1.0], "high": [1.1], "low": [0.9], "close": [1.0], "volume": [1.0],
     })
     closes = _bar_close_times(native, "1d")
     assert closes.iloc[0] == pd.Timestamp("2025-03-10T00:00:00Z")
