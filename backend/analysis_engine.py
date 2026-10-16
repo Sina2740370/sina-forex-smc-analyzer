@@ -420,7 +420,7 @@ def analyze_technical_topdown(data_dict):
     base = {
         "score": 0.0, "direction": None, "price": None, "sl": None, "tp": None,
         "trend": "-", "wk_trend": "-", "d_trend": "-", "zone": "-",
-        "atr": 0.0, "reasons": [], "blocked": True,
+        "atr": 0.0, "reasons": [], "blocked": True, "config_hash": None,
     }
     try:
         frames = {}
@@ -446,6 +446,7 @@ def analyze_technical_topdown(data_dict):
         now = pd.Timestamp.now(tz="UTC")
         closed = TopDownView(frames).at(now)
         decision = analyze_smc_engine(closed, EngineConfig(), now)
+        base["config_hash"] = decision.config_hash
         df15 = closed.get("15m", pd.DataFrame())
         price = float(df15["close"].iloc[-1]) if not df15.empty else None
         atr = calculate_atr(df15) if len(df15) >= 15 else 0.0
