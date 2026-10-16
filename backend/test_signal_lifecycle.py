@@ -94,6 +94,27 @@ class SignalLifecycleTests(unittest.TestCase):
         close.assert_called_once_with(23, 1.102, unittest.mock.ANY, "LOSS")
 
     @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
+    def test_duplicate_open_symbol_is_rejected(self):
+        original_path = database.DB_PATH
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                database.DB_PATH = str(Path(tmp) / "duplicates.db")
+                database.init_db()
+                first = database.insert_signal(
+                    "EURUSD", "Euro/Dollar", "BUY",
+                    1.1, 1.09, 1.12, 0.8, ["first"]
+                )
+                second = database.insert_signal(
+                    "EURUSD", "Euro/Dollar", "SELL",
+                    1.1, 1.11, 1.08, 0.8, ["duplicate"]
+                )
+                self.assertIsNotNone(first)
+                self.assertIsNone(second)
+                self.assertEqual(len(database.get_open_signals()), 1)
+            finally:
+                database.DB_PATH = original_path
+
+    @unittest.skipIf(database.USE_POSTGRES, "Uses an isolated SQLite database")
     def test_close_signal_only_changes_an_open_signal_once(self):
         original_path = database.DB_PATH
         with tempfile.TemporaryDirectory() as tmp:
