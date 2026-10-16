@@ -190,6 +190,15 @@ def test_backtest_rejects_entry_after_excessive_open_gap():
 
     assert run_backtest("EURUSD", data, cfg, analyze_fn=first_only) == []
 
+
+def test_engine_config_rejects_invalid_risk_and_nonfinite_values():
+    with pytest.raises(ValueError, match="risk_reward"):
+        EngineConfig(risk_reward=0)
+    with pytest.raises(ValueError, match="max_entry_slip_r"):
+        EngineConfig(max_entry_slip_r=-0.1)
+    with pytest.raises(ValueError, match="متناهی"):
+        EngineConfig(min_score=float("nan"))
+
 def test_stats_helpers():
     lo, hi = wilson(13, 20)
     assert 0.40 < lo < 0.45 and 0.80 < hi < 0.88
