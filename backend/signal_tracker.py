@@ -7,7 +7,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 
-from .config import PIP_SIZE, SPREAD
+from .config import MAX_ENTRY_SLIP_R, PIP_SIZE, SPREAD
 from .data_fetcher import fetch_ohlcv
 from .database import (
     get_open_signals,
@@ -33,18 +33,30 @@ def _parse_dt(t):
     return t
 
 
+def _config_symbol(symbol: str) -> str:
+    """Map engine-style symbols to the backend's configured Yahoo symbol keys."""
+    if symbol in PIP_SIZE:
+        return symbol
+    if symbol == "XAUUSD" and "GC=F" in PIP_SIZE:
+        return "GC=F"
+    yahoo_symbol = f"{symbol}=X"
+    return yahoo_symbol if yahoo_symbol in PIP_SIZE else symbol
+
+
 def _to_pips(symbol: str, price_diff: float) -> float:
-    """تبدیل اختلاف قیمت به پیپ"""
-    pip = PIP_SIZE.get(symbol, 0.0001)
+    """تبدیل اختلاف قیمت به پیپ با کلید canonical تنظیمات."""
+    config_symbol = _config_symbol(symbol)
+    pip = PIP_SIZE.get(config_symbol, 0.0001)
     if pip == 0:
         return 0.0
     return round(price_diff / pip, 1)
 
 
 def _apply_spread(symbol: str, price: float, direction: str) -> float:
-    """اسپرد رو روی قیمت اعمال می‌کنه (شبیه‌سازی واقعی)"""
-    spread_pips = SPREAD.get(symbol, 1.0)
-    pip = PIP_SIZE.get(symbol, 0.0001)
+    """Apply half-spread to the executable entry side."""
+    config_symbol = _config_symbol(symbol)
+    spread_pips = SPREAD.get(config_symbol, 1.0)
+    pip = PIP_SIZE.get(config_symbol, 0.0001)
     spread_price = spread_pips * pip
 
     if direction == "BUY":
@@ -85,86 +97,132 @@ def check_open_signals():
             logger.error(f"خطا در بررسی {symbol}: {e}")
 
 def _check_signal(sig: dict, candles: list):
-    """
-    بررسی یک سیگنال با فیلتر زمان
-    فقط کندل‌های بعد از created_at بررسی می‌شن
-    """
+    """Track the signal with the same next-eligible-bar entry and exit rules as backtest."""
     symbol = sig["symbol"]
     direction = sig["direction"]
-    entry = sig["entry"]
-    sl = sig["sl"]
-    tp = sig["tp"]
     sig_id = sig["id"]
-
-    # زمان ساخته شدن
     try:
+        entry = float(sig["entry"])
+        sl = float(sig["sl"])
+        tp = float(sig["tp"])
         created_at = _parse_dt(sig["created_at"])
-    except Exception as e:
-        logger.error(f"خطا در پارس زمان سیگنال {sig_id}: {e}")
+    except (KeyError, TypeError, ValueError) as exc:
+        logger.error("سیگنال %s داده‌ی ورود/زمان نامعتبر دارد: %s", sig_id, exc)
         return
 
-    # اسپرد روی ورود
-    effective_entry = _apply_spread(symbol, entry, direction)
-
-    # پس از مهلت ۷۲ ساعته، خروج با قیمت بازار و هزینه‌ی اسپرد ثبت می‌شود.
+    side = 1 if direction == "BUY" else -1
+    config_symbol = _config_symbol(symbol)
+    half_spread = SPREAD.get(config_symbol, 1.0) * PIP_SIZE.get(config_symbol, 0.0001) / 2.0
+    signal_risk = (entry - sl) * side
     expires_at = created_at + timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
-    half_spread = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    # مرور کندل‌ها به ترتیب زمانی؛ کندل 15m تا زمان بسته‌شدن کامل معتبر نیست.
-    for c in candles:
+    parsed_candles = []
+    for candle in candles:
         try:
-            candle_time = _parse_dt(c["time"])
+            parsed_candles.append((_parse_dt(candle["time"]), candle))
         except Exception:
             continue
+    parsed_candles.sort(key=lambda item: item[0])
+    effective_entry = None
 
+    for candle_time, candle in parsed_candles:
+        # The signal is not executable on a candle that began before it was created.
         if candle_time <= created_at:
             continue
         if candle_time + timedelta(minutes=15) > now_utc:
             continue
-        # اگر تاریخچه فقط پس از مهلت انقضا شروع شود، TP/SL بعد از مهلت را بررسی نمی‌کنیم؛
-        # از نزدیک‌ترین قیمت قابل‌مشاهده برای خروج تقریبی استفاده می‌کنیم.
+
+        market_open = float(candle.get("open", entry))
+        if effective_entry is None:
+            if candle_time >= expires_at:
+                exit_price = (
+                    market_open - half_spread if direction == "BUY"
+                    else market_open + half_spread
+                )
+                close_signal(sig_id, exit_price, 0.0, "EXPIRED")
+                logger.info("EXPIRED without entry: %s; no eligible bar before expiry", symbol)
+                return
+
+            if (
+                signal_risk <= 0
+                or abs(market_open - entry) > MAX_ENTRY_SLIP_R * signal_risk
+            ):
+                exit_price = (
+                    market_open - half_spread if direction == "BUY"
+                    else market_open + half_spread
+                )
+                close_signal(sig_id, exit_price, 0.0, "EXPIRED")
+                logger.warning(
+                    "%s: entry rejected; next eligible open exceeded max slippage or signal risk was invalid",
+                    symbol,
+                )
+                return
+
+            effective_entry = _apply_spread(symbol, market_open, direction)
+            if (effective_entry - sl) * side <= 0 or (tp - effective_entry) * side <= 0:
+                close_signal(sig_id, effective_entry, 0.0, "EXPIRED")
+                logger.warning("%s: entry rejected because executable price crossed SL/TP", symbol)
+                return
+
+        # Once entered, never count TP/SL events from candles after the 72h deadline.
         if candle_time >= expires_at:
             if candle_time - expires_at <= timedelta(minutes=15):
-                market_price = float(c["open"])
+                market_price = market_open
             else:
-                market_price = float(candles[-1]["close"])
+                market_price = float(parsed_candles[-1][1]["close"])
                 logger.warning(
-                    f"История для точного истечения {symbol} неполная; "
-                    "использован последний доступный close."
+                    "%s: incomplete history at expiry; using last available close as an estimate",
+                    symbol,
                 )
-            exit_price = market_price - half_spread if direction == "BUY" else market_price + half_spread
-            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            exit_price = (
+                market_price - half_spread if direction == "BUY"
+                else market_price + half_spread
+            )
+            pnl_diff = (
+                exit_price - effective_entry if direction == "BUY"
+                else effective_entry - exit_price
+            )
             pnl = _to_pips(symbol, pnl_diff)
             close_signal(sig_id, exit_price, pnl, "EXPIRED")
-            logger.info(f"⏰ EXPIRED: {symbol} {pnl:+.1f} pips")
+            logger.info("⏰ EXPIRED: %s %+.1f pips", symbol, pnl)
             return
 
-        high = float(c["high"])
-        low = float(c["low"])
-        side = 1 if direction == "BUY" else -1
-        status, exit_price = engine_check_exit(side, float(sl), float(tp), high, low, half_spread, float(c["open"]) if c.get("open") is not None else None)
+        high = float(candle["high"])
+        low = float(candle["low"])
+        open_price = float(candle["open"]) if candle.get("open") is not None else None
+        status, exit_price = engine_check_exit(
+            side, sl, tp, high, low, half_spread, open_price
+        )
         if status is not None:
-            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            pnl_diff = (
+                exit_price - effective_entry if direction == "BUY"
+                else effective_entry - exit_price
+            )
             pnl = _to_pips(symbol, pnl_diff)
             final_status = "LOSS" if status == "SL" else "WIN"
             close_signal(sig_id, exit_price, pnl, final_status)
             logger.info(
-                f"{'❌ LOSS' if final_status == 'LOSS' else '✅ WIN'}: "
-                f"{symbol} {pnl:+.1f} pips"
+                "%s: %s %+.1f pips",
+                "❌ LOSS" if final_status == "LOSS" else "✅ WIN",
+                symbol, pnl,
             )
             return
 
-        # همان لحظه‌ی بسته‌شدن کندل را ملاک انقضا می‌گیریم؛ این با موتور بک‌تست
-        # هم‌راستاست و از یک کندل کامل اضافه پس از deadline جلوگیری می‌کند.
         bar_close = candle_time + timedelta(minutes=15)
         if bar_close >= expires_at:
-            market_price = float(c["close"])
-            exit_price = market_price - half_spread if direction == "BUY" else market_price + half_spread
-            pnl_diff = exit_price - effective_entry if direction == "BUY" else effective_entry - exit_price
+            market_price = float(candle["close"])
+            exit_price = (
+                market_price - half_spread if direction == "BUY"
+                else market_price + half_spread
+            )
+            pnl_diff = (
+                exit_price - effective_entry if direction == "BUY"
+                else effective_entry - exit_price
+            )
             pnl = _to_pips(symbol, pnl_diff)
             close_signal(sig_id, exit_price, pnl, "EXPIRED")
-            logger.info(f"⏰ EXPIRED: {symbol} {pnl:+.1f} pips")
+            logger.info("⏰ EXPIRED: %s %+.1f pips", symbol, pnl)
             return
 
 
