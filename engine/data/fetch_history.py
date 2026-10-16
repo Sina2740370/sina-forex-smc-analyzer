@@ -10,6 +10,28 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 
 COLS = ["open", "high", "low", "close", "volume"]
+OHLC = ["open", "high", "low", "close"]
+
+
+def _midpoint_ohlc(bid: pd.DataFrame, ask: pd.DataFrame) -> pd.DataFrame:
+    """Align BID/ASK bars and approximate midpoint OHLC for the spread-aware engine.
+
+    The midpoint of aggregated BID/ASK highs/lows is not tick-exact midpoint OHLC;
+    it is nevertheless preferable to applying a mid-price spread model to BID-only bars.
+    """
+    if bid is None or ask is None or bid.empty or ask.empty:
+        raise ValueError("Dukascopy returned empty BID or ASK data")
+    b = bid[COLS].sort_index().add_suffix("_bid")
+    a = ask[COLS].sort_index().add_suffix("_ask")
+    joined = b.join(a, how="inner")
+    if joined.empty:
+        raise ValueError("Dukascopy BID/ASK bars have no common timestamps")
+    out = pd.DataFrame(index=joined.index)
+    for col in OHLC:
+        out[col] = (joined[f"{col}_bid"] + joined[f"{col}_ask"]) / 2.0
+    # FX tick volume is not a centralized traded-volume measure; retain a neutral proxy.
+    out["volume"] = (joined["volume_bid"] + joined["volume_ask"]) / 2.0
+    return out
 
 
 def _quarters(start: datetime, end: datetime):
@@ -32,15 +54,16 @@ def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) 
 
     parts = []
     for a, b in _quarters(start, end):
-        f = os.path.join(cache, f"{symbol}_{a:%Y%m%d}.csv")
+        f = os.path.join(cache, f"{symbol}_mid_{a:%Y%m%d}.csv")
         fresh = b < end - timedelta(days=7)
         if fresh and os.path.exists(f):
             parts.append(pd.read_csv(f, index_col=0, parse_dates=True))
             continue
         if verbose:
             print(f"  {symbol} {a:%Y-%m-%d} -> {b:%Y-%m-%d} ...", flush=True)
-        df = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b)
-        df = df[COLS]
+        bid = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b)
+        ask = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_ASK, a, b)
+        df = _midpoint_ohlc(bid, ask)
         if fresh:
             df.to_csv(f)
         parts.append(df)
