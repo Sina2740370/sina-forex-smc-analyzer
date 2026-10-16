@@ -49,6 +49,7 @@ class EngineConfig:
     max_hold_hours: int = 72
     cooldown_hours: float = 4.0
     scan_every_bars: int = 1
+    max_entry_slip_r: float = 0.3       # رد ورود بعد از بسته‌شدن کندل اگر گپ از این R بیشتر باشد
 
     def to_dict(self) -> dict:
         return asdict(self)
