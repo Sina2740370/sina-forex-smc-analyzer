@@ -366,6 +366,35 @@ def test_mt5_csv_aware_timestamps_are_not_shifted_twice():
             raise AssertionError("Expected a guard against applying a second offset")
 
 
+
+def test_mt5_csv_with_multiple_aware_offsets_normalizes_each_row_to_utc():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "dst-aware.csv"
+        path.write_text(
+            "time,open,high,low,close,volume\n"
+            "2025-03-30T01:30:00+01:00,1.0,1.1,0.9,1.05,10\n"
+            "2025-03-30T03:30:00+02:00,1.0,1.1,0.9,1.05,10\n",
+            encoding="utf-8",
+        )
+        df = load_mt5_csv(str(path))
+        assert df["time"].tolist() == [
+            pd.Timestamp("2025-03-30T00:30:00Z"),
+            pd.Timestamp("2025-03-30T01:30:00Z"),
+        ]
+
+
+def test_mt5_csv_rejects_mixed_aware_and_naive_timestamps():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "mixed-time.csv"
+        path.write_text(
+            "time,open,high,low,close,volume\n"
+            "2025-03-30T01:30:00+01:00,1.0,1.1,0.9,1.05,10\n"
+            "2025-03-30T03:30:00,1.0,1.1,0.9,1.05,10\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="aware"):
+            load_mt5_csv(str(path))
+
 def test_gold_futures_proxy_is_labeled_in_reports():
     from argparse import Namespace
 
