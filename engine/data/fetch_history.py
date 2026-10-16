@@ -61,8 +61,8 @@ def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) 
             continue
         if verbose:
             print(f"  {symbol} {a:%Y-%m-%d} -> {b:%Y-%m-%d} ...", flush=True)
-        bid = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b)
-        ask = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_ASK, a, b)
+        bid = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b, max_retries=3)
+        ask = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_ASK, a, b, max_retries=3)
         df = _midpoint_ohlc(bid, ask)
         if fresh:
             df.to_csv(f)
