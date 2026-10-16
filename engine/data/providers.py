@@ -99,12 +99,15 @@ def _validate_ohlc(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
 
+    validated = df.copy()
     numeric = {}
     for column in ("open", "high", "low", "close", "volume"):
-        values = pd.to_numeric(df[column], errors="coerce").to_numpy(dtype=float)
+        converted = pd.to_numeric(df[column], errors="coerce")
+        values = converted.to_numpy(dtype=float)
         if not np.isfinite(values).all():
             raise ValueError(f"ستون {column} دارای NaN، Infinity یا مقدار غیرعددی است")
         numeric[column] = values
+        validated[column] = converted
 
     prices = np.column_stack([numeric[name] for name in ("open", "high", "low", "close")])
     if (prices <= 0).any():
@@ -124,11 +127,13 @@ def _validate_ohlc(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("زمان کندل‌ها باید timezone-aware باشد و به UTC نرمال شود")
     if timestamps.isna().any():
         raise ValueError("زمان کندل نمی‌تواند خالی باشد")
+    timestamps = timestamps.dt.tz_convert("UTC")
     if timestamps.duplicated().any():
         raise ValueError("داده‌ی کندل دارای timestamp تکراری است")
     if not timestamps.is_monotonic_increasing:
         raise ValueError("زمان کندل‌ها باید صعودی مرتب شده باشد")
-    return df
+    validated["time"] = timestamps
+    return validated
 
 
 def _tidy(df: pd.DataFrame) -> pd.DataFrame:
@@ -168,7 +173,7 @@ def resample_ohlc(df15: pd.DataFrame, tf: str) -> pd.DataFrame:
     """ساخت تایم‌فریم بالاتر از 15m. 1d/1wk روی 17:00 نیویورک (با DST) شروع می‌شوند."""
     if tf not in TF_MINUTES:
         raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
-    _validate_ohlc(df15)
+    df15 = _validate_ohlc(df15)
     if tf == "15m":
         return df15.copy()
     if tf == "1d":
@@ -264,11 +269,12 @@ class TopDownView:
     def __init__(self, data: dict):
         if not isinstance(data, dict):
             raise ValueError("داده‌ی چندتایم‌فریم باید dict باشد")
+        validated_data = {}
         for tf, frame in data.items():
             if tf not in TF_MINUTES:
                 raise ValueError(f"تایم‌فریم پشتیبانی نمی‌شود: {tf}")
-            _validate_ohlc(frame)
-        self.data = data
+            validated_data[tf] = _validate_ohlc(frame)
+        self.data = validated_data
         self._close = {
             tf: _bar_close_times(df, tf)
             .dt.tz_convert("UTC").dt.tz_localize(None).to_numpy(dtype="datetime64[ns]")
