@@ -63,7 +63,9 @@ def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineCo
     opens, hi, lo, cl = (
         df15[k].to_numpy() for k in ("open", "high", "low", "close")
     )
-    nb = cfg.max_hold_hours * 4
+    # Convert the configured holding duration to a safe number of 15-minute bars.
+    # Ceil preserves the maximum-duration bound for fractional-hour settings.
+    nb = int(np.ceil(cfg.max_hold_hours * 4))
     bar = pd.Timedelta(minutes=15)
     j = [int(times.searchsorted(t["open_time"] - bar)) for t in ts]
     j_lo = max(0, min(j))
