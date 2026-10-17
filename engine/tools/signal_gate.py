@@ -7,15 +7,27 @@
   cooldown         : همان نماد و جهت تازه بسته شده (بعد از ضرر ۸ ساعت، بعد از سود/انقضا ۴ ساعت)
   loss_theme       : در ۱۲ ساعت اخیر ضرر داده‌ایم و سیگنال تازه روی همان ارز هم‌جهت است
                      (مثلاً بعد از ضرر خرید USDCAD یعنی «لانگ USD»، خرید USDJPY هم لانگ USD است)
+  failed_zone      : بعد از LOSS، اگر ورود تازه خیلی نزدیک ورود قبلی (نسبت به ریسک قبلی) باشد
+                     تا FAILED_ZONE_H ساعت همان ستاپ دوباره صادر نمی‌شود
+  symbol_streak    : بعد از STREAK_LOSSES باخت روی یک نماد در پنجره STREAK_BLOCK_H، آن نماد بلاک می‌شود
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 COOLDOWN_H = 4
 LOSS_COOLDOWN_H = 8
 LOSS_THEME_H = 12
+
+# بلاک منطقه شکست‌خورده: جلوگیری از ورود دوباره به همان ناحیه بعد از باخت
+FAILED_ZONE_H = float(os.getenv("FAILED_ZONE_H", "48"))
+ZONE_TOL = float(os.getenv("ZONE_TOL", "1.0"))
+
+# بلاک رگبار باخت روی یک نماد
+STREAK_BLOCK_H = float(os.getenv("STREAK_BLOCK_H", "24"))
+STREAK_LOSSES = int(os.getenv("STREAK_LOSSES", "2"))
 
 
 def norm_symbol(symbol: str) -> str:
@@ -40,8 +52,12 @@ def _dt(t) -> datetime:
 
 
 def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: list,
-             now: Optional[datetime] = None) -> Optional[str]:
-    """None یعنی مجاز؛ وگرنه کد دلیل رد."""
+             now: Optional[datetime] = None,
+             entry: Optional[float] = None) -> Optional[str]:
+    """None یعنی مجاز؛ وگرنه کد دلیل رد.
+
+    entry: قیمت ورود پیشنهادی سیگنال تازه (برای قاعده failed_zone). اختیاری برای سازگاری عقب‌رو.
+    """
     now = _dt(now) if now else datetime.utcnow()
     sym = norm_symbol(symbol)
     direction = direction.upper()
@@ -66,4 +82,37 @@ def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: lis
         lost = exposure(s["symbol"], s["direction"])
         if any(mine.get(cur) == sign for cur, sign in lost.items()):
             return "loss_theme"
+
+    # --- failed_zone: ورود دوباره به همان ناحیه بعد از LOSS ---
+    if entry is not None:
+        for s in closed_recent:
+            if s["status"] != "LOSS" or not s.get("closed_at"):
+                continue
+            if norm_symbol(s["symbol"]) != sym or s["direction"].upper() != direction:
+                continue
+            if _dt(s["closed_at"]) <= now - timedelta(hours=FAILED_ZONE_H):
+                continue
+            old_entry = s.get("entry")
+            old_sl = s.get("sl")
+            if old_entry is None or old_sl is None:
+                continue
+            risk = abs(float(old_entry) - float(old_sl))
+            if risk <= 0:
+                continue
+            if abs(float(entry) - float(old_entry)) <= ZONE_TOL * risk:
+                return "failed_zone"
+
+    # --- symbol_streak: چند باخت پشت‌سرهم روی یک نماد ---
+    losses_in_window = 0
+    for s in closed_recent:
+        if s["status"] != "LOSS" or not s.get("closed_at"):
+            continue
+        if norm_symbol(s["symbol"]) != sym:
+            continue
+        if _dt(s["closed_at"]) <= now - timedelta(hours=STREAK_BLOCK_H):
+            continue
+        losses_in_window += 1
+    if losses_in_window >= STREAK_LOSSES:
+        return "symbol_streak"
+
     return None
