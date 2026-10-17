@@ -46,6 +46,12 @@ SYMBOLS = {
     "GC=F":    "XAU/USD",
 }
 
+# نمادهای غیرفعال (کاما جدا، مثلاً GBPUSD=X,USDJPY=X) — از اسکن رد می‌شوند
+_DISABLED_RAW = os.getenv("DISABLED_SYMBOLS", "").strip()
+DISABLED_SYMBOLS = {
+    s.strip() for s in _DISABLED_RAW.split(",") if s.strip()
+}
+
 # ============================================================
 #  تایم‌فریم‌ها (Top-Down)
 # ============================================================
@@ -71,6 +77,33 @@ MIN_SIGNAL_SCORE = 0.40
 RISK_REWARD = 2.0
 SL_ATR_MULTIPLIER = 1.5
 SL_OB_BUFFER = 0.3
+
+# پروفایل هر نماد: min_score سخت‌گیرانه‌تر و SL پهن‌تر برای جفت‌های پرریسک
+# کلید = نماد yfinance (همان کلید SYMBOLS)
+SYMBOL_PROFILE = {
+    "GBPUSD=X": {"min_score": 0.50, "sl_atr_mult": 1.8},
+    "USDJPY=X": {"min_score": 0.50, "sl_atr_mult": 1.8},
+    "EURJPY=X": {"min_score": 0.55, "sl_atr_mult": 2.0},
+    "GBPJPY=X": {"min_score": 0.55, "sl_atr_mult": 2.0},
+}
+
+
+def get_symbol_profile(symbol: str) -> dict:
+    """min_score و sl_atr_mult برای نماد؛ در صورت نبود پروفایل → مقادیر سراسری."""
+    p = SYMBOL_PROFILE.get(symbol) or {}
+    return {
+        "min_score": float(p.get("min_score", MIN_SIGNAL_SCORE)),
+        "sl_atr_mult": float(p.get("sl_atr_mult", SL_ATR_MULTIPLIER)),
+    }
+
+
+# ============================================================
+#  دروازه سیگنال (آستانه‌ها؛ همان envها در engine/tools/signal_gate هم خوانده می‌شوند)
+# ============================================================
+FAILED_ZONE_H = float(os.getenv("FAILED_ZONE_H", "48"))
+ZONE_TOL = float(os.getenv("ZONE_TOL", "1.0"))
+STREAK_BLOCK_H = float(os.getenv("STREAK_BLOCK_H", "24"))
+STREAK_LOSSES = int(os.getenv("STREAK_LOSSES", "2"))
 
 # ============================================================
 #  کش هوشمند
