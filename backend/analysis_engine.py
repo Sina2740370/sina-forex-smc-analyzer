@@ -11,6 +11,7 @@
 """
 import logging
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import pandas as pd
 import numpy as np
 
@@ -243,28 +244,36 @@ def sweep_strength_multiplier(sweep, atr):
     return max(0.5, min(1.6, 0.5 + ratio * 0.7))
 
 
-def is_london_session(dt=None):
-    """تقریبی (بدون احتساب دقیق DST): سشن لندن ~ ۰۷:۰۰ تا ۱۶:۰۰ UTC."""
+_LONDON = ZoneInfo("Europe/London")
+_NEW_YORK = ZoneInfo("America/New_York")
+
+
+def _local_hour(dt, tz):
+    """ساعت محلی (با DST). dt بدون tzinfo به‌صورت UTC در نظر گرفته می‌شود."""
     dt = dt or datetime.now(timezone.utc)
-    return 7 <= dt.hour < 16
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(tz).hour
+
+
+def is_london_session(dt=None):
+    """سشن لندن: ۰۷:۰۰ تا ۱۶:۰۰ به وقت محلی لندن (با DST)."""
+    return 7 <= _local_hour(dt, _LONDON) < 16
 
 
 def is_ny_session(dt=None):
-    """تقریبی: سشن نیویورک ~ ۱۲:۰۰ تا ۲۱:۰۰ UTC."""
-    dt = dt or datetime.now(timezone.utc)
-    return 12 <= dt.hour < 21
+    """سشن نیویورک: ۰۷:۰۰ تا ۱۶:۰۰ به وقت محلی نیویورک (با DST)."""
+    return 7 <= _local_hour(dt, _NEW_YORK) < 16
 
 
 def is_london_killzone(dt=None):
-    """تقریبی: کیل‌زون بازگشایی لندن ~ ۰۷:۰۰ تا ۱۰:۰۰ UTC."""
-    dt = dt or datetime.now(timezone.utc)
-    return 7 <= dt.hour < 10
+    """کیل‌زون لندن: ۰۷:۰۰ تا ۱۰:۰۰ به وقت محلی لندن (با DST)."""
+    return 7 <= _local_hour(dt, _LONDON) < 10
 
 
 def is_ny_killzone(dt=None):
-    """تقریبی: کیل‌زون همپوشانی لندن/نیویورک ~ ۱۲:۰۰ تا ۱۵:۰۰ UTC."""
-    dt = dt or datetime.now(timezone.utc)
-    return 12 <= dt.hour < 15
+    """کیل‌زون نیویورک: ۰۷:۰۰ تا ۱۰:۰۰ به وقت محلی نیویورک (با DST)."""
+    return 7 <= _local_hour(dt, _NEW_YORK) < 10
 
 
 def current_session_label(dt=None):
@@ -309,7 +318,10 @@ def find_breaker_block(df, lookback=40):
 
 
 def detect_unicorn_setup(df_4h, df_1h, df_15m):
-    """ستاپ کلاسیک ICT: Sweep + CHOCH + (Breaker/FVG)"""
+    """ستاپ کلاسیک ICT: Sweep + CHOCH + (Breaker یا FVG) — بدون هیچ‌کدام از دو، None.
+
+    نکته: find_order_blocks فقط OB تخریب‌نشده برمی‌گرداند، پس breaker به‌ندرت پیدا می‌شود.
+    """
     sweep = detect_liquidity_sweep(df_15m, lookback=30)
     if not sweep:
         return None
@@ -322,6 +334,8 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
         return None
     breaker = find_breaker_block(df_4h, lookback=40)
     fvg = detect_fvg(df_15m, lookback=15)
+    if breaker is None and fvg is None:
+        return None
     return {
         "sweep": sweep, "choch": choch,
         "breaker": breaker, "fvg": fvg,
@@ -352,7 +366,11 @@ def top_down_filter(data_dict):
     try:
         df_wk = pd.DataFrame(data_dict["1wk"])
         df_d = pd.DataFrame(data_dict["1d"])
+        # بدون کندل در حال تشکیل (هم‌راستا با بک‌تست)
+        df_wk = _drop_forming(df_wk, 10080)
+        df_d = _drop_forming(df_d, 1440)
     except Exception:
+        logger.warning("top_down_filter: خطا در آماده‌سازی داده HTF", exc_info=True)
         return "NEUTRAL", "داده کافی برای فیلتر", "-", "-", False
 
     wk_struct = detect_structure(df_wk)
@@ -406,7 +424,7 @@ def _drop_forming(df, minutes):
         if t + pd.Timedelta(minutes=minutes) > pd.Timestamp.now(tz="UTC"):
             return df.iloc[:-1].reset_index(drop=True)
     except Exception:
-        pass
+        logger.warning("_drop_forming: خطا در بررسی کندل در حال تشکیل", exc_info=True)
     return df
 
 
@@ -439,7 +457,7 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
             price = float(df_15m["close"].iloc[-1])
             atr = calculate_atr(df_15m)
     except Exception:
-        pass
+        logger.warning("analyze_technical_topdown: خطا در داده 15m", exc_info=True)
 
     try:
         df_4h = pd.DataFrame(data_dict["4h"])
@@ -447,12 +465,12 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
             pd_zone = get_premium_discount(df_4h, lookback=60)
             zone = pd_zone["zone"]
     except Exception:
-        pass
+        logger.warning("analyze_technical_topdown: خطا در داده 4h", exc_info=True)
 
     try:
         df_1h = pd.DataFrame(data_dict["1h"])
     except Exception:
-        pass
+        logger.warning("analyze_technical_topdown: خطا در داده 1h", exc_info=True)
 
     td_dir, td_reason, wk_trend, d_trend, soft = top_down_filter(data_dict)
 
@@ -502,6 +520,7 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
     # آماده‌سازی داده‌ها
     df_1h = _drop_forming(df_1h, 60)
     df_15m = _drop_forming(df_15m, 15)
+    df_4h = _drop_forming(df_4h, 240)
     htf_obs = find_order_blocks(df_4h, lookback=60)
     htf_pd = get_premium_discount(df_4h, lookback=60)
     ltf_fvg = detect_fvg(df_15m, lookback=15)
@@ -517,8 +536,9 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
 
     # جریمه حالت soft
     if soft:
-        score -= 0.10
-        reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه -۰.۱۰)")
+        # جریمه همیشه به سمت صفر: BUY منفی، SELL مثبت (قبلاً همیشه منفی بود و SELL را تقویت می‌کرد)
+        score += -0.10 if td_dir == "BULLISH" else 0.10
+        reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه ۰.۱۰ به سمت صفر)")
 
     # بونوس کوچک و غیرمسدودکننده برای معامله داخل کیل‌زون (فقط تقویت، نه فیلتر سخت)
     if session == "KILLZONE":
