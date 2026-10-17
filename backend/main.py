@@ -24,7 +24,7 @@ from .config import (
     SCAN_INTERVAL_MINUTES, TIMEFRAMES,
 )
 from .database import (
-    init_db, get_stats_summary,
+    init_db, get_stats_summary, get_stats_by_symbol,
     get_all_signals, get_open_signals,
 )
 from .scheduler import (
@@ -304,6 +304,12 @@ def get_stats():
         "max_drawdown": MAX_DRAWDOWN,
         "ready_for_live": ready,
     }
+
+
+@app.get("/api/stats/by-symbol")
+def stats_by_symbol():
+    """آمار تفکیکی هر نماد (R و پیپ) — همان auth سراسری /api/*."""
+    return {"symbols": get_stats_by_symbol()}
 
 
 # ============================================================

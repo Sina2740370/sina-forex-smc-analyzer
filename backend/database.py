@@ -364,6 +364,61 @@ def get_stats_summary():
     }
 
 
+def get_stats_by_symbol():
+    """آمار تفکیکی هر نماد: تعداد، win rate، net R، net pips، میانگین R.
+
+    فقط WIN/LOSS در محاسبهٔ R و win_rate (EXPIRED جدا شمرده می‌شود ولی در مخرج win_rate نیست).
+    """
+    with get_conn() as conn:
+        cur = _execute(conn, """
+            SELECT symbol, status, entry, sl, pnl_pips FROM signals
+            WHERE status IN ('WIN', 'LOSS', 'EXPIRED')
+            ORDER BY closed_at ASC
+        """)
+        rows = cur.fetchall()
+
+    # per_symbol[sym] = {wins, losses, expired, net_r, net_pips, sum_r_closed}
+    per = {}
+    for sym, status, entry, sl, pnl in rows:
+        bucket = per.setdefault(sym, {
+            "wins": 0, "losses": 0, "expired": 0,
+            "net_r": 0.0, "net_pips": 0.0, "sum_r": 0.0,
+        })
+        pnl = pnl or 0.0
+        pip = PIP_SIZE.get(sym, 0.0001)
+        risk_pips = abs(entry - sl) / pip if (sl is not None and pip) else 0.0
+        r = (pnl / risk_pips) if risk_pips > 0 else 0.0
+
+        if status == "WIN":
+            bucket["wins"] += 1
+            bucket["net_r"] += r
+            bucket["sum_r"] += r
+            bucket["net_pips"] += pnl
+        elif status == "LOSS":
+            bucket["losses"] += 1
+            bucket["net_r"] += r
+            bucket["sum_r"] += r
+            bucket["net_pips"] += pnl
+        else:
+            bucket["expired"] += 1
+
+    result = []
+    for sym, b in sorted(per.items()):
+        closed = b["wins"] + b["losses"]
+        result.append({
+            "symbol": sym,
+            "trades": closed + b["expired"],
+            "wins": b["wins"],
+            "losses": b["losses"],
+            "expired": b["expired"],
+            "win_rate": round(b["wins"] / closed, 4) if closed else 0.0,
+            "net_r": round(b["net_r"], 2),
+            "net_pips": round(b["net_pips"], 1),
+            "avg_r": round(b["sum_r"] / closed, 2) if closed else 0.0,
+        })
+    return result
+
+
 def get_recent_closed_signals(hours: int = 12):
     """سیگنال‌هایی که در N ساعت اخیر بسته شده‌اند (برای دروازه‌ی تکرار و تم ضرر)."""
     cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()

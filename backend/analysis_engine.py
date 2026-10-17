@@ -18,6 +18,7 @@ from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
     WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
+    get_symbol_profile,
 )
 
 logger = logging.getLogger(__name__)
@@ -409,7 +410,7 @@ def _drop_forming(df, minutes):
     return df
 
 
-def analyze_technical_topdown(data_dict):
+def analyze_technical_topdown(data_dict, symbol: str = None):
     """
     تحلیل تکنیکال نسخه ۴.۳
     اولویت‌بندی بر اساس روش ICT/SMC حرفه‌ای:
@@ -417,7 +418,16 @@ def analyze_technical_topdown(data_dict):
     2. Liquidity Sweep
     3. Structure Shift (CHOCH)
     4. Entry در FVG یا Order Block
+
+    symbol: برای خواندن پروفایل هر نماد (min_score / sl_atr_mult)
     """
+    profile = get_symbol_profile(symbol) if symbol else {
+        "min_score": MIN_SIGNAL_SCORE,
+        "sl_atr_mult": SL_ATR_MULTIPLIER,
+    }
+    min_score = profile["min_score"]
+    sl_atr_mult = profile["sl_atr_mult"]
+
     price = None
     atr = 0.0
     zone = "-"
@@ -595,17 +605,17 @@ def analyze_technical_topdown(data_dict):
             (sweep and sweep["type"] == "BULLISH_SWEEP" and choch and choch["type"] == "BULLISH_CHOCH")
         )
 
-        if score >= MIN_SIGNAL_SCORE and strong_confluence:
+        if score >= min_score and strong_confluence:
             direction = "BUY"
-            # SL منطقی: زیر OB یا زیر سطح Sweep
+            # SL منطقی: زیر OB یا زیر سطح Sweep (ضریب از پروفایل نماد)
             if ob:
                 ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
+                buf = max(atr * sl_atr_mult, ob_size * SL_OB_BUFFER)
                 sl = round(ob["low"] - buf, 6)
             elif sweep:
-                sl = round(sweep["level"] - atr * SL_ATR_MULTIPLIER, 6)
+                sl = round(sweep["level"] - atr * sl_atr_mult, 6)
             else:
-                sl = round(price - atr * SL_ATR_MULTIPLIER * 1.5, 6)
+                sl = round(price - atr * sl_atr_mult * 1.5, 6)
 
             risk = price - sl
             min_risk = atr * MIN_RISK_ATR_RATIO
@@ -689,16 +699,16 @@ def analyze_technical_topdown(data_dict):
             (sweep and sweep["type"] == "BEARISH_SWEEP" and choch and choch["type"] == "BEARISH_CHOCH")
         )
 
-        if score <= -MIN_SIGNAL_SCORE and strong_confluence:
+        if score <= -min_score and strong_confluence:
             direction = "SELL"
             if ob:
                 ob_size = ob["high"] - ob["low"]
-                buf = max(atr * SL_ATR_MULTIPLIER, ob_size * SL_OB_BUFFER)
+                buf = max(atr * sl_atr_mult, ob_size * SL_OB_BUFFER)
                 sl = round(ob["high"] + buf, 6)
             elif sweep:
-                sl = round(sweep["level"] + atr * SL_ATR_MULTIPLIER, 6)
+                sl = round(sweep["level"] + atr * sl_atr_mult, 6)
             else:
-                sl = round(price + atr * SL_ATR_MULTIPLIER * 1.5, 6)
+                sl = round(price + atr * sl_atr_mult * 1.5, 6)
 
             risk = sl - price
             min_risk = atr * MIN_RISK_ATR_RATIO
@@ -735,7 +745,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
-    tech = analyze_technical_topdown(data_dict)
+    tech = analyze_technical_topdown(data_dict, symbol=symbol)
 
     if tech.get("blocked"):
         return {
@@ -766,10 +776,15 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         final_score = 0.0
         logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
 
+    # آستانه نهایی: فقط اضافه‌ی پروفایل (نسبت به سراسری) با وزن تکنیکال اعمال می‌شود
+    # تا سخت‌گیری جفت‌های پرریسک، final_score ترکیبی را تقریباً غیرفعال نکند.
+    profile = get_symbol_profile(symbol)
+    final_min = MIN_SIGNAL_SCORE + (profile["min_score"] - MIN_SIGNAL_SCORE) * WEIGHT_TECHNICAL
+
     direction = None
-    if final_score >= MIN_SIGNAL_SCORE:
+    if final_score >= final_min:
         direction = "BUY"
-    elif final_score <= -MIN_SIGNAL_SCORE:
+    elif final_score <= -final_min:
         direction = "SELL"
 
     # هم‌جهتی اجباری
