@@ -184,3 +184,74 @@ def test_kill_zone_local_london_and_ny_with_dst():
     # تابستان: لندن 06-09 UTC، نیویورک 11-14 UTC
     assert kill_zone(ts("2025-07-15 06:00")) and kill_zone(ts("2025-07-15 11:00"))
     assert not kill_zone(ts("2025-07-15 09:00")) and not kill_zone(ts("2025-07-15 14:00"))
+
+
+# ============================================================
+#  دروازه سیگنال: failed_zone و symbol_streak
+# ============================================================
+
+from datetime import datetime, timedelta
+from engine.tools.signal_gate import evaluate, FAILED_ZONE_H, STREAK_LOSSES
+
+
+_GATE_NOW = datetime(2026, 10, 12, 12, 0, 0)
+
+
+def _gate_closed(sym, d, status, hours_ago, entry=1.1000, sl=1.0950):
+    return {
+        "symbol": sym, "direction": d, "status": status,
+        "closed_at": (_GATE_NOW - timedelta(hours=hours_ago)).isoformat(),
+        "entry": entry, "sl": sl,
+    }
+
+
+def test_failed_zone_blocks_nearby_reentry():
+    # LOSS روی همان نماد/جهت، ورود جدید داخل ZONE_TOL * risk → blocked
+    # ساعت ۲۰: خارج cooldown و loss_theme، داخل FAILED_ZONE_H
+    risk = 0.005  # |1.10 - 1.095|
+    closed = [_gate_closed("EURUSD", "BUY", "LOSS", 20, entry=1.1000, sl=1.0950)]
+    assert evaluate("EURUSD", "BUY", [], closed, _GATE_NOW, entry=1.1000) == "failed_zone"
+    assert evaluate("EURUSD", "BUY", [], closed, _GATE_NOW, entry=1.1000 + risk * 0.5) == "failed_zone"
+    assert evaluate("EURUSD", "BUY", [], closed, _GATE_NOW, entry=1.1000 + risk * 1.5) is None
+    # بدون entry → failed_zone چک نمی‌شود
+    assert evaluate("EURUSD", "BUY", [], closed, _GATE_NOW) is None
+    # جهت مخالف آزاد است
+    assert evaluate("EURUSD", "SELL", [], closed, _GATE_NOW, entry=1.1000) is None
+    # داخل loss_theme window (۱۰h): loss_theme قبل از failed_zone برمی‌گردد
+    closed_near = [_gate_closed("EURUSD", "BUY", "LOSS", 10, entry=1.1000, sl=1.0950)]
+    assert evaluate("EURUSD", "BUY", [], closed_near, _GATE_NOW, entry=1.1000) == "loss_theme"
+
+
+def test_symbol_streak_blocks_after_n_losses():
+    # دو باخت در پنجره STREAK_BLOCK_H (خارج cooldown و loss_theme تا فقط streak دیده شود)
+    closed = [
+        _gate_closed("GBPJPY", "BUY", "LOSS", 15, entry=190.0, sl=189.0),
+        _gate_closed("GBPJPY", "SELL", "LOSS", 18, entry=191.0, sl=192.0),
+    ]
+    assert evaluate("GBPJPY", "BUY", [], closed, _GATE_NOW, entry=200.0) == "symbol_streak"
+    # یک باخت کافی نیست
+    one = [_gate_closed("GBPJPY", "BUY", "LOSS", 15, entry=190.0, sl=189.0)]
+    r = evaluate("GBPJPY", "SELL", [], one, _GATE_NOW, entry=195.0)
+    assert r != "symbol_streak"
+    # باخت‌های قدیمی خارج پنجره
+    old = [
+        _gate_closed("GBPJPY", "BUY", "LOSS", 30, entry=190.0, sl=189.0),
+        _gate_closed("GBPJPY", "SELL", "LOSS", 28, entry=191.0, sl=192.0),
+    ]
+    assert evaluate("GBPJPY", "BUY", [], old, _GATE_NOW, entry=195.0) is None
+
+
+def test_symbol_profile_fallback(monkeypatch):
+    """پروفایل نماد: تست روی کد واقعی backend/config.py (با env ساختگی برای کلیدهای اجباری)."""
+    for k in ("FRED_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
+        monkeypatch.setenv(k, "test")
+    from backend.config import get_symbol_profile, MIN_SIGNAL_SCORE, SL_ATR_MULTIPLIER
+
+    p_gbp = get_symbol_profile("GBPUSD=X")
+    assert p_gbp["min_score"] == 0.50 and p_gbp["sl_atr_mult"] == 1.8
+    p_ej = get_symbol_profile("EURJPY=X")
+    assert p_ej["min_score"] == 0.55 and p_ej["sl_atr_mult"] == 2.0
+    for sym in ("GC=F", "UNKNOWN=X"):
+        p = get_symbol_profile(sym)
+        assert p["min_score"] == MIN_SIGNAL_SCORE
+        assert p["sl_atr_mult"] == SL_ATR_MULTIPLIER
