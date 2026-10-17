@@ -45,3 +45,35 @@ def test_loss_theme_blocks_same_currency_same_sign_only():
     assert evaluate("EURGBP", "BUY", [], lost, NOW) is None             # بی‌ربط
     assert evaluate("USDJPY", "BUY", [], [_closed("USDCAD", "BUY", "LOSS", 13)], NOW) is None  # قدیمی
     assert evaluate("USDJPY", "BUY", [], [_closed("USDCAD", "BUY", "WIN", 2)], NOW) is None     # سود: بی‌اثر
+
+
+def _closed_full(sym, d, status, hours_ago, entry=1.1000, sl=1.0950):
+    return {
+        "symbol": sym, "direction": d, "status": status,
+        "closed_at": (NOW - timedelta(hours=hours_ago)).isoformat(),
+        "entry": entry, "sl": sl,
+    }
+
+
+def test_failed_zone():
+    risk = 0.005
+    closed = [_closed_full("EURUSD", "BUY", "LOSS", 20, entry=1.1000, sl=1.0950)]
+    assert evaluate("EURUSD", "BUY", [], closed, NOW, entry=1.1000) == "failed_zone"
+    assert evaluate("EURUSD", "BUY", [], closed, NOW, entry=1.1000 + risk * 0.5) == "failed_zone"
+    assert evaluate("EURUSD", "BUY", [], closed, NOW, entry=1.1000 + risk * 1.5) is None
+    assert evaluate("EURUSD", "BUY", [], closed, NOW) is None  # بدون entry
+    assert evaluate("EURUSD", "SELL", [], closed, NOW, entry=1.1000) is None
+
+
+def test_symbol_streak():
+    # خارج از cooldown (۸h) و loss_theme (۱۲h) تا فقط symbol_streak دیده شود
+    closed = [
+        _closed_full("GBPJPY", "BUY", "LOSS", 15, entry=190.0, sl=189.0),
+        _closed_full("GBPJPY", "SELL", "LOSS", 18, entry=191.0, sl=192.0),
+    ]
+    assert evaluate("GBPJPY", "BUY", [], closed, NOW, entry=200.0) == "symbol_streak"
+    old = [
+        _closed_full("GBPJPY", "BUY", "LOSS", 30, entry=190.0, sl=189.0),
+        _closed_full("GBPJPY", "SELL", "LOSS", 28, entry=191.0, sl=192.0),
+    ]
+    assert evaluate("GBPJPY", "BUY", [], old, NOW, entry=195.0) is None
