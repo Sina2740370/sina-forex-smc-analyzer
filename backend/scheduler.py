@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .config import (
-    SYMBOLS, SCAN_INTERVAL_MINUTES, TIMEFRAMES
+    SYMBOLS, SCAN_INTERVAL_MINUTES, TIMEFRAMES, DISABLED_SYMBOLS,
 )
 from .data_fetcher import fetch_topdown, get_cache_stats
 from .analysis_engine import full_analysis
@@ -112,6 +112,9 @@ async def _scan_market_locked():
     correlated_blocked = 0
 
     for symbol, name in SYMBOLS.items():
+        if symbol in DISABLED_SYMBOLS:
+            logger.info(f"⏸ نماد غیرفعال (DISABLED_SYMBOLS): {name}")
+            continue
         try:
             result = await _scan_symbol(symbol, name, news)
             if result is None:
@@ -126,7 +129,8 @@ async def _scan_market_locked():
                     duplicates += 1
                     continue
 
-                gate = signal_gate(symbol, direction)
+                # entry پیشنهادی برای قاعده failed_zone
+                gate = signal_gate(symbol, direction, entry=result.get("current_price"))
                 if gate:
                     duplicates += 1
                     logger.info(f"⏭ دروازه‌ی سیگنال ({gate}): {name} {direction}")

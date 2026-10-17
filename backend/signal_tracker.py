@@ -171,14 +171,23 @@ def _check_signal(sig: dict, candles: list):
                 return
 
 
-def signal_gate(symbol: str, direction: str):
+def signal_gate(symbol: str, direction: str, entry: float = None):
     """
-    دروازه‌ی صدور: None یعنی مجاز؛ وگرنه کد دلیل ('open_same_symbol' | 'cooldown' | 'loss_theme').
+    دروازه‌ی صدور: None یعنی مجاز؛ وگرنه کد دلیل
+    ('open_same_symbol' | 'cooldown' | 'loss_theme' | 'failed_zone' | 'symbol_streak').
     کاملاً مبتنی بر دیتابیس است (با ری‌استارت Render از بین نمی‌رود) و سن سیگنال باز را نادیده نمی‌گیرد.
+    entry: قیمت ورود پیشنهادی برای قاعده failed_zone.
     """
-    from engine.tools.signal_gate import evaluate, LOSS_THEME_H
-    return evaluate(symbol, direction, get_open_signals(),
-                    get_recent_closed_signals(hours=LOSS_THEME_H))
+    from engine.tools.signal_gate import (
+        evaluate, LOSS_THEME_H, FAILED_ZONE_H, STREAK_BLOCK_H,
+    )
+    hours = max(LOSS_THEME_H, FAILED_ZONE_H, STREAK_BLOCK_H)
+    return evaluate(
+        symbol, direction,
+        get_open_signals(),
+        get_recent_closed_signals(hours=hours),
+        entry=entry,
+    )
 
 
 def is_duplicate_signal(symbol: str, direction: str,
