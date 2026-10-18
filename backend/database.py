@@ -21,14 +21,19 @@ IS_RENDER = os.getenv("RENDER", "").strip() != ""  # Render خودش این مت
 
 USE_POSTGRES = DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://")
 
+# فقط با اجازه‌ی صریح (ALLOW_SQLITE_ON_RENDER=1) روی Render بدون Postgres بالا می‌آید.
+ALLOW_SQLITE_ON_RENDER = os.getenv("ALLOW_SQLITE_ON_RENDER", "").strip() == "1"
+
 if IS_RENDER and not USE_POSTGRES:
-    # تو Production (Render) هرگز نباید بی‌سروصدا بره رو SQLite؛
+    # تو Production (Render) به‌صورت پیش‌فرض نباید بی‌سروصدا بره رو SQLite؛
     # چون فضای دیسک موقتیه و با هر دیپلوی/ری‌استارت داده‌ها پاک می‌شن.
-    raise RuntimeError(
-        "روی Render هستیم ولی DATABASE_URL معتبر (postgresql://...) تنظیم نشده. "
-        "بدون Postgres، هر ری‌استارت باعث از دست رفتن کامل داده‌ها می‌شه. "
-        "این رو در Render → Environment تنظیم کن."
-    )
+    if not ALLOW_SQLITE_ON_RENDER:
+        raise RuntimeError(
+            "روی Render هستیم ولی DATABASE_URL معتبر (postgresql://...) تنظیم نشده. "
+            "بدون Postgres، هر ری‌استارت باعث از دست رفتن کامل داده‌ها می‌شه. "
+            "این رو در Render → Environment تنظیم کن، یا برای حالت موقت ALLOW_SQLITE_ON_RENDER=1 بگذار."
+        )
+    logger.warning("⚠️ حالت موقت: SQLite روی Render؛ با هر ری‌استارت/دیپلوی همه‌ی داده‌ها پاک می‌شود")
 
 if USE_POSTGRES:
     try:
