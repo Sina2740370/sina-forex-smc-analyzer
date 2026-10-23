@@ -134,6 +134,8 @@ def _check_signal(sig: dict, candles: list) -> bool:
 
     # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
+    # خروج روی bid/ask مثل بک‌تست: BUY روی bid=mid-half، SELL روی ask=mid+half
+    half = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2
 
     # مرور کندل‌ها
     for c in candles:
@@ -151,12 +153,12 @@ def _check_signal(sig: dict, candles: list) -> bool:
 
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
-            if low <= sl:
+            if low - half <= sl:
                 pnl = _to_pips(symbol, sl - effective_entry)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return True
-            if high >= tp:
+            if high - half >= tp:
                 pnl = _to_pips(symbol, tp - effective_entry)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
@@ -164,12 +166,12 @@ def _check_signal(sig: dict, candles: list) -> bool:
 
         elif direction == "SELL":
             # اول SL
-            if high >= sl:
+            if high + half >= sl:
                 pnl = _to_pips(symbol, effective_entry - sl)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
                 return True
-            if low <= tp:
+            if low + half <= tp:
                 pnl = _to_pips(symbol, effective_entry - tp)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
