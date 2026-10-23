@@ -63,14 +63,12 @@ def check_open_signals():
 
     logger.info(f"🔍 بررسی {len(open_signals)} سیگنال باز...")
 
-    # ۱) چک سیگنال‌های منقضی
-    _check_expired_signals(open_signals)
-
-    # ۲) گروه‌بندی بر اساس نماد
+    closed_ids = set()
     by_symbol = {}
     for sig in open_signals:
         by_symbol.setdefault(sig["symbol"], []).append(sig)
 
+    # ۱) اول کندل‌ها (TP/SL) — id بسته‌شده‌ها ثبت می‌شود
     for symbol, signals in by_symbol.items():
         try:
             candles = fetch_ohlcv(symbol, "15m", limit=500)
@@ -79,10 +77,16 @@ def check_open_signals():
                 continue
 
             for sig in signals:
-                _check_signal(sig, candles)
+                if _check_signal(sig, candles):
+                    closed_ids.add(sig["id"])
 
         except Exception as e:
             logger.error(f"خطا در بررسی {symbol}: {e}")
+            # سیگنال‌های این نماد همچنان در مرحله انقضا بررسی می‌شوند
+
+    # ۲) فقط سیگنال‌های هنوز بازمانده برای EXPIRED
+    remaining = [s for s in open_signals if s["id"] not in closed_ids]
+    _check_expired_signals(remaining)
 
 
 def _check_expired_signals(signals: list):
@@ -108,10 +112,11 @@ def _check_expired_signals(signals: list):
             logger.error(f"خطا در چک EXPIRED {sig['id']}: {e}")
 
 
-def _check_signal(sig: dict, candles: list):
+def _check_signal(sig: dict, candles: list) -> bool:
     """
     بررسی یک سیگنال با فیلتر زمان
     فقط کندل‌های بعد از created_at بررسی می‌شن
+    در صورت بستن سیگنال True و در غیر این صورت False برمی‌گرداند.
     """
     symbol = sig["symbol"]
     direction = sig["direction"]
@@ -125,7 +130,7 @@ def _check_signal(sig: dict, candles: list):
         created_at = _parse_dt(sig["created_at"])
     except Exception as e:
         logger.error(f"خطا در پارس زمان سیگنال {sig_id}: {e}")
-        return
+        return False
 
     # اسپرد روی ورود
     effective_entry = _apply_spread(symbol, entry, direction)
@@ -150,12 +155,12 @@ def _check_signal(sig: dict, candles: list):
                 pnl = _to_pips(symbol, sl - effective_entry)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
-                return
+                return True
             if high >= tp:
                 pnl = _to_pips(symbol, tp - effective_entry)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
-                return
+                return True
 
         elif direction == "SELL":
             # اول SL
@@ -163,12 +168,14 @@ def _check_signal(sig: dict, candles: list):
                 pnl = _to_pips(symbol, effective_entry - sl)
                 close_signal(sig_id, sl, pnl, "LOSS")
                 logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
-                return
+                return True
             if low <= tp:
                 pnl = _to_pips(symbol, effective_entry - tp)
                 close_signal(sig_id, tp, pnl, "WIN")
                 logger.info(f"✅ WIN: {symbol} {pnl:+.1f} pips")
-                return
+                return True
+
+    return False
 
 
 def signal_gate(symbol: str, direction: str, entry: float = None):
@@ -203,7 +210,7 @@ def is_duplicate_signal(symbol: str, direction: str,
 # ============================================================
 #  فیلتر همبستگی ارزی — رفع علت اصلی دو باخت هم‌زمان
 #  (GBPJPY و USDJPY هر دو JPY دارن، ولی نماد متفاوته پس
-#   is_duplicate_signal بالا جلوشون رو نمی‌گیره)
+#   is_duplicate_signal بالا جلشون رو نمی‌گیره)
 # ============================================================
 
 def extract_currencies(symbol: str):
