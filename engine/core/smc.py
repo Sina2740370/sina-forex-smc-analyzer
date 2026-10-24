@@ -33,6 +33,29 @@ def ema_slope(df: pd.DataFrame, period: int = 10) -> str:
 
 
 # ---------------------------------------------------------------- ساختار
+def _collapse_adjacent_equal(swings: list) -> list:
+    """
+    قاعده: فقط پلاتوی متوالی ادغام می‌شود.
+    last_i = ایندکس آخرین سوئینگ «دیده‌شده» (حتی اگر حذف شده باشد).
+    یک سوئینگ فقط وقتی حذف می‌شود که قیمتش با out[-1] برابر باشد و ایندکسش
+    دقیقاً last_i + 1 باشد. در صورت حذف، last_i همچنان به‌روز می‌شود.
+    مثال: [(3,5),(4,5),(5,5)] → [(3,5)]
+          [(3,5),(10,5)] → [(3,5),(10,5)]
+    """
+    if not swings:
+        return []
+    out = [swings[0]]
+    last_i = swings[0][0]
+    for s in swings[1:]:
+        cur_i, cur_p = s
+        if cur_p == out[-1][1] and cur_i == last_i + 1:
+            last_i = cur_i
+            continue
+        out.append(s)
+        last_i = cur_i
+    return out
+
+
 def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     """سوئینگ‌ها: لیست (index, price). یک سوئینگ تا `right` کندل بعدش تأیید نمی‌شود."""
     w = left + right + 1
@@ -43,8 +66,9 @@ def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     mn = sliding_window_view(lo, w).min(axis=1)
     ih = np.flatnonzero(hi[left:left + len(mx)] == mx) + left
     il = np.flatnonzero(lo[left:left + len(mn)] == mn) + left
-    return ([(int(i), float(hi[i])) for i in ih],
-            [(int(i), float(lo[i])) for i in il])
+    highs = [(int(i), float(hi[i])) for i in ih]
+    lows = [(int(i), float(lo[i])) for i in il]
+    return _collapse_adjacent_equal(highs), _collapse_adjacent_equal(lows)
 
 
 def structure(df: pd.DataFrame) -> str:
@@ -146,12 +170,14 @@ def premium_discount(df: pd.DataFrame, lookback: int = 60) -> str:
 
 # ---------------------------------------------------------------- نقدینگی و کندل
 def liquidity_sweep(df: pd.DataFrame, lookback: int = 96, recent: int = 3):
-    """جاروی سقف/کف قبلی توسط فتیله در `recent` کندل آخر؛ extreme = انتهای فتیله."""
+    """جاروی سقف/کف قبلی توسط فتیله در `recent` کندل آخر؛ extreme = انتهای فتیله.
+    حلقه از جدیدترین کندل شروع می‌شود تا تازه‌ترین sweep برگردانده شود.
+    """
     if len(df) < lookback + recent:
         return None
     ref = df.iloc[-lookback:-recent]
     prev_high, prev_low = float(ref["high"].max()), float(ref["low"].min())
-    for i in range(-recent, 0):
+    for i in range(-1, -recent - 1, -1):  # جدیدترین → قدیمی‌تر
         c = df.iloc[i]
         if c["high"] > prev_high and c["close"] < prev_high:
             return {"type": "BEARISH_SWEEP", "level": prev_high,
