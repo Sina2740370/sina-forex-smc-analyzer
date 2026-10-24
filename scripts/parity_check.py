@@ -8,6 +8,7 @@
 
 اجرا (از ریشه‌ی ریپو):
     python -m scripts.parity_check --symbols EURUSD --step 8 --tz-offset 3
+    python -m scripts.parity_check --symbols EURUSD --step 8 --server-tz ny_close
 """
 import argparse
 import os
@@ -54,9 +55,9 @@ def _med(xs):
 
 
 def run_symbol(symbol: str, csv_dir: str, tz_offset: float, step: int,
-               start, end, max_n: int) -> dict:
+               start, end, max_n: int, server_tz=None) -> dict:
     path = os.path.join(csv_dir, f"{symbol}_i_M15.csv")
-    df15 = load_mt5_csv(path, tz_offset)
+    df15 = load_mt5_csv(path, tz_offset_hours=tz_offset, server_tz=server_tz)
     data = build_topdown(df15)
     view = TopDownView(data)
     cfg = EngineConfig()
@@ -131,7 +132,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--symbols", nargs="+", default=["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"])
     ap.add_argument("--csv-dir", default=os.path.join("engine", "data"))
-    ap.add_argument("--tz-offset", type=float, default=3.0, help="اختلاف ساعت سرور MT5 با UTC")
+    ap.add_argument("--tz-offset", type=float, default=3.0, help="اختلاف ساعت سرور MT5 با UTC (اگر server-tz نباشد)")
+    ap.add_argument("--server-tz", choices=["ny_close"], default=None,
+                    help="ny_close = LiteFinance (NY wall + 7h with US DST)")
     ap.add_argument("--step", type=int, default=8, help="هر چند کندل ۱۵م یک snapshot (۸ = هر ۲ ساعت)")
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
@@ -146,7 +149,8 @@ def main() -> int:
                 continue
             try:
                 res = run_symbol(sym, args.csv_dir, args.tz_offset, args.step,
-                                 args.start, args.end, args.max)
+                                 args.start, args.end, args.max,
+                                 server_tz=args.server_tz)
             except FileNotFoundError:
                 print(f"{sym}: فایل CSV پیدا نشد در {args.csv_dir}", file=sys.stderr)
                 continue
