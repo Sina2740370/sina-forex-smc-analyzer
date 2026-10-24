@@ -8,14 +8,13 @@
 
 اجرا (از ریشه‌ی ریپو):
     python -m scripts.parity_check --symbols EURUSD --step 8 --tz-offset 3
-    python -m scripts.parity_check --symbols EURUSD --step 8 --server-tz ny_close
+    python -m scripts.parity_check --symbols EURUSD --step 8 --server-tz Europe/Athens
 """
 import argparse
 import os
 import statistics
 import sys
 
-# backend.config متغیرهای محیطی را اجباری می‌کند؛ این‌ها فقط برای import هستند و هیچ اتصالی ساخته نمی‌شود.
 os.environ.setdefault("FRED_API_KEY", "parity-dummy")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "parity-dummy")
 os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
@@ -31,7 +30,6 @@ from engine.strategy.smc_topdown import analyze as engine_analyze  # noqa: E402
 
 BAR = pd.Timedelta(minutes=15)
 
-# موتور زنده برچسب سشن را از ساعت سیستم می‌گیرد؛ برای مقایسه‌ی تاریخی باید روی زمان هر snapshot باشد.
 _NOW = [None]
 _ORIG_SESSION = live.current_session_label
 
@@ -133,8 +131,8 @@ def main() -> int:
     ap.add_argument("--symbols", nargs="+", default=["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"])
     ap.add_argument("--csv-dir", default=os.path.join("engine", "data"))
     ap.add_argument("--tz-offset", type=float, default=3.0, help="اختلاف ساعت سرور MT5 با UTC (اگر server-tz نباشد)")
-    ap.add_argument("--server-tz", choices=["ny_close"], default=None,
-                    help="ny_close = LiteFinance (NY wall + 7h with US DST)")
+    ap.add_argument("--server-tz", default=None,
+                    help="نام IANA، مثلاً Europe/Athens برای LiteFinance")
     ap.add_argument("--step", type=int, default=8, help="هر چند کندل ۱۵م یک snapshot (۸ = هر ۲ ساعت)")
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)

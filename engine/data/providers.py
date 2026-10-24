@@ -2,9 +2,9 @@
 لایه‌ی دیتا: CSV خروجی MT5، yfinance، ریسمپل، و TopDownView (بدون lookahead).
 
 نکات مهم:
-- همه‌ی زمان‌ها UTC و tz-aware هستند. خروجی MT5 بر پایه‌ی ساعت «سرور بروکر» است
-  (معمولاً UTC+2/+3)، پس tz_offset_hours را درست بده؛ یا برای LiteFinance
-  server_tz="ny_close" (ساعت سرور = NY wall + 7h، با DST آمریکا).
+- همه‌ی زمان‌ها UTC و tz-aware هستند. خروجی MT5 بر پایه‌ی ساعت «سرور بروکر» است.
+  برای LiteFinance: server_tz="Europe/Athens" (UTC+2 زمستان / UTC+3 تابستان، DST اروپا).
+  در غیر این صورت tz_offset_hours ثابت کافی است.
 - روزانه/هفتگی با مرز 17:00 نیویورک (با DST؛ 21:00 یا 22:00 UTC) ساخته می‌شود تا کندل یکشنبه جدا نیفتد.
 """
 from __future__ import annotations
@@ -27,10 +27,11 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0,
     با ستون‌های time/open/high/low/close را می‌خواند.
 
     server_tz:
-      None      — رفتار قبلی: ts - tz_offset_hours سپس tz_localize(UTC)
-      "ny_close" — LiteFinance: ساعت سرور = ساعت دیواری NY + 7h
-                    (UTC+2 زمستان / UTC+3 تابستان با DST آمریکا).
-                    ts_naive - 7h → localize America/New_York → UTC.
+      None — رفتار قبلی: ts - tz_offset_hours سپس tz_localize(UTC)
+      نام IANA (مثل "Europe/Athens") — ts ساده (naive) را با
+        tz_localize(server_tz, ambiguous="NaT", nonexistent="shift_forward")
+        سپس tz_convert("UTC")؛ ردیف‌های NaT حذف می‌شوند.
+        LiteFinance: "Europe/Athens" (UTC+2 زمستان / UTC+3 تابستان).
     """
     raw = pd.read_csv(path, sep=None, engine="python")
     raw.columns = [str(c).strip().strip("<>").lower() for c in raw.columns]
@@ -44,11 +45,12 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0,
         raise ValueError("ستون زمان پیدا نشد (date+time / datetime / time)")
     vol = raw["tickvol"] if "tickvol" in raw.columns else raw.get("volume", 0)
 
-    if server_tz == "ny_close":
-        # سرور = NY wall + 7h → با کم کردن 7h به ساعت دیواری NY می‌رسیم
-        naive = pd.to_datetime(ts).dt.tz_localize(None) - pd.Timedelta(hours=7)
+    if server_tz:
+        naive = pd.to_datetime(ts)
+        if getattr(naive.dt, "tz", None) is not None:
+            naive = naive.dt.tz_localize(None)
         aware = naive.dt.tz_localize(
-            "America/New_York", ambiguous="NaT", nonexistent="shift_forward"
+            server_tz, ambiguous="NaT", nonexistent="shift_forward"
         )
         time_utc = aware.dt.tz_convert("UTC")
     else:
@@ -63,7 +65,6 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0,
         "open": raw["open"], "high": raw["high"], "low": raw["low"], "close": raw["close"],
         "volume": vol,
     })
-    # ردیف‌های NaT (مثلاً ambiguous در DST) حذف می‌شوند
     df = df[df["time"].notna()]
     return _tidy(df)
 

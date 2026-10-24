@@ -1,13 +1,14 @@
-"""تست server_tz=ny_close برای LiteFinance (NY wall + 7h با DST)."""
+"""تست server_tz=Europe/Athens برای LiteFinance (DST اروپا)."""
 from pathlib import Path
 
 import pandas as pd
 
 from engine.data.providers import load_mt5_csv
 
+TZ = "Europe/Athens"
+
 
 def _write_csv(tmp_path: Path, when: str) -> Path:
-    """یک ردیف CSV سبک با ستون‌های date+time متاتریدر."""
     d, t = when.split(" ")
     path = tmp_path / "sample.csv"
     path.write_text(
@@ -18,20 +19,31 @@ def _write_csv(tmp_path: Path, when: str) -> Path:
     return path
 
 
-def test_ny_close_winter_est(tmp_path):
-    """2025-12-01 00:00 سرور → 2025-11-30 22:00 UTC (EST = UTC-5)."""
+def test_athens_winter_eet(tmp_path):
+    """2025-12-01 00:00 سرور → 2025-11-30 22:00 UTC (EET = UTC+2)."""
     path = _write_csv(tmp_path, "2025.12.01 00:00:00")
-    df = load_mt5_csv(str(path), server_tz="ny_close")
+    df = load_mt5_csv(str(path), server_tz=TZ)
     assert len(df) == 1
     assert df["time"].iloc[0] == pd.Timestamp("2025-11-30 22:00:00", tz="UTC")
 
 
-def test_ny_close_summer_edt(tmp_path):
-    """2026-07-06 00:00 سرور → 2026-07-05 21:00 UTC (EDT = UTC-4)."""
+def test_athens_summer_eest(tmp_path):
+    """2026-07-06 00:00 سرور → 2026-07-05 21:00 UTC (EEST = UTC+3)."""
     path = _write_csv(tmp_path, "2026.07.06 00:00:00")
-    df = load_mt5_csv(str(path), server_tz="ny_close")
+    df = load_mt5_csv(str(path), server_tz=TZ)
     assert len(df) == 1
     assert df["time"].iloc[0] == pd.Timestamp("2026-07-05 21:00:00", tz="UTC")
+
+
+def test_athens_us_dst_gap_week(tmp_path):
+    """2026-03-08 23:00 (یکشنبه، هفته‌ی اختلاف DST آمریکا/اروپا) → 2026-03-08 21:00 UTC.
+
+    US DST شروع شده؛ اروپا هنوز EET (UTC+2) است.
+    """
+    path = _write_csv(tmp_path, "2026.03.08 23:00:00")
+    df = load_mt5_csv(str(path), server_tz=TZ)
+    assert len(df) == 1
+    assert df["time"].iloc[0] == pd.Timestamp("2026-03-08 21:00:00", tz="UTC")
 
 
 def test_without_server_tz_keeps_legacy_offset(tmp_path):
