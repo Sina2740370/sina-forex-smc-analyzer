@@ -261,7 +261,7 @@ main{padding:clamp(14px,2vw,28px)}
 #live-results>.signal-card{grid-column:span 4;min-width:0}
 #tab-stats>.stats-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
 #tab-stats>.criteria-card{margin:0}
-#tab-journal>#journal-body{display:contents}
+#tab-journal>#journal-body[style*="display: block"]{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
 #journal-body>#j-guard,#journal-body>#j-verdict,#journal-body>#j-stats,
 #journal-body>.form-card,#journal-body>button{grid-column:1/-1;min-width:0}
 .signal-card,.stat-card,.criteria-card,.form-card{transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
