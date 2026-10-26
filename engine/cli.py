@@ -3,6 +3,7 @@
 
   python -m engine.cli fetch --symbols XAUUSD EURUSD GBPUSD USDJPY --years 4 --out data_duka
   python -m engine.cli backtest --source csv --csv-dir data --symbols EURUSD XAUUSD --tz-offset 3
+  python -m engine.cli backtest --source csv --csv-dir engine/data --symbols EURUSD --server-tz Europe/Athens
   python -m engine.cli scan --symbols EURUSD GBPUSD
   python -m engine.cli report --source csv --csv-dir data_duka --symbols XAUUSD EURUSD --walk-forward
 
@@ -41,7 +42,10 @@ def _load(args, symbol: str) -> dict:
             raise SystemExit(
                 f"فایل پیدا نشد: {symbol}_M15.csv یا {symbol}_i_M15.csv در {args.csv_dir}"
             )
-        return build_topdown(load_mt5_csv(path, args.tz_offset))
+        server_tz = getattr(args, "server_tz", None) or None
+        return build_topdown(load_mt5_csv(
+            path, tz_offset_hours=args.tz_offset, server_tz=server_tz
+        ))
     return load_yfinance_topdown(INSTRUMENTS[symbol].yf)
 
 
@@ -127,6 +131,8 @@ def main():
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
         sp.add_argument("--tz-offset", type=float, default=0.0)
+        sp.add_argument("--server-tz", default=None,
+                        help="نام IANA، مثلاً Europe/Athens برای LiteFinance")
         sp.add_argument("--start")
         sp.add_argument("--end")
         sp.add_argument("--out", default="out")

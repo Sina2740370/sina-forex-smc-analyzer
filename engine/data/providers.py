@@ -2,11 +2,14 @@
 لایه‌ی دیتا: CSV خروجی MT5، yfinance، ریسمپل، و TopDownView (بدون lookahead).
 
 نکات مهم:
-- همه‌ی زمان‌ها UTC و tz-aware هستند. خروجی MT5 بر پایه‌ی ساعت «سرور بروکر» است
-  (معمولاً UTC+2/+3)، پس tz_offset_hours را درست بده.
+- همه‌ی زمان‌ها UTC و tz-aware هستند. خروجی MT5 بر پایه‌ی ساعت «سرور بروکر» است.
+  برای LiteFinance: server_tz="Europe/Athens" (UTC+2 زمستان / UTC+3 تابستان، DST اروپا).
+  در غیر این صورت tz_offset_hours ثابت کافی است.
 - روزانه/هفتگی با مرز 17:00 نیویورک (با DST؛ 21:00 یا 22:00 UTC) ساخته می‌شود تا کندل یکشنبه جدا نیفتد.
 """
 from __future__ import annotations
+
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -17,10 +20,18 @@ COLS = ["time", "open", "high", "low", "close", "volume"]
 
 
 # ---------------------------------------------------------------- CSV (MT5)
-def load_mt5_csv(path: str, tz_offset_hours: float = 0.0) -> pd.DataFrame:
+def load_mt5_csv(path: str, tz_offset_hours: float = 0.0,
+                 server_tz: Optional[str] = None) -> pd.DataFrame:
     """
     خروجی «Export Bars» متاتریدر (<DATE> <TIME> <OPEN> ...) یا CSV عمومی
     با ستون‌های time/open/high/low/close را می‌خواند.
+
+    server_tz:
+      None — رفتار قبلی: ts - tz_offset_hours سپس tz_localize(UTC)
+      نام IANA (مثل "Europe/Athens") — ts ساده (naive) را با
+        tz_localize(server_tz, ambiguous="NaT", nonexistent="shift_forward")
+        سپس tz_convert("UTC")؛ ردیف‌های NaT حذف می‌شوند.
+        LiteFinance: "Europe/Athens" (UTC+2 زمستان / UTC+3 تابستان).
     """
     raw = pd.read_csv(path, sep=None, engine="python")
     raw.columns = [str(c).strip().strip("<>").lower() for c in raw.columns]
@@ -33,13 +44,28 @@ def load_mt5_csv(path: str, tz_offset_hours: float = 0.0) -> pd.DataFrame:
     else:
         raise ValueError("ستون زمان پیدا نشد (date+time / datetime / time)")
     vol = raw["tickvol"] if "tickvol" in raw.columns else raw.get("volume", 0)
+
+    if server_tz:
+        naive = pd.to_datetime(ts)
+        if getattr(naive.dt, "tz", None) is not None:
+            naive = naive.dt.tz_localize(None)
+        aware = naive.dt.tz_localize(
+            server_tz, ambiguous="NaT", nonexistent="shift_forward"
+        )
+        time_utc = aware.dt.tz_convert("UTC")
+    else:
+        shifted = pd.to_datetime(ts) - pd.Timedelta(hours=tz_offset_hours)
+        if getattr(shifted.dt, "tz", None) is None:
+            time_utc = shifted.dt.tz_localize("UTC")
+        else:
+            time_utc = shifted.dt.tz_convert("UTC")
+
     df = pd.DataFrame({
-        "time": ts - pd.Timedelta(hours=tz_offset_hours),
+        "time": time_utc,
         "open": raw["open"], "high": raw["high"], "low": raw["low"], "close": raw["close"],
         "volume": vol,
     })
-    df["time"] = pd.to_datetime(df["time"]).dt.tz_localize("UTC") \
-        if df["time"].dt.tz is None else df["time"].dt.tz_convert("UTC")
+    df = df[df["time"].notna()]
     return _tidy(df)
 
 
