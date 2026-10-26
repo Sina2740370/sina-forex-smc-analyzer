@@ -60,8 +60,11 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
 
 
 def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
-                 start: Optional[str] = None, end: Optional[str] = None) -> list:
-    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict)."""
+                 start: Optional[str] = None, end: Optional[str] = None,
+                 analyze_fn=None) -> list:
+    """data: {tf: DataFrame} برای یک نماد. خروجی: لیست معامله‌ها (dict).
+    analyze_fn: تابع (view_dict, cfg, now) -> Decision؛ پیش‌فرض همان analyze (SMC)."""
+    analyze_fn = analyze_fn or analyze
     view = TopDownView(data)
     df15 = data["15m"]
     half = spread_price(symbol) / 2.0
@@ -98,7 +101,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if now - last_signal.get("t", now - cooldown - bar) < cooldown:
             continue
 
-        dec = analyze(view.at(now), cfg, now)
+        dec = analyze_fn(view.at(now), cfg, now)
         if dec.direction is None:
             continue
         side = 1 if dec.direction == "BUY" else -1
