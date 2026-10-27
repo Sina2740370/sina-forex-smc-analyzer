@@ -5,6 +5,7 @@
 - تصمیم فقط با کندل‌های بسته‌شده تا لحظه‌ی now (TopDownView)
 - ورود با اسپرد (BUY روی ask، SELL روی bid)، خروج SL/TP روی سمت مخالف
 - اگر SL و TP در یک کندل لمس شوند، SL حساب می‌شود (بدبینانه)
+- اگر کندل با گپ از SL رد شود، خروج روی open ± half (نه روی سطح SL)
 - EXPIRED با قیمت بازار (mark-to-market) بسته می‌شود، نه با R=0
 """
 from __future__ import annotations
@@ -21,15 +22,27 @@ from ..data.providers import TopDownView
 from ..strategy.smc_topdown import Decision, analyze
 
 
-def check_exit(side: int, sl: float, tp: float, high: float, low: float, half: float):
-    """('SL'|'TP'|None, قیمت خروج) — SL اولویت دارد."""
+def check_exit(side: int, sl: float, tp: float, high: float, low: float, half: float,
+               open_: Optional[float] = None):
+    """('SL'|'TP'|None, قیمت خروج) — SL اولویت دارد.
+
+    اگر open_ داده شود و کندل با گپ از SL رد کند:
+      BUY  → خروج روی open_ - half (بدتر از sl)
+      SELL → خروج روی open_ + half (بدتر از sl)
+    TP حتی با گپ به نفع فقط روی سطح tp پر می‌شود.
+    open_=None → رفتار قبلی (پر روی سطح دقیق).
+    """
     if side > 0:   # خروج روی bid = mid - half
         if low - half <= sl:
+            if open_ is not None and open_ - half <= sl:
+                return "SL", open_ - half
             return "SL", sl
         if high - half >= tp:
             return "TP", tp
     else:          # خروج روی ask = mid + half
         if high + half >= sl:
+            if open_ is not None and open_ + half >= sl:
+                return "SL", open_ + half
             return "SL", sl
         if low + half <= tp:
             return "TP", tp
@@ -69,7 +82,7 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     df15 = data["15m"]
     half = spread_price(symbol) / 2.0
     times = df15["time"]
-    hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
+    hi, lo, cl, op = (df15[k].to_numpy() for k in ("high", "low", "close", "open"))
 
     t0 = pd.Timestamp(start, tz="UTC") if start else times.iloc[0]
     t1 = pd.Timestamp(end, tz="UTC") if end else times.iloc[-1]
@@ -89,7 +102,9 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         last_i = i
 
         if pos is not None and i > pos.open_idx:
-            status, px = check_exit(pos.side, pos.sl, pos.tp, hi[i], lo[i], half)
+            status, px = check_exit(
+                pos.side, pos.sl, pos.tp, hi[i], lo[i], half, open_=float(op[i])
+            )
             if status is None and now - pos.open_time >= hold:
                 status, px = "EXPIRED", cl[i] - pos.side * half
             if status:
