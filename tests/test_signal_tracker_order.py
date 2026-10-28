@@ -1,16 +1,16 @@
 import os
 os.environ.setdefault("FRED_API_KEY", "x"); os.environ.setdefault("TELEGRAM_BOT_TOKEN", "x"); os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from backend import signal_tracker as st
 
 def _sig(age_h):
-    created = (datetime.utcnow() - timedelta(hours=age_h)).isoformat()
+    created = (datetime.now(timezone.utc) - timedelta(hours=age_h)).isoformat()
     return {"id": 1, "symbol": "EURUSD=X", "direction": "BUY", "entry": 1.1000,
             "sl": 1.0950, "tp": 1.1100, "created_at": created}
 
 def _run(monkeypatch, sig, low):
     calls = []
-    t = datetime.utcnow() - timedelta(hours=70)
+    t = datetime.now(timezone.utc) - timedelta(hours=70)
     candles = [{"time": t.isoformat(), "open": 1.1, "high": 1.1, "low": low, "close": 1.1}]
     monkeypatch.setattr(st, "get_open_signals", lambda: [sig])
     monkeypatch.setattr(st, "fetch_ohlcv", lambda *a, **k: candles)

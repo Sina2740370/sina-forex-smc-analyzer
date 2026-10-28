@@ -5,7 +5,7 @@
 - وزن‌دهی پویا
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_all_signals
 
@@ -97,7 +97,7 @@ def calculate_memory_score(symbol: str) -> dict:
 
     symbol_perf = perf.get(symbol, {"total": 0, "win_rate": 0.5})
     session_perf = get_session_performance()
-    h = datetime.utcnow().hour
+    h = datetime.now(timezone.utc).hour
 
     if 0 <= h < 8:
         cur = "asian"

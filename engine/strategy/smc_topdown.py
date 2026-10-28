@@ -143,6 +143,10 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
         c["killzone"] = cfg.w_killzone
         why.append("killzone")
 
+    # --- Market Regime ---
+    regime = smc.market_regime(df15)
+    why.append(f"regime: {regime}")
+
     if sweep_ok and choch_ok and (fvg or near_ob):
         c["confluence"] = cfg.w_confluence
         why.append("confluence")
@@ -177,6 +181,16 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
         return dec
 
     dec.direction = "BUY" if side > 0 else "SELL"
-    dec.entry, dec.sl = price, round(sl, 6)
-    dec.tp = round(price + side * risk * cfg.risk_reward, 6)
+    entry_val, sl_val = price, round(sl, 6)
+
+    # --- LTF Entry Refinement (اگر دیتاهای 5m یا 1m موجود باشد) ---
+    ltf_df = data.get("5m") if "5m" in data else data.get("1m")
+    if ltf_df is not None and len(ltf_df) >= 10:
+        entry_val, sl_val, refined = smc.refine_ltf_entry(ltf_df, side, entry_val, sl_val)
+        if refined:
+            why.append("LTF refined entry")
+            risk = (entry_val - sl_val) * side
+
+    dec.entry, dec.sl = entry_val, sl_val
+    dec.tp = round(entry_val + side * risk * cfg.risk_reward, 6)
     return dec

@@ -90,23 +90,44 @@ def check_open_signals():
 
 
 def _check_expired_signals(signals: list):
-    """سیگنال‌های قدیمی رو EXPIRED می‌کنه"""
-    now = datetime.utcnow()
+    """سیگنال‌های قدیمی رو EXPIRED می‌کنه (با قیمت زنده بازار / Mark-to-Market)"""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     threshold = now - timedelta(hours=MAX_SIGNAL_LIFETIME_HOURS)
 
     for sig in signals:
         try:
             created = _parse_dt(sig["created_at"])
             if created < threshold:
+                symbol = sig["symbol"]
+                direction = sig["direction"]
+                entry = sig["entry"]
+                effective_entry = _apply_spread(symbol, entry, direction)
+                half = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
+
+                exit_price = entry
+                pnl = 0.0
+                try:
+                    candles = fetch_ohlcv(symbol, "15m", limit=5)
+                    if candles:
+                        last_close = candles[-1]["close"]
+                        if direction == "BUY":
+                            exit_price = last_close - half
+                            pnl = _to_pips(symbol, exit_price - effective_entry)
+                        else:
+                            exit_price = last_close + half
+                            pnl = _to_pips(symbol, effective_entry - exit_price)
+                except Exception as fetch_err:
+                    logger.warning(f"عدم امکان دریافت قیمت زنده برای انقضای {symbol}: {fetch_err}")
+
                 close_signal(
                     sig["id"],
-                    sig["entry"],
-                    0.0,
+                    exit_price,
+                    pnl,
                     "EXPIRED",
                 )
                 logger.info(
-                    f"⏰ EXPIRED: {sig['symbol']} "
-                    f"(عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت)"
+                    f"⏰ EXPIRED: {symbol} (عمر: {MAX_SIGNAL_LIFETIME_HOURS} ساعت, "
+                    f"خروج: {exit_price}, PnL: {pnl:+.1f} pips)"
                 )
         except Exception as e:
             logger.error(f"خطا در چک EXPIRED {sig['id']}: {e}")
@@ -217,8 +238,12 @@ def is_duplicate_signal(symbol: str, direction: str,
 
 def extract_currencies(symbol: str):
     """مثلا 'GBPJPY' یا 'GBP/JPY' -> ('GBP', 'JPY')"""
-    s = symbol.replace("/", "").replace("-", "").upper()
-    return s[:3], s[3:6]
+    s = symbol.replace("/", "").replace("-", "").replace("=X", "").upper()
+    if s in ("GC=F", "GC", "XAU"):
+        s = "XAUUSD"
+    if len(s) >= 6:
+        return s[:3], s[3:6]
+    return s, "USD"
 
 
 def has_correlated_open_signal(symbol: str):

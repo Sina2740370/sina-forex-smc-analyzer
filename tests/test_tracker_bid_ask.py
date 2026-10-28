@@ -1,6 +1,6 @@
 import os
 os.environ.setdefault("FRED_API_KEY", "x"); os.environ.setdefault("TELEGRAM_BOT_TOKEN", "x"); os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytest
 from backend import signal_tracker as st
 from engine.backtest.runner import check_exit
@@ -16,7 +16,7 @@ CASES = {
 def _run(direction, high, low):
     sl, tp = LEVELS[direction]
     calls = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     sig = {"id": 1, "symbol": SYM, "direction": direction, "entry": 1.1000, "sl": sl, "tp": tp,
            "created_at": (now - timedelta(hours=1)).isoformat()}
     candle = {"time": (now - timedelta(minutes=30)).isoformat(), "high": high, "low": low}
