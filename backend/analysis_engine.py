@@ -343,6 +343,22 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
     }
 
 
+def classify_setup_grade(tech_score: float, final_score: float, confluence_reasons: list) -> str:
+    """
+    رده‌بندی ستاپ‌های صادره:
+    - "A+": ستاپ‌های طلایی با بالاترین confluence (امتیاز مطلق >= 0.70 و حداقل 4 علت هم‌پوشانی)
+    - "A": ستاپ‌های قوی استاندارد
+    - "B": ستاپ‌های متوسط
+    """
+    abs_score = abs(final_score)
+    num_reasons = len(confluence_reasons)
+    if abs_score >= 0.70 and num_reasons >= 4:
+        return "A+"
+    if abs_score >= 0.50 and num_reasons >= 3:
+        return "A"
+    return "B"
+
+
 def _distance_to_ob(price: float, ob: dict, atr: float) -> float:
     """فاصله نرمال‌شده تا Order Block (بر حسب ATR)"""
     if ob is None:
@@ -839,8 +855,11 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         all_reasons.append(f"🧠 حافظه: {mem['score']:+.2f}")
         all_reasons.extend(mem["reasons"])
 
+    grade = classify_setup_grade(tech["score"], final_score, all_reasons) if direction else "-"
+
     return {
         "score": round(final_score, 2),
+        "grade": grade,
         "technical_score": tech["score"],
         "fundamental_score": fund["score"],
         "news_score": news_score,
@@ -853,5 +872,5 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         "zone": tech["zone"],
         "atr": tech["atr"],
         "reasons": all_reasons,
-        "summary": f"امتیاز کل: {final_score:+.2f}" if direction else "در انتظار",
+        "summary": f"امتیاز کل: {final_score:+.2f} (ستاپ {grade})" if direction else "در انتظار",
     }

@@ -126,3 +126,21 @@ def test_monte_carlo_simulation():
     assert mc["n_simulations"] == 100
     assert "max_drawdown_mean" in mc
     assert "total_r_mean" in mc
+
+
+def test_fractional_kelly_and_position_milestones():
+    from engine.tools import risk
+    k_risk = risk.fractional_kelly_risk_pct(win_rate=0.65, win_loss_ratio=2.0, fraction=0.25)
+    assert 0.25 <= k_risk <= 2.0
+
+    ms = risk.calculate_position_milestones("BUY", 1.1000, 1.0950, 1.1100, be_r_trigger=1.0, partial_r_trigger=1.5)
+    assert ms["be_trigger_price"] == 1.1050
+    assert ms["partial_tp_price"] == 1.1075
+
+
+def test_classify_setup_grade():
+    grade_a_plus = ae.classify_setup_grade(0.80, 0.75, ["r1", "r2", "r3", "r4"])
+    assert grade_a_plus == "A+"
+
+    grade_b = ae.classify_setup_grade(0.30, 0.35, ["r1"])
+    assert grade_b == "B"

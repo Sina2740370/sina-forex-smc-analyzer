@@ -142,3 +142,45 @@ def trade_r(side: str, entry: float, sl: float, exit_price: float) -> float:
     if risk <= 0:
         raise ValueError("SL باید در سمت زیان باشد (BUY: زیر ورود، SELL: بالای ورود)")
     return (exit_price - entry) * s / risk
+
+
+def calculate_position_milestones(direction: str, entry: float, sl: float, tp: float,
+                                   be_r_trigger: float = 1.0, partial_r_trigger: float = 1.5) -> dict:
+    """
+    محاسبه سطوح مدیریت زنده پوزیشن: قیمت فعال‌سازی ریسک‌فری (Break-Even) و خروج پله‌ای (Partial TP).
+    """
+    side = 1 if direction.upper() == "BUY" else -1
+    risk_dist = abs(entry - sl)
+    if risk_dist <= 0:
+        return {}
+
+    be_trigger = entry + side * risk_dist * be_r_trigger
+    partial_tp = entry + side * risk_dist * partial_r_trigger
+
+    return {
+        "direction": direction.upper(),
+        "entry": round(entry, 6),
+        "sl_initial": round(sl, 6),
+        "tp_final": round(tp, 6),
+        "breakeven_price": round(entry, 6),
+        "be_trigger_price": round(be_trigger, 6),
+        "partial_tp_price": round(partial_tp, 6),
+    }
+
+
+def fractional_kelly_risk_pct(win_rate: float, win_loss_ratio: float, fraction: float = 0.25,
+                              min_risk_pct: float = 0.25, max_risk_pct: float = 2.0) -> float:
+    """
+    محاسبه درصد ریسک بهینه بر اساس فرمول کلی تعدیل‌شده (Fractional Kelly Criterion).
+    win_rate: نرخ برد تاریخی (بین 0 تا 1)
+    win_loss_ratio: نسبت میانگین سود به میانگین زیان (b)
+    fraction: ضریب ایمنی فرمول کلی (پیش‌فرض 0.25 = Quarter Kelly)
+    """
+    if win_rate <= 0 or win_loss_ratio <= 0:
+        return min_risk_pct
+    q = 1.0 - win_rate
+    kelly_full = (win_rate * win_loss_ratio - q) / win_loss_ratio
+    if kelly_full <= 0:
+        return min_risk_pct
+    raw_risk = kelly_full * fraction * 100.0
+    return max(min_risk_pct, min(max_risk_pct, round(raw_risk, 2)))
