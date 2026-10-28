@@ -35,7 +35,7 @@ def test_resample_weekly_and_daily_align_to_fx_week():
     m = make_15m(30)
     wk, d = resample_ohlc(m, "1wk"), resample_ohlc(m, "1d")
     # هفته با کندل یکشنبه ۲۲:۰۰ UTC شروع می‌شود و کندل یکشنبه جدا نمی‌ماند
-    assert (wk["time"].dt.dayofweek == 6).all() and (wk["time"].dt.hour == 22).all()
+    assert (wk["time"].dt.day_of_week == 6).all() and (wk["time"].dt.hour == 22).all()
     assert (d["time"].dt.hour == 22).all()
     assert wk["high"].max() == m["high"].max()
 

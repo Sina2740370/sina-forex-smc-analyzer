@@ -38,7 +38,10 @@ def norm_symbol(symbol: str) -> str:
 def exposure(symbol: str, direction: str) -> dict:
     """جهت قرارگیری ارزی: BUY EURUSD = {EUR:+1, USD:-1}."""
     s = norm_symbol(symbol)
-    base, quote = s[:3], s[3:6]
+    if len(s) >= 6:
+        base, quote = s[:3], s[3:6]
+    else:
+        base, quote = s, "USD"
     sign = 1 if direction.upper() == "BUY" else -1
     return {base: sign, quote: -sign}
 
@@ -58,7 +61,7 @@ def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: lis
 
     entry: قیمت ورود پیشنهادی سیگنال تازه (برای قاعده failed_zone). اختیاری برای سازگاری عقب‌رو.
     """
-    now = _dt(now) if now else datetime.utcnow()
+    now = _dt(now) if now else datetime.now(timezone.utc)
     sym = norm_symbol(symbol)
     direction = direction.upper()
 

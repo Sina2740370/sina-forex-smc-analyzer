@@ -6,7 +6,7 @@
 import os
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from contextlib import contextmanager
 
 from .config import DB_PATH, PIP_SIZE, LOT_RISK_PCT
@@ -261,7 +261,7 @@ def insert_signal(symbol, name, direction, entry, sl, tp, score, reasons,
         """, (
             symbol, name, direction, entry, sl, tp, score,
             reasons_json, price_at_signal,
-            datetime.utcnow().isoformat()
+            datetime.now(timezone.utc).isoformat()
         ))
 
         if USE_POSTGRES:
@@ -302,7 +302,7 @@ def close_signal(signal_id, exit_price, pnl_pips, status):
             WHERE id = ?
         """, (
             status, exit_price, pnl_pips,
-            datetime.utcnow().isoformat(), signal_id
+            datetime.now(timezone.utc).isoformat(), signal_id
         ))
 
 
@@ -426,7 +426,7 @@ def get_stats_by_symbol():
 
 def get_recent_closed_signals(hours: int = 12):
     """سیگنال‌هایی که در N ساعت اخیر بسته شده‌اند (برای دروازه‌ی تکرار و تم ضرر)."""
-    cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     with get_conn() as conn:
         cur = _execute(conn, """
             SELECT * FROM signals
@@ -437,7 +437,7 @@ def get_recent_closed_signals(hours: int = 12):
 
 def get_recent_signals_for_symbol(symbol: str, hours: int = 4):
     """سیگنال‌های اخیر یه نماد"""
-    cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     with get_conn() as conn:
         cur = _execute(conn, """
             SELECT * FROM signals

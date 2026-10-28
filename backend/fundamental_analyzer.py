@@ -7,7 +7,7 @@
 """
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import httpx
 
 from .config import FRED_API_KEY
@@ -51,7 +51,7 @@ async def _fetch_series(series_id: str, limit: int = 30) -> list:
 
 async def fetch_all_fundamental_data() -> dict:
     """دریافت همه داده‌های فاندامنتال (با کش)"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # چک کش
     if _cache["fetched_at"]:

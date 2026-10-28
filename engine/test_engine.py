@@ -35,7 +35,7 @@ def test_resample_weekly_and_daily_align_to_fx_week():
     m = make_15m(30)
     wk, d = resample_ohlc(m, "1wk"), resample_ohlc(m, "1d")
     # هفته با کندل یکشنبه ۲۲:۰۰ UTC شروع می‌شود و کندل یکشنبه جدا نمی‌ماند
-    assert (wk["time"].dt.dayofweek == 6).all() and (wk["time"].dt.hour == 22).all()
+    assert (wk["time"].dt.day_of_week == 6).all() and (wk["time"].dt.hour == 22).all()
     assert (d["time"].dt.hour == 22).all()
     assert wk["high"].max() == m["high"].max()
 
@@ -165,7 +165,7 @@ def test_daily_bar_starts_at_ny_1700_winter_and_summer():
     summ = resample_ohlc(_flat_15m("2025-07-06 21:00", 20), "1d")
     assert (summ["time"].dt.hour == 21).all()
     wk = resample_ohlc(_flat_15m("2025-07-06 21:00", 20), "1wk")
-    assert (wk["time"].dt.hour == 21).all() and (wk["time"].dt.dayofweek == 6).all()
+    assert (wk["time"].dt.hour == 21).all() and (wk["time"].dt.day_of_week == 6).all()
 
 
 def test_daily_bar_across_dst_switch_keeps_17_ny():

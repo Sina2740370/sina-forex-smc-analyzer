@@ -420,8 +420,13 @@ def _drop_forming(df, minutes):
     try:
         if df is None or len(df) < 2:
             return df
-        t = pd.to_datetime(df["time"].iloc[-1], utc=True)
-        if t + pd.Timedelta(minutes=minutes) > pd.Timestamp.now(tz="UTC"):
+        t = pd.to_datetime(df["time"].iloc[-1])
+        if t.tzinfo is None:
+            t = t.tz_localize("UTC")
+        else:
+            t = t.tz_convert("UTC")
+        now_utc = pd.Timestamp.now(tz="UTC")
+        if t + pd.Timedelta(minutes=minutes) > now_utc:
             return df.iloc[:-1].reset_index(drop=True)
     except Exception:
         logger.warning("_drop_forming: خطا در بررسی کندل در حال تشکیل", exc_info=True)
