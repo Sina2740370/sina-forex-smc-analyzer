@@ -343,6 +343,44 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
     }
 
 
+def calculate_super_quant_score(tech_score: float, fund_score: float, news_score: float,
+                                mem_score: float, regime_label: str = "TRENDING_LOW_VOL") -> dict:
+    """
+    موتور هم‌پوشانی لایه‌ای ابر پروژه (Super Quant Scorer):
+    ترکیب ۵ لایه اصلی و تبدیل به امتیاز -100 تا +100 با رده‌بندی هوشمند A++ تا B.
+    """
+    raw_composite = (
+        tech_score * 0.40 +
+        fund_score * 0.20 +
+        news_score * 0.15 +
+        mem_score * 0.15 +
+        (0.10 if "TRENDING" in regime_label else -0.05)
+    )
+    sq_score = round(max(-100.0, min(100.0, raw_composite * 100.0)), 1)
+    abs_sq = abs(sq_score)
+
+    if abs_sq >= 75.0:
+        super_grade = "A++"
+    elif abs_sq >= 55.0:
+        super_grade = "A+"
+    elif abs_sq >= 35.0:
+        super_grade = "A"
+    else:
+        super_grade = "B"
+
+    return {
+        "super_quant_score": sq_score,
+        "super_grade": super_grade,
+        "components": {
+            "tech": round(tech_score * 100, 1),
+            "fund": round(fund_score * 100, 1),
+            "news": round(news_score * 100, 1),
+            "memory": round(mem_score * 100, 1),
+            "regime": regime_label,
+        }
+    }
+
+
 def classify_setup_grade(tech_score: float, final_score: float, confluence_reasons: list) -> str:
     """
     رده‌بندی ستاپ‌های صادره:

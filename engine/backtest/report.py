@@ -174,3 +174,35 @@ def monte_carlo_simulation(trades: list, n_simulations: int = 1000, seed: int = 
         "total_r_p5": round(float(np.percentile(total_returns, 5)), 2),
         "total_r_p95": round(float(np.percentile(total_returns, 95)), 2),
     }
+
+
+# ---------------------------------------------------------------- ۶) تست استرس بحران
+def crisis_stress_test(trades: list, slippage_penalty_r: float = 0.2,
+                       spread_multiplier: float = 2.0) -> dict:
+    """
+    تست استرس صنعتی (Crisis Stress Testing):
+    اعمال اسلیپج شوک نوسان و افزایش ۲ تا ۳ برابری اسپرد در شرایط بحران شوک بازار
+    """
+    if not trades:
+        return {"n_trades": 0, "note": "معامله‌ای وجود ندارد"}
+
+    r_orig = np.array([t["r"] for t in trades], dtype=float)
+    r_stressed = np.where(r_orig > 0, r_orig - slippage_penalty_r, r_orig - slippage_penalty_r * spread_multiplier)
+
+    cum_orig = np.cumsum(r_orig)
+    cum_stressed = np.cumsum(r_stressed)
+
+    peak_orig = np.maximum.accumulate(np.r_[0.0, cum_orig])[1:]
+    peak_stressed = np.maximum.accumulate(np.r_[0.0, cum_stressed])[1:]
+
+    dd_orig = float((peak_orig - cum_orig).max())
+    dd_stressed = float((peak_stressed - cum_stressed).max())
+
+    return {
+        "n_trades": len(trades),
+        "total_r_original": round(float(cum_orig[-1]), 2),
+        "total_r_stressed": round(float(cum_stressed[-1]), 2),
+        "max_drawdown_original": round(dd_orig, 2),
+        "max_drawdown_stressed": round(dd_stressed, 2),
+        "survived_stress": float(cum_stressed[-1]) > 0 and dd_stressed < 25.0
+    }
