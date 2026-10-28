@@ -65,3 +65,16 @@ def calc_lots(symbol, entry, sl, balance, risk_pct, rates=None):
         }
     except Exception:
         return None
+
+
+def fractional_kelly_risk_pct(win_rate: float, win_loss_ratio: float, fraction: float = 0.25,
+                              min_risk_pct: float = 0.25, max_risk_pct: float = 2.0) -> float:
+    """محاسبه درصد ریسک بهینه پوزیشن بر اساس فرمول کلی تعدیل‌شده"""
+    if win_rate <= 0 or win_loss_ratio <= 0:
+        return min_risk_pct
+    q = 1.0 - win_rate
+    kelly_full = (win_rate * win_loss_ratio - q) / win_loss_ratio
+    if kelly_full <= 0:
+        return min_risk_pct
+    raw_risk = kelly_full * fraction * 100.0
+    return max(min_risk_pct, min(max_risk_pct, round(raw_risk, 2)))
