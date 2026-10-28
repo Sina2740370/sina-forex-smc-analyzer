@@ -144,3 +144,21 @@ def test_classify_setup_grade():
 
     grade_b = ae.classify_setup_grade(0.30, 0.35, ["r1"])
     assert grade_b == "B"
+
+
+def test_mega_quant_features():
+    from engine.tools.chart_renderer import render_ascii_chart_summary
+    from engine.backtest.report import crisis_stress_test
+
+    sq = ae.calculate_super_quant_score(0.8, 0.5, 0.4, 0.3, "TRENDING_HIGH_VOL")
+    assert "super_quant_score" in sq
+    assert sq["super_grade"] in ("A++", "A+", "A", "B")
+
+    chart_text = render_ascii_chart_summary("EURUSD", "BUY", 1.1000, 1.0950, 1.1100)
+    assert "BUY" in chart_text
+    assert "EURUSD" in chart_text
+
+    trades = [{"r": 2.0}, {"r": -1.0}, {"r": 1.5}, {"r": -0.5}, {"r": 3.0}]
+    st_res = crisis_stress_test(trades)
+    assert "total_r_stressed" in st_res
+    assert "max_drawdown_stressed" in st_res
