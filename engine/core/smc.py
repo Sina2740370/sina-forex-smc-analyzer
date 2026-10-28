@@ -208,3 +208,52 @@ def candle_confirmation(df: pd.DataFrame, side: int) -> bool:
                                          and a["open"] < p["close"]))
     return bool(uw > body * 1.5 or (a["close"] < a["open"] and a["close"] < p["low"]
                                      and a["open"] > p["close"]))
+
+
+# ---------------------------------------------------------------- رژیم بازار و تیونینگ LTF
+def market_regime(df: pd.DataFrame, period: int = 20) -> str:
+    """
+    تشخیص رژیم تحلیلی بازار (Trending / Ranging) و نوسان (High Volatility / Low Volatility)
+    خروجی: "TRENDING_HIGH_VOL" | "TRENDING_LOW_VOL" | "RANGING_HIGH_VOL" | "RANGING_LOW_VOL"
+    """
+    if len(df) < period + 5:
+        return "RANGING_LOW_VOL"
+
+    recent_atr = atr(df, period=10)
+    hist_atr = atr(df, period=40)
+    high_vol = recent_atr > hist_atr * 1.15 if hist_atr > 0 else False
+
+    struct = structure(df)
+    is_trending = struct in ("BULLISH", "BEARISH")
+
+    if is_trending:
+        return "TRENDING_HIGH_VOL" if high_vol else "TRENDING_LOW_VOL"
+    return "RANGING_HIGH_VOL" if high_vol else "RANGING_LOW_VOL"
+
+
+def refine_ltf_entry(df_ltf: pd.DataFrame, side: int, htf_entry: float, htf_sl: float) -> tuple[float, float, bool]:
+    """
+    بهینه‌سازی نقطه ورود و SL بر اساس ستاپ‌های جدید در تایم پایین‌تر (1m/5m)
+    خروجی: (entry_refined, sl_refined, is_refined)
+    """
+    if len(df_ltf) < 10:
+        return htf_entry, htf_sl, False
+
+    fvg_data = fvgs(df_ltf, lookback=10, min_gap_ratio=0.1)
+    target_fvg = fvg_data.get("BULLISH" if side > 0 else "BEARISH")
+
+    if target_fvg:
+        fvg_entry = target_fvg["bottom"] if side > 0 else target_fvg["top"]
+        risk_orig = abs(htf_entry - htf_sl)
+
+        # ورود FVG تایید شده اگر نسبت به ورود اصلی ریسک کمتر یا برابری ایجاد کند
+        if side > 0 and htf_sl < fvg_entry < htf_entry:
+            refined_sl = target_fvg["bottom"] - abs(htf_entry - htf_sl) * 0.1
+            if abs(fvg_entry - refined_sl) <= risk_orig and refined_sl > htf_sl:
+                return round(fvg_entry, 6), round(refined_sl, 6), True
+        elif side < 0 and htf_sl > fvg_entry > htf_entry:
+            refined_sl = target_fvg["top"] + abs(htf_entry - htf_sl) * 0.1
+            if abs(fvg_entry - refined_sl) <= risk_orig and refined_sl < htf_sl:
+                return round(fvg_entry, 6), round(refined_sl, 6), True
+
+    return htf_entry, htf_sl, False

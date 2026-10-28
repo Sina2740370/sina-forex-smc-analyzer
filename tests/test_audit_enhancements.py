@@ -87,3 +87,42 @@ def test_check_expired_signals_mark_to_market(monkeypatch):
     assert status == "EXPIRED"
     assert exit_price > 1.1000  # Mark to market exit price
     assert pnl > 0  # Floating profit recorded on expiration
+
+
+def test_market_regime_and_refine_entry():
+    from engine.core import smc
+    df = pd.DataFrame({
+        "open": [1.0 + 0.001 * i for i in range(30)],
+        "high": [1.002 + 0.001 * i for i in range(30)],
+        "low": [0.998 + 0.001 * i for i in range(30)],
+        "close": [1.001 + 0.001 * i for i in range(30)]
+    })
+    regime = smc.market_regime(df)
+    assert regime in ("TRENDING_HIGH_VOL", "TRENDING_LOW_VOL", "RANGING_HIGH_VOL", "RANGING_LOW_VOL")
+
+    entry, sl, refined = smc.refine_ltf_entry(df, 1, 1.0500, 1.0400)
+    assert isinstance(refined, bool)
+
+
+def test_rollover_period_and_portfolio_currency_limit():
+    rollover_dt = datetime(2026, 3, 10, 22, 15, tzinfo=timezone.utc)
+    assert sg.is_rollover_period(rollover_dt) is True
+    assert sg.evaluate("EURUSD", "BUY", [], [], now=rollover_dt) == "rollover_spread_guard"
+
+    normal_dt = datetime(2026, 3, 10, 14, 0, tzinfo=timezone.utc)
+    open_sigs = [
+        {"symbol": "EURUSD", "direction": "BUY"},
+        {"symbol": "GBPUSD", "direction": "BUY"},
+    ]
+    # Adding a 3rd USD position should trigger portfolio_currency_limit
+    res = sg.evaluate("AUDUSD", "BUY", open_sigs, [], now=normal_dt)
+    assert res == "portfolio_currency_limit"
+
+
+def test_monte_carlo_simulation():
+    from engine.backtest.report import monte_carlo_simulation
+    trades = [{"r": 2.0}, {"r": -1.0}, {"r": 1.5}, {"r": -1.0}, {"r": 3.0}]
+    mc = monte_carlo_simulation(trades, n_simulations=100, seed=123)
+    assert mc["n_simulations"] == 100
+    assert "max_drawdown_mean" in mc
+    assert "total_r_mean" in mc

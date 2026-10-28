@@ -29,6 +29,16 @@ ZONE_TOL = float(os.getenv("ZONE_TOL", "1.0"))
 STREAK_BLOCK_H = float(os.getenv("STREAK_BLOCK_H", "24"))
 STREAK_LOSSES = int(os.getenv("STREAK_LOSSES", "2"))
 
+# حداکثر تعداد پوزیشن‌های باز هم‌ارز
+MAX_CURRENCY_EXPOSURE = int(os.getenv("MAX_CURRENCY_EXPOSURE", "2"))
+
+
+def is_rollover_period(now: datetime) -> bool:
+    """ساعات تسویه بازار فارکس و بازشدن شدید اسپرد (22:00 تا 23:00 UTC / 17:00 نیویورک)"""
+    t = now if now.tzinfo is not None else now.replace(tzinfo=timezone.utc)
+    utc_hour = t.astimezone(timezone.utc).hour
+    return utc_hour == 22
+
 
 def norm_symbol(symbol: str) -> str:
     s = (symbol or "").upper().replace("/", "").replace("-", "").replace("=X", "")
@@ -65,9 +75,25 @@ def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: lis
     sym = norm_symbol(symbol)
     direction = direction.upper()
 
+    # --- rollover_spread_guard: محافظت در برابر باز شدن اسپرد در ساعات Rollover ---
+    if is_rollover_period(now):
+        return "rollover_spread_guard"
+
     for s in open_signals:
         if norm_symbol(s["symbol"]) == sym:
             return "open_same_symbol"
+
+    # --- portfolio_currency_limit: فیلتر تمرکز بیش از حد ریسک روی یک ارز ---
+    mine = exposure(sym, direction)
+    cur_counts = {}
+    for osig in open_signals:
+        oexp = exposure(osig["symbol"], osig.get("direction", "BUY"))
+        for c in oexp:
+            cur_counts[c] = cur_counts.get(c, 0) + 1
+
+    for c in mine:
+        if cur_counts.get(c, 0) >= MAX_CURRENCY_EXPOSURE:
+            return "portfolio_currency_limit"
 
     for s in closed_recent:
         if norm_symbol(s["symbol"]) != sym or s["direction"].upper() != direction:

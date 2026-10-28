@@ -136,3 +136,41 @@ def walk_forward(symbol: str, data: dict, base: EngineConfig, grid=(0.5, 0.6, 0.
                             "test_exp": round(float(np.mean([t["r"] for t in test])), 3) if test else None})
         s += pd.Timedelta(days=test_days)
     return {"windows": windows, "out_of_sample": summarize(oos)}
+
+
+# ---------------------------------------------------------------- ۵) مونت‌کارلو
+def monte_carlo_simulation(trades: list, n_simulations: int = 1000, seed: int = 42) -> dict:
+    """
+    شبیه‌سازی مونت‌کارلو (Monte Carlo Shuffling) برای بررسی ریسک افت سرمایه (Max Drawdown)
+    و توزیع احتمالی R نهایی در سناریوهای مختلف ترتیب معاملات.
+    """
+    if not trades:
+        return {"n_simulations": 0, "note": "معامله‌ای برای شبیه‌سازی وجود ندارد"}
+
+    r_returns = np.array([t["r"] for t in trades], dtype=float)
+    n_trades = len(r_returns)
+    if n_trades < 3:
+        return {"n_simulations": 0, "note": "تعداد معاملات برای شبیه‌سازی کافی نیست"}
+
+    rng = np.random.default_rng(seed)
+    max_dds = np.empty(n_simulations)
+    total_returns = np.empty(n_simulations)
+
+    for i in range(n_simulations):
+        shuffled = rng.choice(r_returns, size=n_trades, replace=True)
+        cum = np.cumsum(shuffled)
+        peak = np.maximum.accumulate(np.r_[0.0, cum])[1:]
+        dd = peak - cum
+        max_dds[i] = float(dd.max())
+        total_returns[i] = float(cum[-1])
+
+    return {
+        "n_simulations": n_simulations,
+        "n_trades": n_trades,
+        "max_drawdown_mean": round(float(max_dds.mean()), 2),
+        "max_drawdown_p95": round(float(np.percentile(max_dds, 95)), 2),
+        "max_drawdown_p99": round(float(np.percentile(max_dds, 99)), 2),
+        "total_r_mean": round(float(total_returns.mean()), 2),
+        "total_r_p5": round(float(np.percentile(total_returns, 5)), 2),
+        "total_r_p95": round(float(np.percentile(total_returns, 95)), 2),
+    }
