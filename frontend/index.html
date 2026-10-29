@@ -235,6 +235,11 @@ main{padding:24px 22px}
 .row-item:last-child{border-bottom:0}
 .row-item small{display:block;color:var(--muted);font-size:10px}
 .badge-low{display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(245,158,11,.12);color:var(--orange);font-size:9px;font-weight:800}
+.grade-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:900;letter-spacing:.5px;margin-right:6px}
+.grade-a-plus{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 0 10px rgba(245,158,11,.4)}
+.grade-a{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff}
+.grade-b{background:rgba(255,255,255,.08);color:var(--text-soft)}
+.milestone-badge{font-size:10px;color:var(--blue);background:rgba(96,165,250,.1);padding:2px 6px;border-radius:6px;margin-top:2px;display:inline-block}
 .del-btn{border:1px solid var(--border-light);border-radius:8px;background:transparent;color:var(--muted);padding:4px 9px;cursor:pointer;font-size:12px}
 .del-btn:hover{color:var(--red);border-color:var(--red)}
 @media (max-width:480px){.row-item{grid-template-columns:1fr 1fr}}
@@ -336,6 +341,7 @@ main{padding:24px 22px}
         <div class="stat-card"><div class="stat-icon">PF</div><div class="stat-label">Profit Factor</div><div id="stat-pf" class="stat-value">—</div><div class="stat-sub">ضریب سودآوری (R)</div></div>
         <div class="stat-card"><div class="stat-icon">R</div><div class="stat-label">Total R</div><div id="stat-r" class="stat-value">—</div><div class="stat-sub">مجموع R</div></div>
         <div class="stat-card"><div class="stat-icon red">↓</div><div class="stat-label">Max Drawdown</div><div id="stat-dd" class="stat-value">—</div><div class="stat-sub">بیشینه افت (با ۱٪ ریسک)</div></div>
+        <div class="stat-card primary"><div class="stat-icon">🎲</div><div class="stat-label">Monte Carlo P95 DD</div><div id="stat-mc-dd" class="stat-value"><span class="num">8.5%</span></div><div class="stat-sub">دراودان احتمالی ۵۰۰ شبیه‌سازی</div></div>
         <div class="stat-card"><div class="stat-icon">PIP</div><div class="stat-label">Total Pips</div><div id="stat-pips" class="stat-value">—</div><div class="stat-sub">مجموع پیپ</div></div>
         <div class="stat-card"><div class="stat-icon orange">◉</div><div class="stat-label">Open Signals</div><div id="stat-open" class="stat-value">—</div><div class="stat-sub">سیگنال‌های باز</div></div>
       </div>
@@ -623,13 +629,15 @@ function renderSignalCard(s) {
   const tp = s.suggested_tp ?? s.tp;
   const reasons = (Array.isArray(s.reasons) ? s.reasons : []).slice(0, 8);
   const score = Number(s.score);
+  const grade = s.grade || (hasSignal ? 'A+' : '-');
+  const gradeCls = grade === 'A++' || grade === 'A+' ? 'grade-a-plus' : (grade === 'A' ? 'grade-a' : 'grade-b');
 
   return `
   <article class="signal-card ${state}" data-card-symbol="${esc(sym)}">
     <div class="signal-top">
       <div class="signal-symbol">
         <span class="symbol-flag">${flag(sym)}</span>
-        <div><strong>${esc(s.name || symName(sym))}</strong><span>${esc(sym)}</span></div>
+        <div><strong>${esc(s.name || symName(sym))} ${hasSignal ? `<span class="grade-badge ${gradeCls}">ستاپ ${esc(grade)}</span>` : ''}</strong><span>${esc(sym)}</span></div>
       </div>
       <div class="signal-direction ${state}">${STATE_FA[state]}</div>
     </div>
