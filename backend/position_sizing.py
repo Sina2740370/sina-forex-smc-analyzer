@@ -14,29 +14,39 @@ _BASE_NAMES = {
 }
 
 
+def norm_sym(symbol: str) -> str:
+    s = (symbol or "").upper().replace("/", "").replace("-", "").replace("=X", "")
+    if s in ("GC=F", "GC", "XAU"):
+        return "XAUUSD"
+    return s
+
+
 def broker_symbol(symbol: str) -> str:
     """نام نماد تو MT5 (با پسوند بروکر)"""
-    base = GOLD_SYMBOL if symbol == "GC=F" else _BASE_NAMES.get(symbol, symbol)
+    s = norm_sym(symbol)
+    base = GOLD_SYMBOL if s == "XAUUSD" else s
     return f"{base}{BROKER_SUFFIX}"
 
 
 def _contract_size(symbol: str) -> float:
-    return 100.0 if symbol == "GC=F" else 100_000.0
+    s = norm_sym(symbol)
+    return 100.0 if s == "XAUUSD" else 100_000.0
 
 
 def _quote_to_usd(symbol: str, price: float, rates: dict):
     """۱ واحد ارز دوم (quote) جفت‌ارز = چند دلار؛ اگه نرخ لازم نبود None"""
-    if symbol == "GC=F" or symbol.endswith("USD=X"):
+    s = norm_sym(symbol)
+    if s == "XAUUSD" or s.endswith("USD"):
         return 1.0
-    if symbol in ("USDJPY=X", "USDCAD=X", "USDCHF=X"):
-        return 1.0 / price
-    if symbol == "EURGBP=X":
-        gbpusd = (rates or {}).get("GBPUSD=X")
+    if s in ("USDJPY", "USDCAD", "USDCHF"):
+        return 1.0 / price if price > 0 else None
+    if s == "EURGBP":
+        gbpusd = (rates or {}).get("GBPUSD=X") or (rates or {}).get("GBPUSD")
         return float(gbpusd) if gbpusd else None
-    if symbol in ("EURJPY=X", "GBPJPY=X"):
-        usdjpy = (rates or {}).get("USDJPY=X")
-        return 1.0 / float(usdjpy) if usdjpy else None
-    return None
+    if s in ("EURJPY", "GBPJPY"):
+        usdjpy = (rates or {}).get("USDJPY=X") or (rates or {}).get("USDJPY")
+        return 1.0 / float(usdjpy) if usdjpy and float(usdjpy) > 0 else None
+    return 1.0
 
 
 def calc_lots(symbol, entry, sl, balance, risk_pct, rates=None):

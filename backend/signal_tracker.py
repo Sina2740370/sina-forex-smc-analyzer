@@ -172,12 +172,17 @@ def _check_signal(sig: dict, candles: list) -> bool:
         high = c["high"]
         low = c["low"]
 
+        open_px = c.get("open")
         if direction == "BUY":
             # اول SL (محافظه‌کارانه)
             if low - half <= sl:
-                pnl = _to_pips(symbol, sl - effective_entry)
-                close_signal(sig_id, sl, pnl, "LOSS")
-                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
+                # خروج با گپ اگر کندل زیر SL باز شده باشد
+                exit_px = sl
+                if open_px is not None and open_px - half <= sl:
+                    exit_px = open_px - half
+                pnl = _to_pips(symbol, exit_px - effective_entry)
+                close_signal(sig_id, exit_px, pnl, "LOSS")
+                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips (exit: {exit_px})")
                 return True
             if high - half >= tp:
                 pnl = _to_pips(symbol, tp - effective_entry)
@@ -188,9 +193,13 @@ def _check_signal(sig: dict, candles: list) -> bool:
         elif direction == "SELL":
             # اول SL
             if high + half >= sl:
-                pnl = _to_pips(symbol, effective_entry - sl)
-                close_signal(sig_id, sl, pnl, "LOSS")
-                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips")
+                # خروج با گپ اگر کندل بالای SL باز شده باشد
+                exit_px = sl
+                if open_px is not None and open_px + half >= sl:
+                    exit_px = open_px + half
+                pnl = _to_pips(symbol, effective_entry - exit_px)
+                close_signal(sig_id, exit_px, pnl, "LOSS")
+                logger.info(f"❌ LOSS: {symbol} {pnl:+.1f} pips (exit: {exit_px})")
                 return True
             if low + half <= tp:
                 pnl = _to_pips(symbol, effective_entry - tp)
