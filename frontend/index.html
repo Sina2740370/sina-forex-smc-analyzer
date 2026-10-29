@@ -629,7 +629,7 @@ function renderSignalCard(s) {
   const tp = s.suggested_tp ?? s.tp;
   const reasons = (Array.isArray(s.reasons) ? s.reasons : []).slice(0, 8);
   const score = Number(s.score);
-  const grade = s.grade || (hasSignal ? 'A+' : '-');
+  const grade = s.grade || (hasSignal ? 'B' : '-');
   const gradeCls = grade === 'A++' || grade === 'A+' ? 'grade-a-plus' : (grade === 'A' ? 'grade-a' : 'grade-b');
 
   return `

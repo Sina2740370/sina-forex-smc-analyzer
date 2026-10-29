@@ -130,7 +130,7 @@ SPREAD = {
     "EURUSD=X": 0.8, "GBPUSD=X": 1.2, "USDJPY=X": 1.0,
     "AUDUSD=X": 1.2, "USDCAD=X": 1.5, "NZDUSD=X": 1.8,
     "USDCHF=X": 1.5, "EURGBP=X": 1.5, "EURJPY=X": 1.8,
-    "GBPJPY=X": 2.5, "GC=F":     25.0,
+    "GBPJPY=X": 2.5, "GC=F":     3.0,
 }
 
 DB_PATH = os.getenv("DB_PATH", "signals.db")
