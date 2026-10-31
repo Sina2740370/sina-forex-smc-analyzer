@@ -33,11 +33,40 @@ STREAK_LOSSES = int(os.getenv("STREAK_LOSSES", "2"))
 MAX_CURRENCY_EXPOSURE = int(os.getenv("MAX_CURRENCY_EXPOSURE", "2"))
 
 
-def is_rollover_period(now: datetime) -> bool:
-    """ساعات تسویه بازار فارکس و بازشدن شدید اسپرد (22:00 تا 23:00 UTC / 17:00 نیویورک)"""
+def is_market_closed(now: datetime) -> bool:
+    """تعطیلی آخر هفته‌ی بازار فارکس: جمعه بعد از ۱۷:۰۰ نیویورک تا یکشنبه ۱۸:۰۰ نیویورک.
+
+    قبلاً زمان‌بند ۲۴/۷ اجرا می‌شد و شنبه/یکشنبه با داده‌ی جمعه کار می‌کرد
+    (سیگنال روی قیمت مرده). الان سیگنال‌دهی در تعطیلات بسته است."""
     t = now if now.tzinfo is not None else now.replace(tzinfo=timezone.utc)
-    utc_hour = t.astimezone(timezone.utc).hour
-    return utc_hour == 22
+    try:
+        from zoneinfo import ZoneInfo
+        ny = t.astimezone(ZoneInfo("America/New_York"))
+    except Exception:
+        ny = t.astimezone(timezone.utc)  # fallback
+    wd = ny.weekday()   # Mon=0 … Fri=4, Sat=5, Sun=6
+    if wd == 5:                          # شنبه
+        return True
+    if wd == 4 and ny.hour >= 17:        # جمعه بعد از رول‌اور
+        return True
+    if wd == 6 and ny.hour < 18:         # یکشنبه قبل از باز شدن
+        return True
+    return False
+
+
+def is_rollover_period(now: datetime) -> bool:
+    """ساعات تسویه بازار فارکس و بازشدن شدید اسپرد: 17:00 نیویورک تا یک ساعت بعد.
+
+    قبلاً ساعت 22:00 UTC هاردکد شده بود که فقط زمستان درست است؛
+    در طول DST (حدوداً اسفند تا آبان) رول‌اور واقعی 21:00 UTC است.
+    الان با تبدیل به America/New_York درست کار می‌کند (هم‌راستا با kill_zone)."""
+    t = now if now.tzinfo is not None else now.replace(tzinfo=timezone.utc)
+    try:
+        from zoneinfo import ZoneInfo
+        ny_hour = t.astimezone(ZoneInfo("America/New_York")).hour
+    except Exception:
+        ny_hour = t.astimezone(timezone.utc).hour  # fallback: رفتار قبلی
+    return ny_hour == 17
 
 
 def norm_symbol(symbol: str) -> str:
@@ -75,6 +104,10 @@ def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: lis
     sym = norm_symbol(symbol)
     direction = direction.upper()
 
+    # --- market_closed: تعطیلی آخر هفته‌ی فارکس ---
+    if is_market_closed(now):
+        return "market_closed"
+
     # --- rollover_spread_guard: محافظت در برابر باز شدن اسپرد در ساعات Rollover ---
     if is_rollover_period(now):
         return "rollover_spread_guard"
@@ -98,7 +131,8 @@ def evaluate(symbol: str, direction: str, open_signals: list, closed_recent: lis
     for s in closed_recent:
         if norm_symbol(s["symbol"]) != sym or s["direction"].upper() != direction:
             continue
-        hours = LOSS_COOLDOWN_H if s["status"] == "LOSS" else COOLDOWN_H
+        hours = (LOSS_COOLDOWN_H if (s["status"] == "LOSS"
+                 or float(s.get("pnl_pips") or 0) < 0) else COOLDOWN_H)
         if s.get("closed_at") and _dt(s["closed_at"]) > now - timedelta(hours=hours):
             return "cooldown"
 

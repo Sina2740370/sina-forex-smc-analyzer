@@ -21,6 +21,20 @@ def _quarters(start: datetime, end: datetime):
         cur = nxt
 
 
+def _read_cache_csv(path: str) -> pd.DataFrame:
+    """خواندن کش CSV با تضمین ایندکس tz-aware UTC.
+
+    قبلاً اگر ایندکس ذخیره‌شده tz-naive خوانده می‌شد، tz_convert در دور بعد
+    با خطا کرش می‌کرد؛ الان localize شرطی انجام می‌شود."""
+    df = pd.read_csv(path, index_col=0, parse_dates=True)
+    idx = df.index
+    if idx.tz is None:
+        df.index = idx.tz_localize("UTC")
+    else:
+        df.index = idx.tz_convert("UTC")
+    return df
+
+
 def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) -> str:
     import dukascopy_python as dk
 
@@ -35,7 +49,7 @@ def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) 
         f = os.path.join(cache, f"{symbol}_{a:%Y%m%d}.csv")
         fresh = b < end - timedelta(days=7)
         if fresh and os.path.exists(f):
-            parts.append(pd.read_csv(f, index_col=0, parse_dates=True))
+            parts.append(_read_cache_csv(f))
             continue
         if verbose:
             print(f"  {symbol} {a:%Y-%m-%d} -> {b:%Y-%m-%d} ...", flush=True)

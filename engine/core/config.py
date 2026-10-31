@@ -45,6 +45,11 @@ class EngineConfig:
     w_killzone: float = 0.05
     w_confluence: float = 0.10       # Sweep + CHOCH + (FVG یا OB) با هم
 
+    # --- رژیم بازار و سشن (کاهش خطای معامله: جریمه‌ی بازار بی‌جهت و نقدشوندگی کم) ---
+    w_regime_align: float = 0.06     # بونوس رژیم TRENDING هم‌جهت با bias کامل HTF
+    w_regime_chop: float = 0.08      # جریمه‌ی RANGING_HIGH_VOL (نوسان بی‌جهت = سیگنال کاذب)
+    w_off_hours: float = 0.04        # جریمه‌ی ورود خارج سشن‌های لندن/نیویورک (اسپرد پهن)
+
     # --- مدیریت معامله ---
     max_hold_hours: int = 72
     cooldown_hours: float = 4.0

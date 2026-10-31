@@ -325,19 +325,6 @@ def data_feed_health(max_age_seconds: int = 900) -> dict:
 #  سازگاری
 # ============================================================
 
-def fetch_multi_timeframe(symbol: str, htf: str = "4h",
-                          ltf: str = "15m") -> dict:
-    htf_data = fetch_ohlcv(symbol, htf)
-    ltf_data = fetch_ohlcv(symbol, ltf)
-
-    if len(htf_data) < MIN_CANDLES:
-        return {"error": f"HTF داده کم ({len(htf_data)})"}
-    if len(ltf_data) < MIN_CANDLES:
-        return {"error": f"LTF داده کم ({len(ltf_data)})"}
-
-    return {"htf": htf_data, "ltf": ltf_data}
-
-
 def get_cache_stats() -> dict:
     return {
         "size": len(_cache),

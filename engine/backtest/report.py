@@ -51,10 +51,16 @@ def random_baseline(symbol: str, df15: pd.DataFrame, trades: list, cfg: EngineCo
     hi, lo, cl = (df15[k].to_numpy() for k in ("high", "low", "close"))
     nb = cfg.max_hold_hours * 4
     bar = pd.Timedelta(minutes=15)
-    j = [int(times.searchsorted(t["open_time"] - bar)) for t in ts]
-    j_lo, j_hi = min(j), min(max(j), len(df15) - nb - 2)
+    j_cap = len(df15) - nb - 2
+    # معاملاتی که نزدیک انتهای داده باز شده‌اند پنجرهٔ نگهداری nb را ندارند؛
+    # قبلاً همین‌جا rng.integers با low>=high کرش می‌کرد.
+    pairs = [(t, int(times.searchsorted(t["open_time"] - bar))) for t in ts]
+    usable = [(t, x) for t, x in pairs if x <= j_cap]
+    if not usable:
+        return {"n": len(ts), "note": "معاملات نزدیک انتهای داده‌اند؛ مقایسهٔ تصادفی ممکن نیست"}
+    j_lo, j_hi = min(x for _, x in usable), max(x for _, x in usable)
     risks = np.array([(((t["entry"] - (1 if t["side"] == "BUY" else -1) * half) - t["sl"])
-                       * (1 if t["side"] == "BUY" else -1)) for t in ts])
+                       * (1 if t["side"] == "BUY" else -1)) for t, _ in usable])
     real = float(np.mean([t["r"] for t in ts]))
 
     rng = np.random.default_rng(seed)

@@ -7,6 +7,8 @@
 - اگر SL و TP در یک کندل لمس شوند، SL حساب می‌شود (بدبینانه)
 - اگر کندل با گپ از SL رد شود، خروج روی open ± half (نه روی سطح SL)
 - EXPIRED با قیمت بازار (mark-to-market) بسته می‌شود، نه با R=0
+- کول‌داون از زمان «بسته‌شدن» معامله شمرده می‌شود (هم‌راستا با signal_gate لایو؛
+  قبلاً از زمان ورود شمرده می‌شد و بک‌تست خوش‌بینانه‌تر از لایو بود)
 """
 from __future__ import annotations
 
@@ -68,6 +70,7 @@ def _close_trade(symbol, pos, status, exit_price, t, cfg):
         "open_time": pos.open_time, "close_time": t,
         "entry": pos.entry, "sl": pos.sl, "tp": pos.tp, "exit": exit_price,
         "status": status, "r": round(float(r), 4), "score": pos.dec.score,
+        "grade": getattr(pos.dec, "grade", "-"),
         "features": pos.dec.features, "config_hash": cfg.hash(),
     }
 
@@ -90,7 +93,8 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
     hold = pd.Timedelta(hours=cfg.max_hold_hours)
     cooldown = pd.Timedelta(hours=cfg.cooldown_hours)
 
-    trades, pos, last_signal = [], None, {}
+    trades, pos = [], None
+    last_close_t = None          # کول‌داون نسبت به بسته‌شدن آخرین معامله (نه ورود)
     last_i = None
     for i in range(len(df15)):
         t_open = times.iloc[i]
@@ -110,10 +114,11 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
             if status:
                 trades.append(_close_trade(symbol, pos, status, px, now, cfg))
                 pos = None
+                last_close_t = now
 
         if pos is not None or i % cfg.scan_every_bars:
             continue
-        if now - last_signal.get("t", now - cooldown - bar) < cooldown:
+        if last_close_t is not None and now - last_close_t < cooldown:
             continue
 
         dec = analyze_fn(view.at(now), cfg, now)
@@ -124,7 +129,6 @@ def run_backtest(symbol: str, data: dict, cfg: EngineConfig,
         if (entry - dec.sl) * side <= 0:
             continue
         pos = _Pos(side, now, i, entry, dec.sl, dec.tp, dec)
-        last_signal["t"] = now
 
     if pos is not None and last_i is not None:  # پوزیشن باز آخر بازه: mark-to-market
         trades.append(_close_trade(

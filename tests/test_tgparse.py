@@ -5,8 +5,18 @@ from engine.tools.tgparse import CommandError, normalize_text, parse, to_float
 
 def test_persian_digits_and_separators():
     assert normalize_text("۱٫۱۰۰۰ ۱٫۰۹۸۰") == "1.1000 1.0980"
-    assert to_float("1,098") == pytest.approx(1.098)               # قیمت: ویرگول = اعشار
+    # قیمت با اعشار ویرگولی که مبهم نباشد قبول است (گروه بعد از ویرگول ≠ ۳ رقم)
+    assert to_float("1,0980") == pytest.approx(1.098)              # قیمت: ویرگول = اعشار
+    assert to_float("2,400.5") == pytest.approx(2400.5)
     assert to_float("10,000", "thousands") == 10000                # مبلغ: ویرگول = هزارگان
+
+
+def test_ambiguous_thousands_comma_in_price_rejected():
+    """2,400 / 1,098 مبهم‌اند (هزارگان یا اعشار؟) — باید خطای واضح بدهند،
+    نه اینکه بی‌سروصدا 2.4 تفسیر شوند (قبلاً خطای ۱۰۰۰ برابری حجم می‌ساخت)."""
+    for tok in ("2,400", "1,098", "1,234,567"):
+        with pytest.raises(CommandError):
+            to_float(tok)
 
 
 def test_size_basic_and_options():

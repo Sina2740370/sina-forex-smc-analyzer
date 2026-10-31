@@ -13,6 +13,8 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
+<!-- احراز هویت /api (قبل از اسکریپت اصلی اپ) -->
+<script src="/static/tg-auth.js"></script>
 <style>
 :root{--bg:#07090d;--bg-soft:#0b0f15;--panel:#10151d;--panel-2:#141a23;--border:#202936;--border-light:#2b3544;--text:#f3f4f6;--text-soft:#cbd5e1;--muted:#718096;--blue:#60a5fa;--blue-dark:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--radius:18px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -547,9 +549,17 @@ const zoneFa  = v => ZONE_FA[String(v||'').toUpperCase()] || v || '—';
 async function apiFetch(path, ms = 45000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
+  const headers = {Accept: 'application/json'};
+  // هدر احراز هویت از tg-auth.js (کلید ادمین). اگر کلیدی نبود، بدون هدر می‌رویم
+  // و سرور 403 برمی‌گرداند که با همان مدیریت خطای موجود نمایش داده می‌شود.
+  try {
+    const auth = (window.TgAuth && typeof window.TgAuth.getAuthHeader === 'function')
+      ? await window.TgAuth.getAuthHeader() : '';
+    if (auth) headers['Authorization'] = auth;
+  } catch (e) {}
   try {
     const r = await fetch(API + path, {
-      cache: 'no-store', headers: {Accept: 'application/json'}, signal: ctrl.signal
+      cache: 'no-store', headers, signal: ctrl.signal
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return await r.json();
@@ -569,7 +579,7 @@ function setConnection(online, message) {
 
 const loadingCard = msg => `<div class="loading-card"><div class="spinner"></div><span>${esc(msg)}</span></div>`;
 const emptyCard = (title, sub = '') => `<div class="empty-card"><div class="empty-icon">∅</div><h3>${esc(title)}</h3>${sub ? `<p>${esc(sub)}</p>` : ''}</div>`;
-const errorCard = (msg, retry) => `<div class="error-card"><div class="error-icon">!</div><strong>ارتباط با سرور ناموفق بود</strong><p>${esc(msg)}</p><button class="mini-btn" type="button" onclick="${retry}">تلاش مجدد</button></div>`;
+const errorCard = (msg, retry) => `<div class="error-card"><div class="error-icon">!</div><strong>ارتباط با سرور ناموفق بود</strong><p>${esc(msg)}</p><button class="mini-btn" type="button" onclick="${esc(retry)}">تلاش مجدد</button></div>`;
 
 /* ============================ TICKER ============================ */
 function renderTicker(items) {
@@ -749,7 +759,7 @@ function renderHistoryCard(s) {
     ${hasPnl
       ? `<div class="history-pnl">نتیجه<strong class="num ${Number(pnl) >= 0 ? 'positive' : 'negative'}">${fmtS(pnl, 1)} پیپ</strong></div>`
       : `<div class="history-score">امتیاز<strong class="num">${Number.isFinite(Number(s.score)) ? Number(s.score).toFixed(2) : '—'}</strong></div>`}
-    <span class="history-status ${status.toLowerCase()}">${STATUS_FA[status] || esc(status)}</span>
+    <span class="history-status ${esc(status.toLowerCase())}">${STATUS_FA[status] || esc(status)}</span>
   </article>`;
 }
 
@@ -831,7 +841,16 @@ async function loadStats() {
 }
 
 /* ============================ RISK + JOURNAL ============================ */
-const KEY_STORE = 'sq_admin_key';
+const KEY_STORE = 'sina_admin_key';
+// مهاجرت از کلیدهای قدیمی (sq_admin_key در localStorage/sessionStorage) — idempotent
+try {
+  if (!localStorage.getItem(KEY_STORE)) {
+    const legacy = localStorage.getItem('sq_admin_key') || sessionStorage.getItem('sq_admin_key') || '';
+    if (legacy) localStorage.setItem(KEY_STORE, legacy);
+  }
+  if (sessionStorage.getItem('sq_admin_key')) sessionStorage.removeItem('sq_admin_key');
+  if (localStorage.getItem('sq_admin_key')) localStorage.removeItem('sq_admin_key');
+} catch (e) {}
 const getKey = () => { try { return localStorage.getItem(KEY_STORE) || ''; } catch (e) { return ''; } };
 const setKey = v => { try { if (v) localStorage.setItem(KEY_STORE, v); else localStorage.removeItem(KEY_STORE); } catch (e) {} };
 
@@ -843,7 +862,14 @@ async function api2(method, path, body, withKey, ms = 45000) {
   const timer = setTimeout(() => ctrl.abort(), ms);
   const headers = {Accept: 'application/json'};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (withKey) headers['X-Admin-Key'] = getKey();
+  if (withKey) {
+    headers['X-Admin-Key'] = getKey();
+    try {
+      const auth = (window.TgAuth && typeof window.TgAuth.getAuthHeader === 'function')
+        ? await window.TgAuth.getAuthHeader() : '';
+      if (auth) headers['Authorization'] = auth;
+    } catch (e) {}
+  }
   try {
     const r = await fetch(API + path, {
       method, headers, cache: 'no-store', signal: ctrl.signal,

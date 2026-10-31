@@ -25,6 +25,7 @@ MIN_LEN = {"1wk": 20, "1d": 20, "4h": 30, "1h": 60, "15m": 120}
 class Decision:
     direction: Optional[str] = None      # "BUY" | "SELL" | None
     score: float = 0.0
+    grade: str = "-"                     # کیفیت ستاپ: A+ | A | B (برای مدیریت حجم)
     entry: Optional[float] = None
     sl: Optional[float] = None
     tp: Optional[float] = None
@@ -44,6 +45,15 @@ def kill_zone(now: pd.Timestamp) -> bool:
     ldn = t.tz_convert("Europe/London").hour
     ny = t.tz_convert("America/New_York").hour
     return 7 <= ldn < 10 or 7 <= ny < 10
+
+
+def in_active_session(now: pd.Timestamp) -> bool:
+    """سشن فعال لندن یا نیویورک (07-16 محلی، با DST).
+    خارج از این سشن‌ها اسپرد پهن و نقدشوندگی کم است (منبع اصلی استاپ‌های کاذب)."""
+    t = now.tz_localize("UTC") if now.tzinfo is None else now
+    ldn = t.tz_convert("Europe/London").hour
+    ny = t.tz_convert("America/New_York").hour
+    return 7 <= ldn < 16 or 7 <= ny < 16
 
 
 def top_down_bias(df_wk: pd.DataFrame, df_d: pd.DataFrame):
@@ -143,9 +153,20 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
         c["killzone"] = cfg.w_killzone
         why.append("killzone")
 
-    # --- Market Regime ---
+    # --- Market Regime (دیگر تزئینی نیست: در امتیاز اثر مستقیم دارد) ---
     regime = smc.market_regime(df15)
     why.append(f"regime: {regime}")
+    if strength == "full" and regime.startswith("TRENDING"):
+        c["regime"] = cfg.w_regime_align
+        why.append("regime align")
+    if regime == "RANGING_HIGH_VOL":
+        c["regime_chop"] = -cfg.w_regime_chop
+        why.append("regime chop")
+
+    # --- نقدشوندگی: ورود خارج سشن جریمه می‌شود ---
+    if not in_active_session(now):
+        c["off_hours"] = -cfg.w_off_hours
+        why.append("off hours")
 
     if sweep_ok and choch_ok and (fvg or near_ob):
         c["confluence"] = cfg.w_confluence
@@ -153,6 +174,8 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
 
     score = round(sum(c.values()), 4)
     dec.score, dec.features, dec.reasons = score, {k: round(v, 4) for k, v in c.items()}, why
+    abs_score = abs(score)
+    dec.grade = "A+" if abs_score >= 1.0 else "A" if abs_score >= 0.8 else "B"
 
     gate = near_ob or (sweep_ok and choch_ok)
     if score < cfg.min_score or not gate:
@@ -186,10 +209,14 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
     # --- LTF Entry Refinement (اگر دیتاهای 5m یا 1m موجود باشد) ---
     ltf_df = data.get("5m") if "5m" in data else data.get("1m")
     if ltf_df is not None and len(ltf_df) >= 10:
-        entry_val, sl_val, refined = smc.refine_ltf_entry(ltf_df, side, entry_val, sl_val)
+        e2, s2, refined = smc.refine_ltf_entry(ltf_df, side, entry_val, sl_val)
         if refined:
-            why.append("LTF refined entry")
-            risk = (entry_val - sl_val) * side
+            r2 = (e2 - s2) * side
+            # چک‌های min/max ریسک باید روی ورود/SL پالیش‌شده هم اعمال شود،
+            # وگرنه refine می‌توانست چک‌های بالاتر را دور بزند.
+            if cfg.min_risk_atr1h * atr1h <= r2 <= cfg.max_risk_atr4h * atr4h:
+                entry_val, sl_val, risk = e2, s2, r2
+                why.append("LTF refined entry")
 
     dec.entry, dec.sl = entry_val, sl_val
     dec.tp = round(entry_val + side * risk * cfg.risk_reward, 6)

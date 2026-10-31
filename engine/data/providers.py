@@ -14,8 +14,10 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-TF_MINUTES = {"15m": 15, "1h": 60, "4h": 240, "1d": 1440, "1wk": 10080}
-TAIL = {"1wk": 120, "1d": 200, "4h": 200, "1h": 300, "15m": 400}
+TF_MINUTES = {"15m": 15, "1h": 60, "4h": 240, "1d": 1440, "1wk": 10080,
+              "5m": 5, "1m": 1}
+TAIL = {"1wk": 120, "1d": 200, "4h": 200, "1h": 300, "15m": 400,
+        "5m": 500, "1m": 600}
 COLS = ["time", "open", "high", "low", "close", "volume"]
 
 
@@ -109,8 +111,12 @@ def resample_ohlc(df15: pd.DataFrame, tf: str) -> pd.DataFrame:
     return out.reset_index().rename(columns={"index": "time"})[COLS]
 
 
+# تایم‌فریم‌هایی که از 15m قابل ساخت هستند (5m/1m فقط از دیتای مستقل می‌آیند)
+BASE_TFS = ("15m", "1h", "4h", "1d", "1wk")
+
+
 def build_topdown(df15: pd.DataFrame) -> dict:
-    return {tf: resample_ohlc(df15, tf) for tf in TF_MINUTES}
+    return {tf: resample_ohlc(df15, tf) for tf in BASE_TFS}
 
 
 # ---------------------------------------------------------------- yfinance

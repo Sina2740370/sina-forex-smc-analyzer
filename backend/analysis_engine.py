@@ -19,7 +19,7 @@ from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
     WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
-    get_symbol_profile,
+    get_symbol_profile, SPREAD, PIP_SIZE,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,20 @@ logger = logging.getLogger(__name__)
 # و در صورت کوچک بودن OB، SL می‌توانست غیرواقعی نزدیک به قیمت باشد.
 # در صورت نیاز به تنظیم‌پذیری، می‌توان این را به config.py منتقل کرد.
 MIN_RISK_ATR_RATIO = 0.25
+MIN_RISK_SPREAD_MULT = 3.0   # حداقل فاصلهٔ SL = ۳ برابر اسپرد معمول نماد
+
+
+def _min_spread_risk(symbol) -> float:
+    """حداقل فاصلهٔ SL بر حسب اسپرد معمول نماد.
+    استاپی که داخل نویز اسپرد باشد = باخت قطعی بدون تحرک بازار؛ مسدود می‌شود."""
+    try:
+        spread_pips = SPREAD.get(symbol)
+        pip = PIP_SIZE.get(symbol)
+        if not spread_pips or not pip:
+            return 0.0
+        return MIN_RISK_SPREAD_MULT * spread_pips * pip
+    except Exception:
+        return 0.0
 
 
 # ============================================================
@@ -65,7 +79,9 @@ def ema_trend(df, period=50):
 
 def find_swings(df, left=3, right=3):
     """نسخه بهینه: به‌جای برش pandas در هر پله حلقه (کند روی دیتافریم بزرگ)،
-    ماکزیمم/مینیمم پنجره متحرک را یک‌بار به‌صورت برداری محاسبه می‌کند."""
+    ماکزیمم/مینیمم پنجره متحرک را یک‌بار به‌صورت برداری محاسبه می‌کند.
+    پلتو غیرمجاور در یک پنجره (دو سوئینگ هم‌قیمت نزدیک هم) یک‌بار شمرده می‌شود
+    تا ساختار به‌اشتباه RANGING نشود (هم‌راستا با engine/core/smc.py)."""
     n = len(df)
     if n < left + right + 1:
         return {"highs": [], "lows": []}
@@ -80,8 +96,18 @@ def find_swings(df, left=3, right=3):
 
     is_high = high == win_max
     is_low = low == win_min
-    highs = [(i, float(high.iloc[i])) for i in range(left, n - right) if is_high.iloc[i]]
-    lows = [(i, float(low.iloc[i])) for i in range(left, n - right) if is_low.iloc[i]]
+    window = left + right + 1
+
+    def _dedupe(pairs):
+        out = []
+        for i, p in pairs:
+            if out and p == out[-1][1] and i - out[-1][0] < window:
+                continue
+            out.append((i, p))
+        return out
+
+    highs = _dedupe([(i, float(high.iloc[i])) for i in range(left, n - right) if is_high.iloc[i]])
+    lows = _dedupe([(i, float(low.iloc[i])) for i in range(left, n - right) if is_low.iloc[i]])
     return {"highs": highs, "lows": lows}
 
 
@@ -341,6 +367,23 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
         "breaker": breaker, "fvg": fvg,
         "direction": "BUY" if sweep["type"] == "BULLISH_SWEEP" else "SELL",
     }
+
+
+def detect_market_regime(df):
+    """برچسب رژیم بازار روی 15m (نسخهٔ سبک برای لایهٔ زنده).
+    خروجی: TRENDING_HIGH_VOL | TRENDING_LOW_VOL | RANGING_HIGH_VOL | RANGING_LOW_VOL
+    رژیم RANGING_HIGH_VOL (نوسان بی‌جهت) منبع اصلی سیگنال‌های کاذب است و جریمه می‌شود."""
+    if df is None or len(df) < 25:
+        return "RANGING_LOW_VOL"
+    atr_short = calculate_atr(df, 10)
+    hist_period = min(40, max(10, len(df) // 2))
+    atr_hist = calculate_atr(df, hist_period) if hist_period >= 10 else 0.0
+    high_vol = atr_short > atr_hist * 1.15 if atr_hist > 0 else False
+    struct = detect_structure(df).get("trend")
+    trending = struct in ("BULLISH", "BEARISH")
+    if trending:
+        return "TRENDING_HIGH_VOL" if high_vol else "TRENDING_LOW_VOL"
+    return "RANGING_HIGH_VOL" if high_vol else "RANGING_LOW_VOL"
 
 
 def calculate_super_quant_score(tech_score: float, fund_score: float, news_score: float,
@@ -603,6 +646,18 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
     if session == "KILLZONE":
         reasons.append("⏰ داخل کیل‌زون لندن/نیویورک")
 
+    # جریمه ورود خارج سشن (نقدشوندگی کم / اسپرد پهن = منبع اصلی استاپ‌های کاذب)
+    if session == "OFF_HOURS":
+        score = score - 0.05 if score > 0 else score + 0.05
+        reasons.append("🌙 خارج سشن لندن/نیویورک (جریمه ۰.۰۵ به سمت صفر)")
+
+    # رژیم بازار: نوسان بی‌جهت (RANGING_HIGH_VOL) جریمه می‌شود — دیگر خروجی تزئینی نیست
+    regime = detect_market_regime(df_15m)
+    base["regime"] = regime
+    if regime == "RANGING_HIGH_VOL":
+        score = score - 0.08 if score > 0 else score + 0.08
+        reasons.append("🌀 رژیم رنج پرنوسان (جریمه ۰.۰۸ به سمت صفر)")
+
     direction = None
     sl = tp = None
 
@@ -697,7 +752,7 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
                 sl = round(price - atr * sl_atr_mult * 1.5, 6)
 
             risk = price - sl
-            min_risk = atr * MIN_RISK_ATR_RATIO
+            min_risk = max(atr * MIN_RISK_ATR_RATIO, _min_spread_risk(symbol))
             if risk <= 0:
                 direction = None
                 sl = None
@@ -790,7 +845,7 @@ def analyze_technical_topdown(data_dict, symbol: str = None):
                 sl = round(price + atr * sl_atr_mult * 1.5, 6)
 
             risk = sl - price
-            min_risk = atr * MIN_RISK_ATR_RATIO
+            min_risk = max(atr * MIN_RISK_ATR_RATIO, _min_spread_risk(symbol))
             if risk <= 0:
                 direction = None
                 sl = None
@@ -851,6 +906,17 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         mem["score"] * WEIGHT_MEMORY
     )
 
+    regime = tech.get("regime") or "RANGING_LOW_VOL"
+    # Super Quant Score (فعال‌سازی کد مرده): امتیاز ترکیبی نرمال‌شده + گرید کیفیت،
+    # در خروجی سیگنال و پیام تلگرام گزارش می‌شود.
+    sq = calculate_super_quant_score(
+        max(-1.0, min(1.0, tech["score"] / 1.5)),
+        max(-1.0, min(1.0, fund["score"])),
+        max(-1.0, min(1.0, news_score)),
+        max(-1.0, min(1.0, mem["score"])),
+        regime_label=regime,
+    )
+
     if not news_safe:
         final_score = 0.0
         logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
@@ -898,6 +964,9 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     return {
         "score": round(final_score, 2),
         "grade": grade,
+        "super_quant_score": sq["super_quant_score"],
+        "super_grade": sq["super_grade"],
+        "regime": regime,
         "technical_score": tech["score"],
         "fundamental_score": fund["score"],
         "news_score": news_score,
