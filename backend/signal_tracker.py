@@ -12,7 +12,6 @@ from .data_fetcher import fetch_ohlcv
 from .database import (
     get_open_signals,
     get_recent_closed_signals,
-    get_recent_signals_for_symbol,
     close_signal,
 )
 
@@ -213,7 +212,7 @@ def _check_signal(sig: dict, candles: list) -> bool:
 def signal_gate(symbol: str, direction: str, entry: float = None):
     """
     دروازه‌ی صدور: None یعنی مجاز؛ وگرنه کد دلیل
-    ('open_same_symbol' | 'cooldown' | 'loss_theme' | 'failed_zone' | 'symbol_streak').
+    ('market_closed' | 'open_same_symbol' | 'cooldown' | 'loss_theme' | 'failed_zone' | 'symbol_streak').
     کاملاً مبتنی بر دیتابیس است (با ری‌استارت Render از بین نمی‌رود) و سن سیگنال باز را نادیده نمی‌گیرد.
     entry: قیمت ورود پیشنهادی برای قاعده failed_zone.
     """
@@ -227,16 +226,6 @@ def signal_gate(symbol: str, direction: str, entry: float = None):
         get_recent_closed_signals(hours=hours),
         entry=entry,
     )
-
-
-def is_duplicate_signal(symbol: str, direction: str,
-                         hours: int = 4) -> bool:
-    """جلوگیری از تکرار سیگنال مشابه در بازه کوتاه (فقط همون نماد)"""
-    recent = get_recent_signals_for_symbol(symbol, hours=hours)
-    for sig in recent:
-        if sig["direction"] == direction and sig["status"] == "OPEN":
-            return True
-    return False
 
 
 # ============================================================

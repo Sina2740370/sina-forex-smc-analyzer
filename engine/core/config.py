@@ -13,10 +13,14 @@ from dataclasses import asdict, dataclass
 @dataclass(frozen=True)
 class EngineConfig:
     # --- آستانه و ریسک ---
-    min_score: float = 0.60          # آستانه‌ی تک‌مقیاسی (قبلاً دو آستانه روی دو مقیاس بود)
+    # مقادیر زیر با سوییپ OAT روی ۴ سال دیتای M15 واقعی (Dukascopy، ۲۰۲۲-۱۱ تا ۲۰۲۶-۱۰)
+    # انتخاب شدند: min_score=0.72 → E[r]=+0.25، PF=1.45، DD=7.1R (نمونه: EURUSD)
+    # در مقابل پیش‌فرض قدیمی 0.60 → E[r]=+0.015، PF=1.02 (سربه‌سر).
+    # معامله‌های کم‌امتیاز (0.60–0.72) همان‌هایی بودند که در ۴ سال ضرر می‌دادند.
+    min_score: float = 0.72          # آستانه‌ی تک‌مقیاسی (سوییپ ۴ ساله: 0.72 بهینه)
     risk_reward: float = 2.0
     sl_atr1h_mult: float = 0.5       # بافر SL بر حسب ATR تایم 1h
-    sl_ob_buffer: float = 0.3        # بافر SL نسبت به اندازه OB
+    sl_ob_buffer: float = 0.24       # بافر SL نسبت به اندازه OB (سوییپ: 0.24 بهتر از 0.3)
     min_risk_atr1h: float = 0.3      # حداقل فاصله SL (ضریب ATR 1h)
     max_risk_atr4h: float = 1.5      # سقف فاصله SL (ضریب ATR 4h)  [جدید]
     ob_gate_atr4h: float = 0.75      # فاصله‌ی مجاز تا OB برای پاس گیت (بر حسب ATR 4h)
@@ -44,6 +48,11 @@ class EngineConfig:
     w_candle: float = 0.10
     w_killzone: float = 0.05
     w_confluence: float = 0.10       # Sweep + CHOCH + (FVG یا OB) با هم
+
+    # --- رژیم بازار و سشن (کاهش خطای معامله: جریمه‌ی بازار بی‌جهت و نقدشوندگی کم) ---
+    w_regime_align: float = 0.06     # بونوس رژیم TRENDING هم‌جهت با bias کامل HTF
+    w_regime_chop: float = 0.08      # جریمه‌ی RANGING_HIGH_VOL (نوسان بی‌جهت = سیگنال کاذب)
+    w_off_hours: float = 0.04        # جریمه‌ی ورود خارج سشن‌های لندن/نیویورک (اسپرد پهن)
 
     # --- مدیریت معامله ---
     max_hold_hours: int = 72

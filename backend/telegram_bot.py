@@ -92,7 +92,8 @@ def _cmd_size(a: dict) -> str:
     risk = a.get("risk") or s["risk"]
     lev = a["lev"] if "lev" in a else s["lev"]
     try:
-        res = rk.position_size(a["symbol"], bal, risk, a["entry"], a["sl"], a.get("tp"), leverage=lev)
+        res = rk.position_size(a["symbol"], bal, risk, a["entry"], a["sl"], a.get("tp"),
+                               leverage=lev, cross_rates=a.get("cross_rates"))
     except ValueError as e:
         raise tp.CommandError(str(e))
     side = "BUY" if a["entry"] > a["sl"] else "SELL"

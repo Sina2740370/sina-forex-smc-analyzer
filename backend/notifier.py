@@ -55,7 +55,8 @@ async def notify_new_signal(symbol: str, name: str, direction: str,
                               entry: float, sl: float, tp: float,
                               score: float, reasons: list,
                               trend: str = "-", zone: str = "-",
-                              rates: dict = None):
+                              grade: str = "-", super_grade: str = "-",
+                              regime: str = "-", rates: dict = None):
     """اطلاع سیگنال جدید"""
     emoji = "🟢" if direction == "BUY" else "🔴"
     dir_fa = "خرید" if direction == "BUY" else "فروش"
@@ -103,7 +104,8 @@ async def notify_new_signal(symbol: str, name: str, direction: str,
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"📈 روند: <b>{trend}</b>\n"
         f"📍 ناحیه: <b>{zone}</b>\n"
-        f"🎯 امتیاز: <b>{score:+.2f}</b>\n"
+        f"🧭 رژیم: <b>{regime}</b>\n"
+        f"🎯 امتیاز: <b>{score:+.2f}</b> (ستاپ <b>{grade}</b> · کوانت <b>{super_grade}</b>)\n"
         f"{mt5_block}"
     )
 

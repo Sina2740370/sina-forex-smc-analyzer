@@ -33,10 +33,29 @@ def normalize_text(s: str) -> str:
     return " ".join(s.split())
 
 
+_THOUSANDS_RE = re.compile(r"\d{1,3}(,\d{3})+$")
+
+
 def to_float(tok: str, comma: str = "decimal") -> float:
-    """comma='decimal' برای قیمت؛ comma='thousands' برای مبلغ."""
+    """comma='decimal' برای قیمت؛ comma='thousands' برای مبلغ.
+
+    برای قیمت، ویرگولِ هزارگان (مثل 2,400) عمداً رد می‌شود: قبلاً 2,400
+    بی‌سروصدا 2.4 تفسیر می‌شد و حجم محاسبه‌شده صدها برابر اشتباه بود.
+    کاربر باید صریح بنویسد: 2400 (عدد) یا 2400.50 / 2400,50 (اعشار)."""
     t = tok.strip()
-    t = t.replace(",", "") if comma == "thousands" else t.replace(",", ".")
+    if comma == "thousands":
+        t = t.replace(",", "")
+    else:
+        if _THOUSANDS_RE.fullmatch(t):
+            raise CommandError(
+                f"عدد مبهم: «{tok}» — ویرگول هزارگان برای قیمت مجاز نیست. "
+                f"بنویس: «{tok.replace(',', '')}» یا اعشار «{tok.replace(',', '.')}»"
+            )
+        if "," in t and "." in t:
+            # فرمت ترکیبی: ویرگول هزارگان + نقطه اعشار (مثل 2,400.5)
+            t = t.replace(",", "")
+        else:
+            t = t.replace(",", ".")
     try:
         v = float(t)
     except ValueError:
@@ -75,7 +94,8 @@ _SET_KEYS = {"balance": "balance", "bal": "balance", "موجودی": "balance",
              "maxloss": "maxloss", "maxtrades": "maxtrades", "consec": "consec"}
 
 USAGE = {
-    "size": "/size EURUSD 1.1000 1.0980 [TP] [risk=1 bal=10000 lev=100]",
+    "size": "/size EURUSD 1.1000 1.0980 [TP] [risk=1 bal=10000 lev=100 jpy=155]",
+    # jpy= نرخ USDJPY برای جفت‌های کراس ین (EURJPY/GBPJPY/AUDJPY) و gbp= نرخ GBPUSD برای EURGBP
     "log": "/log EURUSD buy 1.1000 1.0980 1.1040 [برچسب]",
     "set": "/set balance 10000  |  risk 1  |  lev 100 (یا off)  |  maxloss 3  |  maxtrades 5  |  consec 3",
     "last": "/last [تعداد]",
@@ -110,6 +130,9 @@ def parse_size(tokens: list) -> dict:
             out["balance"] = to_float(v, "thousands")
         elif k in ("lev", "leverage"):
             out["lev"] = to_float(v)
+        elif k in ("jpy", "gbp", "cad", "chf"):
+            # نرخ ارز کوت به دلار برای محاسبه‌ی کراس‌ها (مثلاً jpy= نرخ USDJPY)
+            out.setdefault("cross_rates", {})[k.upper()] = to_float(v)
         elif k == "tp":
             out["tp"] = to_float(v)
         else:

@@ -46,9 +46,14 @@ SYMBOLS = {
     "GC=F":    "XAU/USD",
 }
 
-# نمادهای غیرفعال (کاما جدا، مثلاً GBPUSD=X,USDJPY=X) — از اسکن رد می‌شوند
+# نمادهای غیرفعال پیش‌فرض + ورودی محیط (کاما جدا).
+# GC=F (طلا) به‌صورت پیش‌فرض غیرفعال است: سوییپ ۴ ساله (Dukascopy M15)
+# نشان داد استراتژی روی XAUUSD به‌طور پایدار ضررده است (E[r]=−0.13، PF=0.79)
+# و به هیچ پارامتری حساس نیست — تا بازطراحی سیگنال طلا، معامله نشود.
+# برای فعال‌سازی مجدد: DISABLED_SYMBOLS را خالی نکن؛ از SYMBOLS حذف/اضافه کن در دیپلوی.
+DEFAULT_DISABLED_SYMBOLS = {"GC=F"}
 _DISABLED_RAW = os.getenv("DISABLED_SYMBOLS", "").strip()
-DISABLED_SYMBOLS = {
+DISABLED_SYMBOLS = DEFAULT_DISABLED_SYMBOLS | {
     s.strip() for s in _DISABLED_RAW.split(",") if s.strip()
 }
 
@@ -71,20 +76,25 @@ MIN_PROFIT_FACTOR = float(os.getenv("MIN_PROFIT_FACTOR", 1.5))
 MAX_DRAWDOWN = float(os.getenv("MAX_DRAWDOWN", 0.15))
 
 # ============================================================
-#  آستانه سیگنال (تعدیل‌شده)
+#  آستانه سیگنال (تعدیل‌شده با سوییپ ۴ ساله — ۲۰۲۶-۱۰)
+#  سوییپ OAT روی ۴ سال M15 واقعی نشان داد معامله‌های کم‌امتیاز ضررده‌اند:
+#  min_score=0.72 + sl_ob_buffer=0.24 → E[r]=+0.25، PF=1.45، DD=7.1R (EURUSD)
+#  در مقابل 0.40/0.30 قدیمی → لبه عملاً صفر.
+#  توجه: وزن‌دهی نهایی لایو (final_min) پروفایل را با WEIGHT_TECHNICAL می‌میزاند.
 # ============================================================
-MIN_SIGNAL_SCORE = 0.40
+MIN_SIGNAL_SCORE = 0.72
 RISK_REWARD = 2.0
 SL_ATR_MULTIPLIER = 1.5
-SL_OB_BUFFER = 0.3
+SL_OB_BUFFER = 0.24
 
 # پروفایل هر نماد: min_score سخت‌گیرانه‌تر و SL پهن‌تر برای جفت‌های پرریسک
 # کلید = نماد yfinance (همان کلید SYMBOLS)
 SYMBOL_PROFILE = {
-    "GBPUSD=X": {"min_score": 0.50, "sl_atr_mult": 1.8},
-    "USDJPY=X": {"min_score": 0.50, "sl_atr_mult": 1.8},
-    "EURJPY=X": {"min_score": 0.55, "sl_atr_mult": 2.0},
-    "GBPJPY=X": {"min_score": 0.55, "sl_atr_mult": 2.0},
+    "EURUSD=X": {"min_score": 0.72, "sl_atr_mult": 1.5},   # مقدار تأییدشده با سوییپ ۴ ساله
+    "GBPUSD=X": {"min_score": 0.72, "sl_atr_mult": 1.8},
+    "USDJPY=X": {"min_score": 0.72, "sl_atr_mult": 1.8},
+    "EURJPY=X": {"min_score": 0.72, "sl_atr_mult": 2.0},
+    "GBPJPY=X": {"min_score": 0.72, "sl_atr_mult": 2.0},
 }
 
 
@@ -138,10 +148,14 @@ SCAN_INTERVAL_MINUTES = 15
 
 # ============================================================
 #  وزن لایه‌ها
+#  لایه‌ی خبر به‌عنوان وزن امتیاز حذف شد (قبلاً همیشه صفر بود چون
+#  scheduler هرگز news_sentiment نمی‌فرستاد)؛ خبر فقط به‌عنوان
+#  «فیلتر سخت ایمنی» (news_safe) عمل می‌کند. اخبار مرتبط در reasons گزارش می‌شوند.
+#  اگر در آینده منبع sentiment وصل شد، WEIGHT_NEWS را env کنید.
 # ============================================================
-WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.60))
-WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.15))
-WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.15))
+WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.70))
+WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.20))
+WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.00))
 WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.10))
 
 # ============================================================

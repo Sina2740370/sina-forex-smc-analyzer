@@ -105,9 +105,16 @@ def test_market_regime_and_refine_entry():
 
 
 def test_rollover_period_and_portfolio_currency_limit():
-    rollover_dt = datetime(2026, 3, 10, 22, 15, tzinfo=timezone.utc)
-    assert sg.is_rollover_period(rollover_dt) is True
-    assert sg.evaluate("EURUSD", "BUY", [], [], now=rollover_dt) == "rollover_spread_guard"
+    # رول‌اور = 17:00 نیویورک (با DST): زمستان 22:00 UTC، تابستان 21:00 UTC
+    rollover_dt_winter = datetime(2026, 1, 15, 22, 15, tzinfo=timezone.utc)
+    assert sg.is_rollover_period(rollover_dt_winter) is True
+    assert sg.evaluate("EURUSD", "BUY", [], [], now=rollover_dt_winter) == "rollover_spread_guard"
+
+    rollover_dt_summer = datetime(2026, 7, 15, 21, 15, tzinfo=timezone.utc)
+    assert sg.is_rollover_period(rollover_dt_summer) is True
+
+    not_rollover = datetime(2026, 7, 15, 22, 15, tzinfo=timezone.utc)  # NY = 18:15
+    assert sg.is_rollover_period(not_rollover) is False
 
     normal_dt = datetime(2026, 3, 10, 14, 0, tzinfo=timezone.utc)
     open_sigs = [

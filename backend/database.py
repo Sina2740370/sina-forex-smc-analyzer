@@ -81,8 +81,14 @@ def get_conn():
         finally:
             conn.close()
     else:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
+        try:
+            # WAL: نوشتن هم‌زمان (اسکن + API) دیگر «database is locked» نمی‌دهد
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=5000")
+        except Exception:
+            pass  # PRAGMA حیاتی نیست؛ در بدترین حالت رفتار قبلی
         try:
             yield conn
             conn.commit()
@@ -289,6 +295,20 @@ def get_all_signals(limit: int = 200):
         cur = _execute(conn,
             "SELECT * FROM signals ORDER BY created_at DESC LIMIT ?",
             (limit,)
+        )
+        return _process_rows(cur)
+
+
+def get_signals_by_ids(ids: list):
+    """واکشی هدفمند سیگنال‌ها با id (برای نوتیف بسته‌شدن؛ قبلاً فقط
+    ۵۰ رکورد آخر جست‌وجو می‌شد و اعلان WIN/LOSS می‌توانست گم شود)."""
+    if not ids:
+        return []
+    placeholders = ",".join("?" for _ in ids)
+    with get_conn() as conn:
+        cur = _execute(conn,
+            f"SELECT * FROM signals WHERE id IN ({placeholders}) ORDER BY created_at DESC",
+            tuple(ids),
         )
         return _process_rows(cur)
 
