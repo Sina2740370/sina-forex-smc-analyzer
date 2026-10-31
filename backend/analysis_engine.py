@@ -19,7 +19,7 @@ from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
     WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
-    get_symbol_profile,
+    get_symbol_profile, SPREAD, PIP_SIZE,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,21 @@ logger = logging.getLogger(__name__)
 # و در صورت کوچک بودن OB، SL می‌توانست غیرواقعی نزدیک به قیمت باشد.
 # در صورت نیاز به تنظیم‌پذیری، می‌توان این را به config.py منتقل کرد.
 MIN_RISK_ATR_RATIO = 0.25
+MIN_RISK_SPREAD_MULT = 3.0   # حداقل فاصلهٔ SL = ۳ برابر اسپرد معمول نماد
+
+
+def _min_spread_risk(symbol) -> float:
+    """حداقل فاصلهٔ SL بر حسب اسپرد معمول نماد.
+    استاپی که داخل نویز اسپرد باشد = باخت قطعی بدون تحرک بازار؛ مسدود می‌شود.
+    (از audit v1 — اینجا فقط برای سازگاری تست/ابزارهای جانبی حفظ شده.)"""
+    try:
+        spread_pips = SPREAD.get(symbol)
+        pip = PIP_SIZE.get(symbol)
+        if not spread_pips or not pip:
+            return 0.0
+        return MIN_RISK_SPREAD_MULT * spread_pips * pip
+    except Exception:
+        return 0.0
 
 
 # ============================================================
@@ -80,8 +95,20 @@ def find_swings(df, left=3, right=3):
 
     is_high = high == win_max
     is_low = low == win_min
-    highs = [(i, float(high.iloc[i])) for i in range(left, n - right) if is_high.iloc[i]]
-    lows = [(i, float(low.iloc[i])) for i in range(left, n - right) if is_low.iloc[i]]
+    window = left + right + 1
+
+    def _dedupe(pairs):
+        # پلتو غیرمجاور در یک پنجره (دو سوئینگ هم‌قیمت نزدیک هم) یک‌بار شمرده می‌شود
+        # تا ساختار به‌اشتباه RANGING نشود (هم‌راستا با engine/core/smc.py).
+        out = []
+        for i, p in pairs:
+            if out and p == out[-1][1] and i - out[-1][0] < window:
+                continue
+            out.append((i, p))
+        return out
+
+    highs = _dedupe([(i, float(high.iloc[i])) for i in range(left, n - right) if is_high.iloc[i]])
+    lows = _dedupe([(i, float(low.iloc[i])) for i in range(left, n - right) if is_low.iloc[i]])
     return {"highs": highs, "lows": lows}
 
 
