@@ -10,3 +10,4 @@ out/
 venv/
 .DS_Store
 signals.db*
+data_duka/

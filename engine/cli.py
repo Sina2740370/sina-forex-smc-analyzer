@@ -101,6 +101,42 @@ def cmd_report(args):
     print("\nگزارش ذخیره شد ->", path)
 
 
+def cmd_sweep(args):
+    from .tools.param_sweep import (grid_variants, oat_variants, run_sweep,
+                                    stability_verdict, to_markdown)
+    cfg = EngineConfig()
+    if args.mode == "grid":
+        if not args.set:
+            raise SystemExit("حالت grid به --set name=v1,v2,... نیاز دارد")
+        variants = grid_variants(cfg, args.set)
+    else:
+        variants = oat_variants(cfg, args.pct, all_params=args.all_params,
+                                only=args.params)
+    print(f"{len(variants)} ترکیب × {len(args.symbols)} نماد ...", flush=True)
+    data_map = {}
+    for sym in args.symbols:
+        print(f"> load {sym} ...", flush=True)
+        data_map[sym] = _load(args, sym)
+
+    df = run_sweep(data_map, variants, args.symbols, args.start, args.end,
+                   args.strategy, args.workers)
+    verdicts = stability_verdict(df, oat=(args.mode == "oat"))
+    note = (f"engine.cli sweep --mode {args.mode} --symbols {' '.join(args.symbols)}"
+            + (f" --set {' '.join(args.set)}" if args.set else "")
+            + (f" --pct {args.pct}" if args.mode == "oat" else ""))
+
+    os.makedirs(args.out, exist_ok=True)
+    tag = f"{args.mode}_{cfg.hash()}"
+    csv_path = os.path.join(args.out, f"sweep_{tag}.csv")
+    md_path = os.path.join(args.out, f"sweep_{tag}.md")
+    df.to_csv(csv_path, index=False)
+    md = to_markdown(df, verdicts, note)
+    open(md_path, "w", encoding="utf-8").write(md)
+    print("\n".join(verdicts))
+    print("\nجدول کامل:\n", df.to_string(index=False))
+    print("\nذخیره شد ->", csv_path, "و", md_path)
+
+
 def cmd_scan(args):
     cfg = EngineConfig()
     now = pd.Timestamp.now(tz="UTC")
@@ -124,7 +160,8 @@ def main():
     fp.add_argument("--out", default="data_duka")
     fp.set_defaults(fn=cmd_fetch)
 
-    for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan), ("report", cmd_report)):
+    for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan),
+                     ("report", cmd_report)):
         sp = sub.add_parser(name)
         sp.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
@@ -142,6 +179,29 @@ def main():
         sp.add_argument("--train-days", type=int, default=180)
         sp.add_argument("--test-days", type=int, default=60)
         sp.set_defaults(fn=fn)
+
+    sw = sub.add_parser("sweep", help="سوییپ/حساسیت پارامترها (ضد overfitting)")
+    sw.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
+    sw.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
+    sw.add_argument("--csv-dir", default="data")
+    sw.add_argument("--symbols", nargs="+", default=["EURUSD"])
+    sw.add_argument("--tz-offset", type=float, default=0.0)
+    sw.add_argument("--server-tz", default=None)
+    sw.add_argument("--start", default=None)
+    sw.add_argument("--end", default=None)
+    sw.add_argument("--out", default="out")
+    sw.add_argument("--mode", choices=["oat", "grid"], default="oat")
+    sw.add_argument("--pct", type=float, default=20.0,
+                    help="درصد جابه‌جایی در حالت oat (پیش‌فرض ۲۰)")
+    sw.add_argument("--all-params", action="store_true",
+                    help="همه‌ی پارامترهای عددی (کندتر) به‌جای CORE_PARAMS")
+    sw.add_argument("--params", nargs="*", default=None,
+                    help="حالت oat: فقط این پارامترها سنجیده شوند (اجرای متمرکز)")
+    sw.add_argument("--set", action="append", default=None,
+                    help="حالت grid: name=v1,v2,... (چند بار مجاز)")
+    sw.add_argument("--workers", type=int, default=0,
+                    help="تعداد پروسه‌ی موازی (۰ = تعداد هسته‌ها)")
+    sw.set_defaults(fn=cmd_sweep)
 
     args = p.parse_args()
     args.fn(args)
