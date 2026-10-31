@@ -31,6 +31,17 @@ CSV: خروجی Export Bars متاتریدر با نام `EURUSD_M15.csv` (حد�
 لبه‌ی واقعی باید در ±۲۰٪ پارامترها زنده بماند؛ سیگنالِ «تنها با یک مقدار دقیق سودده» overfit است.
 موازی‌سازی خودکار با ProcessPoolExecutor (با `--workers` کنترل کنید).
 
+## موتور تجربی V4 (ensemble) — تست‌شده و ردّشده (v0.5)
+    python -m engine.cli backtest --source csv --csv-dir data_duka --symbols EURUSD --strategy v4
+`quant_v4.py` سه واریانت را روی ۴ سال M15 واقعی EURUSD آزمود:
+- v4.1 breakout + sweep خام → E[r]=−0.136 (sweep چاقوگیری می‌کرد)
+- v4.2 breakout + پولبک EMA20 → E[r]=−0.147
+- v4.3 breakout + mean-reversion RSI(2) → E[r]=−0.094
+در مقابل SMC با پیکربندی 0.72/0.24: **E[r]=+0.249، PF=1.45**.
+**نتیجه: موتور SMC هسته‌ی اصلی می‌ماند؛ V4 به‌عنوان مرجع آزمایش و پلتفرم ایده‌های بعدی نگه داشته می‌شود**
+(فیلتر رژیم روزانه و صدک ATR آن قابل استفاده در فیلترهای آینده است).
+درس‌ها: M15 فارکس intraday mean-revert است؛ ادامه‌ی روند کوتاه‌مدت و sweep بدون تأیید ساختاری ضرر می‌دهد.
+
 ## دانلود دیتای چندساله بدون MT5 (v0.3)
     pip install dukascopy-python
     python -m engine.cli fetch --symbols XAUUSD EURUSD GBPUSD USDJPY --years 4 --out data_duka

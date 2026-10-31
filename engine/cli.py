@@ -26,9 +26,12 @@ from .strategy.smc_topdown import analyze
 
 
 def _strategy(name: str):
-    """smc پیش‌فرض؛ s1/s2 از engine/strategy/baselines.py (import تنبل)."""
+    """smc پیش‌فرض؛ s1/s2 پایه‌ها؛ v4 موتور ensemble جدید."""
     if name == "smc":
         return analyze
+    if name == "v4":
+        from .strategy.quant_v4 import analyze_v4
+        return analyze_v4
     from .strategy import baselines
     return {"s1": baselines.analyze_s1, "s2": baselines.analyze_s2}[name]
 
@@ -163,7 +166,7 @@ def main():
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan),
                      ("report", cmd_report)):
         sp = sub.add_parser(name)
-        sp.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
+        sp.add_argument("--strategy", choices=["smc", "s1", "s2", "v4"], default="smc")
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
@@ -181,7 +184,7 @@ def main():
         sp.set_defaults(fn=fn)
 
     sw = sub.add_parser("sweep", help="سوییپ/حساسیت پارامترها (ضد overfitting)")
-    sw.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
+    sw.add_argument("--strategy", choices=["smc", "s1", "s2", "v4"], default="smc")
     sw.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
     sw.add_argument("--csv-dir", default="data")
     sw.add_argument("--symbols", nargs="+", default=["EURUSD"])
