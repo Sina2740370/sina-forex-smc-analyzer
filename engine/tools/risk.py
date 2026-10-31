@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 # quote: ارز دوم جفت؛ pip: اندازه‌ی یک پیپ؛ contract: اندازه‌ی لات
+# کراس‌ها (EURJPY و…) به نرخ ارز کوت نسبت به دلار نیاز دارند (cross_rates)
 SPECS = {
     "EURUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
     "GBPUSD": {"pip": 0.0001, "contract": 100_000, "quote": "USD"},
@@ -19,6 +20,10 @@ SPECS = {
     "USDJPY": {"pip": 0.01, "contract": 100_000, "quote": "JPY"},
     "USDCAD": {"pip": 0.0001, "contract": 100_000, "quote": "CAD"},
     "USDCHF": {"pip": 0.0001, "contract": 100_000, "quote": "CHF"},
+    "EURJPY": {"pip": 0.01, "contract": 100_000, "quote": "JPY"},
+    "GBPJPY": {"pip": 0.01, "contract": 100_000, "quote": "JPY"},
+    "AUDJPY": {"pip": 0.01, "contract": 100_000, "quote": "JPY"},
+    "EURGBP": {"pip": 0.0001, "contract": 100_000, "quote": "GBP"},
     "XAUUSD": {"pip": 0.1, "contract": 100, "quote": "USD"},
 }
 
@@ -39,15 +44,25 @@ class SizeResult:
     margin_limited: bool = False         # حجم به‌خاطر سقف مارجین کم شده؟
 
 
-def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] = None) -> float:
-    """زیان یک لات برای حرکت یک واحد قیمت، به دلار."""
+def loss_per_lot_per_unit(symbol: str, price: float, contract: Optional[float] = None,
+                          quote_to_usd: Optional[float] = None) -> float:
+    """زیان یک لات برای حرکت یک واحد قیمت، به دلار.
+
+    برای کراس‌ها (مثل EURJPY) ارزش به ارز کوت است و باید با نرخ ارز کوت به دلار
+    تقسیم شود (مثلاً برای JPY: نرخ USDJPY). قبلاً کراس‌ها با ValueError رد می‌شدند."""
     sp = SPECS[symbol]
     c = contract if contract is not None else sp["contract"]
     if sp["quote"] == "USD":
         return c
     if symbol.startswith("USD"):          # USDJPY/USDCAD/USDCHF: ارزش به ارز دوم است
         return c / price
-    raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
+    # کراس: EURJPY/GBPJPY/AUDJPY/EURGBP — تبدیل ارزش ارز کوت به دلار
+    if not quote_to_usd or quote_to_usd <= 0:
+        raise ValueError(
+            f"محاسبه‌ی {symbol} به نرخ {sp['quote']}USD نیاز دارد؛ "
+            f"cross_rates={{'{sp['quote']}': نرخ}} را بده (مثلاً USDJPY برای جفت‌های ین)"
+        )
+    return c / quote_to_usd
 
 
 def _decimals(step: float) -> int:
@@ -56,25 +71,39 @@ def _decimals(step: float) -> int:
 
 
 def margin_per_lot(symbol: str, price: float, leverage: float,
-                   contract: Optional[float] = None) -> float:
-    """مارجین یک لات به دلار: ارزش اسمی موقعیت ÷ اهرم."""
+                   contract: Optional[float] = None,
+                   quote_to_usd: Optional[float] = None) -> float:
+    """مارجین یک لات به دلار: ارزش اسمی موقعیت ÷ اهرم.
+    برای کراس‌ها ارزش اسمی به ارز کوت است و به دلار تبدیل می‌شود."""
     if symbol not in SPECS:
         raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
     if leverage <= 0:
         raise ValueError("leverage باید مثبت باشد")
-    c = contract if contract is not None else SPECS[symbol]["contract"]
-    notional = c if symbol.startswith("USD") else c * price   # USD-base: ارزش اسمی خودش دلار است
+    sp = SPECS[symbol]
+    c = contract if contract is not None else sp["contract"]
+    if symbol.startswith("USD"):
+        notional = c                                     # USD-base: ارزش اسمی خودش دلار است
+    elif sp["quote"] == "USD":
+        notional = c * price
+    else:                                                # کراس: تبدیل به دلار
+        if not quote_to_usd or quote_to_usd <= 0:
+            raise ValueError(
+                f"محاسبه‌ی مارجین {symbol} به نرخ {sp['quote']}USD نیاز دارد (cross_rates)"
+            )
+        notional = c * price / quote_to_usd
     return notional / leverage
 
 
 def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl: float,
                   tp: Optional[float] = None, lot_step: float = 0.01, min_lot: float = 0.01,
                   max_lot: float = 100.0, contract: Optional[float] = None,
-                  leverage: Optional[float] = None, max_margin_pct: float = 50.0) -> SizeResult:
+                  leverage: Optional[float] = None, max_margin_pct: float = 50.0,
+                  cross_rates: Optional[dict] = None) -> SizeResult:
     """
     حجم معامله برای ریسک درصدی ثابت. همیشه به پایین رُند می‌شود (هرگز ریسک بیشتر از خواسته).
     اگر leverage داده شود، مارجین هم حساب می‌شود و حجم طوری سقف می‌خورد که مارجین از
     max_margin_pct درصد موجودی بیشتر نشود (با SL خیلی نزدیک، حجم ریسکی ممکن است بیش از توان مارجین باشد).
+    cross_rates: برای کراس‌ها، نرخ ارز کوت به دلار (مثلاً {"JPY": 155.0} برای EURJPY).
     """
     if symbol not in SPECS:
         raise ValueError(f"نماد پشتیبانی نمی‌شود: {symbol}")
@@ -83,14 +112,16 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
     dist = abs(entry - sl)
     if dist <= 0:
         raise ValueError("entry و sl نباید برابر باشند")
+    sp = SPECS[symbol]
+    q2u = (cross_rates or {}).get(sp["quote"]) if sp["quote"] != "USD" else None
     risk_amount = balance * risk_pct / 100.0
-    per_lot = loss_per_lot_per_unit(symbol, entry, contract) * dist
+    per_lot = loss_per_lot_per_unit(symbol, entry, contract, quote_to_usd=q2u) * dist
     raw = risk_amount / per_lot
     lots = math.floor(raw / lot_step + 1e-9) * lot_step
     lots = round(min(lots, max_lot), 8)
     margin_limited = False
     if leverage is not None:
-        mpl = margin_per_lot(symbol, entry, leverage, contract)
+        mpl = margin_per_lot(symbol, entry, leverage, contract, quote_to_usd=q2u)
         cap = math.floor((balance * max_margin_pct / 100.0) / mpl / lot_step + 1e-9) * lot_step
         if lots > cap:
             lots, margin_limited = round(cap, 8), True
@@ -114,7 +145,7 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
         notes.append("ریسک واقعی از خواسته بیشتر شد")
     margin = margin_pct = free = None
     if leverage is not None:
-        margin = lots * margin_per_lot(symbol, entry, leverage, contract)
+        margin = lots * margin_per_lot(symbol, entry, leverage, contract, quote_to_usd=q2u)
         margin_pct = margin / balance * 100.0
         free = balance - margin
         if margin_pct > 30 and not margin_limited:

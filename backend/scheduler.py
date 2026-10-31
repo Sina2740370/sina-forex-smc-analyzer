@@ -18,11 +18,10 @@ from .analysis_engine import full_analysis
 from .news_fetcher import fetch_news, is_news_safe
 from .signal_tracker import (
     check_open_signals,
-    is_duplicate_signal,
     signal_gate,
     has_correlated_open_signal,
 )
-from .database import insert_signal
+from .database import insert_signal, get_signals_by_ids
 from .notifier import notify_new_signal, notify_startup
 
 logger = logging.getLogger(__name__)
@@ -34,6 +33,7 @@ _scan_stats = {
     "total_scans": 0,
     "last_scan_time": None,
     "signals_today": 0,
+    "signals_today_date": None,   # برای ریست روزانه (قبلاً هرگز ریست نمی‌شد)
     "errors": 0,
     "timeframes": TIMEFRAMES,
 }
@@ -92,6 +92,16 @@ async def _scan_market_locked():
     logger.info("=" * 55)
     logger.info("🔍 شروع اسکن Top-Down...")
     start_time = datetime.now(timezone.utc)
+
+    # --- گارد تعطیلی آخر هفته: سیگنال روی قیمت مرده صادر نمی‌شود ---
+    from engine.tools.signal_gate import is_market_closed
+    if is_market_closed(start_time):
+        logger.info("🛑 بازار فارکس تعطیل است (آخر هفته)؛ اسکن تحلیل انجام نمی‌شود")
+        try:
+            await check_open_signals_and_notify()
+        except Exception as e:
+            logger.error(f"خطا در رصد سیگنال‌ها: {e}")
+        return
 
     now = time.time()
     if now - _last_startup_notified > STARTUP_COOLDOWN_SECONDS:
@@ -183,6 +193,9 @@ async def _scan_market_locked():
                         reasons=result.get("reasons", []),
                         trend=result.get("htf_trend", "-"),
                         zone=result.get("zone", "-"),
+                        grade=result.get("grade", "-"),
+                        super_grade=result.get("super_grade", "-"),
+                        regime=result.get("regime", "-"),
                         rates={k: v.get("current_price") for k, v in _last_scan.items()},
                     )
                 except Exception as e:
@@ -203,6 +216,10 @@ async def _scan_market_locked():
     elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
     _scan_stats["total_scans"] += 1
     _scan_stats["last_scan_time"] = start_time.isoformat()
+    today = start_time.date().isoformat()
+    if _scan_stats.get("signals_today_date") != today:
+        _scan_stats["signals_today"] = 0
+        _scan_stats["signals_today_date"] = today
     _scan_stats["signals_today"] += signals_created
     _scan_stats["errors"] += errors
 
@@ -221,7 +238,7 @@ async def _scan_market_locked():
 
 
 async def check_open_signals_and_notify():
-    from .database import get_open_signals, get_all_signals
+    from .database import get_open_signals
     from .notifier import notify_signal_closed
 
     before = {s["id"] for s in get_open_signals()}
@@ -232,9 +249,11 @@ async def check_open_signals_and_notify():
     if not closed_ids:
         return
 
-    all_signals = get_all_signals(limit=50)
+    # واکشی هدفمند فقط سیگنال‌های بسته‌شده‌ی همین دور
+    # (قبلاً فقط ۵۰ سیگنال آخر واکشی می‌شد و WIN/LOSS گم می‌شد)
+    all_signals = get_signals_by_ids(list(closed_ids))
     for sig in all_signals:
-        if sig["id"] in closed_ids and sig["status"] in ("WIN", "LOSS", "EXPIRED"):
+        if sig["status"] in ("WIN", "LOSS", "EXPIRED"):
             try:
                 if sig["status"] == "EXPIRED":
                     logger.info(f"⏰ سیگنال منقضی: {sig['symbol']}")

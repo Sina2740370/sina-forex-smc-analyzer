@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from .config import (
     TEST_DURATION_DAYS, MIN_WIN_RATE,
@@ -501,7 +501,8 @@ def serve_sw():
 
 @app.get("/favicon.ico")
 def favicon():
+    """favicon واقعی وجود ندارد؛ ۴۰۴ نویز لاگ می‌سازد → 204 خالی برمی‌گردانیم"""
     ico = FRONTEND_DIR / "static" / "favicon.ico"
     if ico.exists():
         return FileResponse(ico)
-    raise HTTPException(status_code=404)
+    return Response(status_code=204)

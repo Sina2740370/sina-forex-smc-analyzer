@@ -27,7 +27,8 @@ def _utc(*a):
 @pytest.mark.parametrize("trend,sign", [("BULLISH", -1), ("BEARISH", +1)])
 def test_soft_penalty_is_direction_aware(monkeypatch, trend, sign):
     """جریمه soft همیشه به سمت صفر است: BUY منفی، SELL مثبت."""
-    monkeypatch.setattr(ae, "current_session_label", lambda dt=None: "OFF_HOURS")
+    monkeypatch.setattr(ae, "current_session_label", lambda dt=None: "ACTIVE_SESSION")
+    monkeypatch.setattr(ae, "detect_market_regime", lambda df: "TRENDING_LOW_VOL")
     data = _data()
     scores = {}
     for soft in (False, True):

@@ -138,10 +138,14 @@ SCAN_INTERVAL_MINUTES = 15
 
 # ============================================================
 #  وزن لایه‌ها
+#  لایه‌ی خبر به‌عنوان وزن امتیاز حذف شد (قبلاً همیشه صفر بود چون
+#  scheduler هرگز news_sentiment نمی‌فرستاد)؛ خبر فقط به‌عنوان
+#  «فیلتر سخت ایمنی» (news_safe) عمل می‌کند. اخبار مرتبط در reasons گزارش می‌شوند.
+#  اگر در آینده منبع sentiment وصل شد، WEIGHT_NEWS را env کنید.
 # ============================================================
-WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.60))
-WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.15))
-WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.15))
+WEIGHT_TECHNICAL = float(os.getenv("WEIGHT_TECHNICAL", 0.70))
+WEIGHT_FUNDAMENTAL = float(os.getenv("WEIGHT_FUNDAMENTAL", 0.20))
+WEIGHT_NEWS = float(os.getenv("WEIGHT_NEWS", 0.00))
 WEIGHT_MEMORY = float(os.getenv("WEIGHT_MEMORY", 0.10))
 
 # ============================================================

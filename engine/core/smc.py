@@ -56,6 +56,21 @@ def _collapse_adjacent_equal(swings: list) -> list:
     return out
 
 
+def _dedupe_equal_within(swings: list, window: int) -> list:
+    """دو سوئینگ غیرمجاور با قیمت برابر که در یک پنجره‌ی تشخیص جا می‌شوند،
+    در واقع یک پلتو هستند؛ فقط اولی نگه داشته می‌شود.
+    قبلاً هر دو شمرده می‌شدند و ساختار می‌توانست به‌اشتباه RANGING شود.
+    پنجره‌های هم‌پوشان (فاصله < left+right+1) ادغام؛ فاصله بزرگ‌تر دست‌نخورده"""
+    if not swings:
+        return []
+    out = [swings[0]]
+    for s in swings[1:]:
+        if s[1] == out[-1][1] and s[0] - out[-1][0] < window:
+            continue
+        out.append(s)
+    return out
+
+
 def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     """سوئینگ‌ها: لیست (index, price). یک سوئینگ تا `right` کندل بعدش تأیید نمی‌شود."""
     w = left + right + 1
@@ -68,7 +83,8 @@ def swings(df: pd.DataFrame, left: int = 3, right: int = 3):
     il = np.flatnonzero(lo[left:left + len(mn)] == mn) + left
     highs = [(int(i), float(hi[i])) for i in ih]
     lows = [(int(i), float(lo[i])) for i in il]
-    return _collapse_adjacent_equal(highs), _collapse_adjacent_equal(lows)
+    return _dedupe_equal_within(_collapse_adjacent_equal(highs), w), \
+        _dedupe_equal_within(_collapse_adjacent_equal(lows), w)
 
 
 def structure(df: pd.DataFrame) -> str:
@@ -215,12 +231,17 @@ def market_regime(df: pd.DataFrame, period: int = 20) -> str:
     """
     تشخیص رژیم تحلیلی بازار (Trending / Ranging) و نوسان (High Volatility / Low Volatility)
     خروجی: "TRENDING_HIGH_VOL" | "TRENDING_LOW_VOL" | "RANGING_HIGH_VOL" | "RANGING_LOW_VOL"
+
+    روی داده‌ی کوتاه (۲۵ تا ۴۵ کندل) قبلاً ATR(40)=۰ بود و برچسب همیشه LOW_VOL
+    می‌شد؛ الان پنجره‌ی تاریخی به‌اندازه‌ی داده‌ی موجود کوچک می‌شود.
     """
-    if len(df) < period + 5:
+    n = len(df)
+    if n < period + 5:
         return "RANGING_LOW_VOL"
 
     recent_atr = atr(df, period=10)
-    hist_atr = atr(df, period=40)
+    hist_period = min(40, max(10, n // 2))
+    hist_atr = atr(df, period=hist_period) if hist_period >= 10 else 0.0
     high_vol = recent_atr > hist_atr * 1.15 if hist_atr > 0 else False
 
     struct = structure(df)
@@ -235,6 +256,11 @@ def refine_ltf_entry(df_ltf: pd.DataFrame, side: int, htf_entry: float, htf_sl: 
     """
     بهینه‌سازی نقطه ورود و SL بر اساس ستاپ‌های جدید در تایم پایین‌تر (1m/5m)
     خروجی: (entry_refined, sl_refined, is_refined)
+
+    نکته: SL پالیش‌شده باید ریسکِ معنادار داشته باشد؛ قبلاً فاصلهٔ SL فقط
+    ۰.۱ برابرِ ریسک اصلی بود (اغلب کوچک‌تر از اسپرد) و چک‌های min/max ریسک
+    در consumer بعد از refine دوباره اجرا نمی‌شدند. الان بافر SL از ATR تایم
+    پایین‌تر گرفته می‌شود و ریسک پالیش‌شده باید بین ۰.۳ تا ۱ برابر ریسک اصلی باشد.
     """
     if len(df_ltf) < 10:
         return htf_entry, htf_sl, False
@@ -245,15 +271,18 @@ def refine_ltf_entry(df_ltf: pd.DataFrame, side: int, htf_entry: float, htf_sl: 
     if target_fvg:
         fvg_entry = target_fvg["bottom"] if side > 0 else target_fvg["top"]
         risk_orig = abs(htf_entry - htf_sl)
+        atr_ltf = atr(df_ltf, period=14)
+        buf = 0.5 * atr_ltf if atr_ltf > 0 else 0.3 * risk_orig
 
-        # ورود FVG تایید شده اگر نسبت به ورود اصلی ریسک کمتر یا برابری ایجاد کند
         if side > 0 and htf_sl < fvg_entry < htf_entry:
-            refined_sl = target_fvg["bottom"] - abs(htf_entry - htf_sl) * 0.1
-            if abs(fvg_entry - refined_sl) <= risk_orig and refined_sl > htf_sl:
+            refined_sl = target_fvg["bottom"] - buf
+            refined_risk = fvg_entry - refined_sl
+            if 0.3 * risk_orig <= refined_risk <= risk_orig and refined_sl > htf_sl:
                 return round(fvg_entry, 6), round(refined_sl, 6), True
         elif side < 0 and htf_sl > fvg_entry > htf_entry:
-            refined_sl = target_fvg["top"] + abs(htf_entry - htf_sl) * 0.1
-            if abs(fvg_entry - refined_sl) <= risk_orig and refined_sl < htf_sl:
+            refined_sl = target_fvg["top"] + buf
+            refined_risk = refined_sl - fvg_entry
+            if 0.3 * risk_orig <= refined_risk <= risk_orig and refined_sl < htf_sl:
                 return round(fvg_entry, 6), round(refined_sl, 6), True
 
     return htf_entry, htf_sl, False

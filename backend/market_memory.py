@@ -136,17 +136,3 @@ def calculate_memory_score(symbol: str) -> dict:
     return {"score": round(score, 2), "reasons": reasons, "enabled": True}
 
 
-def get_memory_weights() -> dict:
-    """وزن پیشنهادی هر نماد"""
-    perf = get_symbol_performance()
-    total = sum(d["total"] for d in perf.values())
-
-    if total < MIN_TRADES_FOR_MEMORY:
-        return {}
-
-    weights = {}
-    for sym, d in perf.items():
-        if d["total"] >= 3:
-            weights[sym] = round(0.5 + d["win_rate"], 2)
-
-    return weights
