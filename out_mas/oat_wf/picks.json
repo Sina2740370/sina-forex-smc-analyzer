@@ -1,0 +1,58 @@
+{
+  "EURUSD": {
+    "F1": {
+      "best": "g1_lo",
+      "train_E_R": -0.112,
+      "train_trades": 7,
+      "train_PF": 0.83
+    },
+    "F2": {
+      "best": "g1_lo",
+      "train_E_R": -0.112,
+      "train_trades": 7,
+      "train_PF": 0.83
+    }
+  },
+  "GBPUSD": {
+    "F1": {
+      "best": "ext_double",
+      "train_E_R": -0.375,
+      "train_trades": 5,
+      "train_PF": 0.52
+    },
+    "F2": {
+      "best": "ext_double",
+      "train_E_R": -0.375,
+      "train_trades": 5,
+      "train_PF": 0.52
+    }
+  },
+  "USDJPY": {
+    "F1": {
+      "best": "g1_hi",
+      "train_E_R": 0.853,
+      "train_trades": 5,
+      "train_PF": 3.13
+    },
+    "F2": {
+      "best": "g1_hi",
+      "train_E_R": 0.853,
+      "train_trades": 5,
+      "train_PF": 3.13
+    }
+  },
+  "XAUUSD": {
+    "F1": {
+      "best": "baseline",
+      "train_E_R": -0.108,
+      "train_trades": 7,
+      "train_PF": 0.84
+    },
+    "F2": {
+      "best": "baseline",
+      "train_E_R": -0.108,
+      "train_trades": 7,
+      "train_PF": 0.84
+    }
+  }
+}

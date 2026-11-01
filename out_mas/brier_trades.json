@@ -1,0 +1,354 @@
+[
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-10 08:00:00+00:00",
+    "score":67.4621037093,
+    "confidence":40.3,
+    "win":false,
+    "r":-1.004
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-10 16:00:00+00:00",
+    "score":66.6922191695,
+    "confidence":39.8,
+    "win":true,
+    "r":2.111
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-13 08:00:00+00:00",
+    "score":68.8183046094,
+    "confidence":40.9,
+    "win":false,
+    "r":-0.995
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2023-07-13 16:00:00+00:00",
+    "score":66.2222222222,
+    "confidence":41.2,
+    "win":true,
+    "r":2.073
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2023-07-18 16:00:00+00:00",
+    "score":66.1777777778,
+    "confidence":41.4,
+    "win":false,
+    "r":-1.008
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-07-21 16:00:00+00:00",
+    "score":65.6566745542,
+    "confidence":28.0,
+    "win":false,
+    "r":-0.985
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-07-24 08:00:00+00:00",
+    "score":65.9908303696,
+    "confidence":28.1,
+    "win":false,
+    "r":-0.988
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-07-24 16:00:00+00:00",
+    "score":65.4256973967,
+    "confidence":27.9,
+    "win":false,
+    "r":-0.986
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2023-11-28 16:00:00+00:00",
+    "score":65.1839232818,
+    "confidence":42.8,
+    "win":true,
+    "r":2.187
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-11-28 16:00:00+00:00",
+    "score":65.2498313374,
+    "confidence":45.1,
+    "win":false,
+    "r":-0.977
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2023-12-04 08:00:00+00:00",
+    "score":66.07,
+    "confidence":43.8,
+    "win":false,
+    "r":-1.001
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2023-12-26 08:00:00+00:00",
+    "score":65.2291039419,
+    "confidence":42.7,
+    "win":false,
+    "r":-1.001
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2023-12-28 16:00:00+00:00",
+    "score":65.5833906926,
+    "confidence":43.0,
+    "win":false,
+    "r":-1.003
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-03-07 16:00:00+00:00",
+    "score":65.1691177922,
+    "confidence":44.1,
+    "win":true,
+    "r":2.167
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-03-08 16:00:00+00:00",
+    "score":66.78,
+    "confidence":45.3,
+    "win":false,
+    "r":-0.992
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-03-13 08:00:00+00:00",
+    "score":65.06,
+    "confidence":51.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-06-24 00:00:00+00:00",
+    "score":33.8900963775,
+    "confidence":39.5,
+    "win":false,
+    "r":-0.995
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-06-27 00:00:00+00:00",
+    "score":32.136749512,
+    "confidence":36.2,
+    "win":false,
+    "r":-1.002
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-12 08:00:00+00:00",
+    "score":65.43,
+    "confidence":42.4,
+    "win":true,
+    "r":2.057
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-12 16:00:00+00:00",
+    "score":67.53,
+    "confidence":46.4,
+    "win":false,
+    "r":-0.997
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-16 08:00:00+00:00",
+    "score":68.15,
+    "confidence":44.4,
+    "win":false,
+    "r":-1.007
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-16 16:00:00+00:00",
+    "score":66.65,
+    "confidence":47.4,
+    "win":true,
+    "r":2.036
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-20 16:00:00+00:00",
+    "score":66.6059686744,
+    "confidence":44.4,
+    "win":false,
+    "r":-1.011
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-21 08:00:00+00:00",
+    "score":65.4390242425,
+    "confidence":48.0,
+    "win":true,
+    "r":2.014
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-21 16:00:00+00:00",
+    "score":67.2748839359,
+    "confidence":44.9,
+    "win":true,
+    "r":2.096
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-23 16:00:00+00:00",
+    "score":67.78,
+    "confidence":46.1,
+    "win":false,
+    "r":-1.023
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-09-16 16:00:00+00:00",
+    "score":66.0101975167,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.004
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-09-18 08:00:00+00:00",
+    "score":65.278178894,
+    "confidence":43.5,
+    "win":true,
+    "r":2.162
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-09-19 08:00:00+00:00",
+    "score":66.1611719728,
+    "confidence":44.1,
+    "win":true,
+    "r":2.115
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-09-23 16:00:00+00:00",
+    "score":66.0746234114,
+    "confidence":44.1,
+    "win":true,
+    "r":2.096
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-09-25 08:00:00+00:00",
+    "score":66.6914367278,
+    "confidence":42.3,
+    "win":false,
+    "r":-1.003
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-01-13 00:00:00+00:00",
+    "score":34.3,
+    "confidence":43.2,
+    "win":true,
+    "r":2.113
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-01-14 00:00:00+00:00",
+    "score":32.42,
+    "confidence":40.1,
+    "win":false,
+    "r":-1.01
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-01-20 00:00:00+00:00",
+    "score":34.5850408756,
+    "confidence":38.1,
+    "win":false,
+    "r":-1.01
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-14 08:00:00+00:00",
+    "score":66.6843240926,
+    "confidence":44.6,
+    "win":true,
+    "r":2.08
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-21 08:00:00+00:00",
+    "score":67.2234236143,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.008
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-22 08:00:00+00:00",
+    "score":67.47,
+    "confidence":45.7,
+    "win":false,
+    "r":-1.013
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-24 08:00:00+00:00",
+    "score":65.2520572839,
+    "confidence":37.8,
+    "win":true,
+    "r":2.108
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-05-22 08:00:00+00:00",
+    "score":65.6977717758,
+    "confidence":44.1,
+    "win":false,
+    "r":-0.988
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-05-22 16:00:00+00:00",
+    "score":65.4390022064,
+    "confidence":44.0,
+    "win":true,
+    "r":2.101
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-05-23 16:00:00+00:00",
+    "score":66.2259019491,
+    "confidence":44.5,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-05-26 08:00:00+00:00",
+    "score":65.0360852969,
+    "confidence":41.2,
+    "win":false,
+    "r":-1.004
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-05-27 08:00:00+00:00",
+    "score":65.1809582942,
+    "confidence":41.3,
+    "win":false,
+    "r":-1.003
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-06-05 16:00:00+00:00",
+    "score":67.9662028233,
+    "confidence":48.1,
+    "win":false,
+    "r":-0.989
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "n_trades": 44,
+  "base_rate": 0.364,
+  "logistic_std": {
+    "a": -0.8936,
+    "b_z": 0.6386,
+    "mu": 63.76,
+    "sd": 8.93
+  },
+  "split": {
+    "train_n": 26,
+    "test_n": 18
+  },
+  "brier_model_test": 0.278,
+  "brier_base_test": 0.2656,
+  "skill": -0.047,
+  "p_test_range": [
+    0.04,
+    0.36
+  ],
+  "score_win_mean": 64.0,
+  "score_loss_mean": 61.7,
+  "verdict": "جدایی score برد/باخت ضعیف است و روی test کالیبره نشد — confidence فقط برای رتبه‌بندی استفاده شود، نه احتمال"
+}
