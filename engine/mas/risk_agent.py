@@ -23,14 +23,6 @@ RISK_RULES = {
     "equity_default": 10_000.0,
 }
 
-# pip و ارزش هر پیپ در یک لات استاندارد (100k واحد). quote در USD.
-# USDJPY: پیپ 0.01 و ارزش = 1000 JPY → /نرخ → دلار.
-SYM_SPEC = {
-    "EURUSD": {"pip": 0.0001, "pip_value_quote_per_lot": 10.0, "quote_is_usd": True},
-    "GBPUSD": {"pip": 0.0001, "pip_value_quote_per_lot": 10.0, "quote_is_usd": True},
-    "XAUUSD": {"pip": 0.1, "pip_value_quote_per_lot": 1.0, "quote_is_usd": True},  # 100oz
-    "USDJPY": {"pip": 0.01, "pip_value_quote_per_lot": 1000.0, "quote_is_usd": False},
-}
 
 
 @dataclass
@@ -52,6 +44,14 @@ class RiskVerdict:
     risk_amount: float = 0.0
     gates: list = field(default_factory=list)
     rejection_reasons: list = field(default_factory=list)
+
+
+# مشخصات نمادها به engine/mas/symbols.py منتقل شد (تک منبع حقیقت برای چندارزی).
+# SYM_SPEC اینجا برای سازگاری قبلی به شکل دیکشنری ساده نگه داشته می‌شود.
+from .symbols import SYM_SPECS as _SYM_SPECS
+
+SYM_SPEC = {sym: {"pip": s.pip, "pip_value_quote_per_lot": s.pip_value_quote_per_lot,
+                  "quote_is_usd": s.quote_is_usd} for sym, s in _SYM_SPECS.items()}
 
 
 def _pip_value_usd(symbol: str, price: float) -> float:

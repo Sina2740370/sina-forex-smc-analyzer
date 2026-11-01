@@ -180,6 +180,43 @@ def _mas_csv_path(csv_dir: str, symbol: str) -> str:
     raise SystemExit(f"فایل {symbol}_M15.csv در {csv_dir} پیدا نشد")
 
 
+def cmd_mas_portfolio(args):
+    """فاز ۴: تحلیل چندجفتی هم‌زمان با AccountState مشترک + گزارش ترکیبی."""
+    from .mas.portfolio import run_portfolio, save_portfolio, portfolio_markdown
+    from .mas.symbols import supported_symbols
+
+    symbols = args.symbols or supported_symbols(args.csv_dir)
+    now = pd.Timestamp(args.now, tz="UTC") if args.now else None
+    p = run_portfolio(args.csv_dir, now=now, symbols=symbols, equity=args.equity)
+    jp, mp = save_portfolio(p, args.out)
+    print(portfolio_markdown(p) if len(symbols) <= 2 else
+          "\n".join(portfolio_markdown(p).splitlines()[:12]))
+    print("\nذخیره شد ->", jp, "و", mp)
+
+
+def cmd_mas_backtest(args):
+    """فاز ۲: بک‌تست walk-forward سیگنال MAS روی نماد(ها)."""
+    import json
+    from .mas.backtest import backtest_mas
+    from .mas.symbols import supported_symbols
+
+    symbols = args.symbols or supported_symbols(args.csv_dir)
+    os.makedirs(args.out, exist_ok=True)
+    all_summaries = {}
+    for sym in symbols:
+        df = load_mt5_csv(_mas_csv_path(args.csv_dir, sym))
+        r = backtest_mas(df, sym, start=args.start, end=args.end,
+                         step_hours=args.step_hours)
+        all_summaries[sym] = r.summary()
+        s = all_summaries[sym]
+        print(f"== {sym}: {s['trades']} معامله | برد {s['win_rate_pct']}% | "
+              f"PF={s['profit_factor']} | E[R]={s['expectancy_R']} | "
+              f"PnL={s['total_pnl_usd']} USD | MDD={s['max_drawdown_pct']}%")
+    with open(os.path.join(args.out, "bt_all.json"), "w", encoding="utf-8") as f:
+        json.dump(all_summaries, f, ensure_ascii=False, indent=2, default=str)
+    print("ذخیره شد ->", os.path.join(args.out, "bt_all.json"))
+
+
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -241,6 +278,25 @@ def main():
     ma.add_argument("--spread", type=float, default=0.0, help="اسپرد واقعی بر حسب قیمت")
     ma.add_argument("--out", default="out")
     ma.set_defaults(fn=cmd_mas_analyze)
+
+    mp = sub.add_parser("mas-portfolio", help="فاز ۴: تحلیل چندجفتی با ریسک مشترک")
+    mp.add_argument("--symbols", nargs="*", default=None,
+                    help="نمادها؛ خالی = همه نمادهایی که داده دارند")
+    mp.add_argument("--csv-dir", default="data_duka")
+    mp.add_argument("--now", default=None, help="نقطه زمانی UTC؛ خالی = آخرین کندل هر نماد")
+    mp.add_argument("--equity", type=float, default=10_000.0)
+    mp.add_argument("--out", default="out_mas")
+    mp.set_defaults(fn=cmd_mas_portfolio)
+
+    mb = sub.add_parser("mas-backtest", help="فاز ۲: بک‌تست سیگنال MAS (هر سیگنال = یک معامله)")
+    mb.add_argument("--symbols", nargs="*", default=None,
+                    help="نمادها؛ خالی = همه نمادهایی که داده دارند")
+    mb.add_argument("--csv-dir", default="data_duka")
+    mb.add_argument("--start", default=None)
+    mb.add_argument("--end", default=None)
+    mb.add_argument("--step-hours", type=int, default=8)
+    mb.add_argument("--out", default="out_mas/backtest")
+    mb.set_defaults(fn=cmd_mas_backtest)
 
     args = p.parse_args()
     args.fn(args)

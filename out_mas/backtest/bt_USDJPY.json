@@ -1,0 +1,157 @@
+{
+  "summary": {
+    "symbol": "USDJPY",
+    "points": 3630,
+    "signals": 7,
+    "trades": 7,
+    "wins": 3,
+    "losses": 4,
+    "win_rate_pct": 42.9,
+    "profit_factor": 1.53,
+    "expectancy_R": 0.326,
+    "total_pnl_usd": 221.83,
+    "max_drawdown_pct": 2.99,
+    "equity_end": 10221.83,
+    "by_regime": {
+      "strong_trend": {
+        "n": 7,
+        "wins": 3,
+        "pnl": 221.83,
+        "r_sum": 2.28
+      }
+    },
+    "by_session": {
+      "London": {
+        "n": 1,
+        "wins": 0,
+        "pnl": -100.65,
+        "r_sum": -1.01
+      },
+      "NewYork": {
+        "n": 4,
+        "wins": 3,
+        "pnl": 531.82,
+        "r_sum": 5.29
+      },
+      "Asia": {
+        "n": 2,
+        "wins": 0,
+        "pnl": -209.34,
+        "r_sum": -2.0
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3405,
+      "G5": 198,
+      "G2": 3
+    },
+    "elapsed_sec": 225.0
+  },
+  "trades": [
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-10 08:00:00+00:00",
+      "exit_time": "2023-08-10 12:30:00+00:00",
+      "entry": "143.82899999999998",
+      "sl": "143.57940205972295",
+      "tp2": "144.34611546860947",
+      "lots": "0.58",
+      "pnl_usd": "-100.65202800594868",
+      "r_multiple": "-1.0065202800594868",
+      "bars_held": "18",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-10 16:00:00+00:00",
+      "exit_time": "2023-08-14 13:30:00+00:00",
+      "entry": "144.46099999999998",
+      "sl": "143.9682996199994",
+      "tp2": "145.51294083600126",
+      "lots": "0.29",
+      "pnl_usd": "211.17314876705194",
+      "r_multiple": "2.133202604499565",
+      "bars_held": "182",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-14 16:00:00+00:00",
+      "exit_time": "2023-08-16 13:15:00+00:00",
+      "entry": "145.237",
+      "sl": "144.9268416624984",
+      "tp2": "145.88734834250354",
+      "lots": "0.47",
+      "pnl_usd": "210.45857527810938",
+      "r_multiple": "2.0815798984480676",
+      "bars_held": "181",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-16 16:00:00+00:00",
+      "exit_time": "2023-08-16 19:30:00+00:00",
+      "entry": "145.84",
+      "sl": "145.5791288788712",
+      "tp2": "146.38191646648343",
+      "lots": "0.58",
+      "pnl_usd": "215.51806812972328",
+      "r_multiple": "2.08815514105149",
+      "bars_held": "14",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-17 00:00:00+00:00",
+      "exit_time": "2023-08-17 08:15:00+00:00",
+      "entry": "146.507",
+      "sl": "146.1379338408869",
+      "tp2": "147.2869455500489",
+      "lots": "0.42",
+      "pnl_usd": "-105.80230762182649",
+      "r_multiple": "-1.0041506199680919",
+      "bars_held": "33",
+      "regime": "strong_trend",
+      "session": "Asia"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-17 16:00:00+00:00",
+      "exit_time": "2023-08-17 23:15:00+00:00",
+      "entry": "146.148",
+      "sl": "145.59820351425546",
+      "tp2": "147.325552268638",
+      "lots": "0.28",
+      "pnl_usd": "-105.33364535160953",
+      "r_multiple": "-1.0098429753837175",
+      "bars_held": "29",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-08-18 00:00:00+00:00",
+      "exit_time": "2023-08-18 01:00:00+00:00",
+      "entry": "145.78199999999998",
+      "sl": "145.4675478075899",
+      "tp2": "146.44179482330216",
+      "lots": "0.48",
+      "pnl_usd": "-103.53613776518021",
+      "r_multiple": "-1.0027361719462353",
+      "bars_held": "4",
+      "regime": "strong_trend",
+      "session": "Asia"
+    }
+  ]
+}

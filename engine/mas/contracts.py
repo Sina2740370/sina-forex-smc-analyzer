@@ -96,6 +96,9 @@ class Signal:
     gate_results: list = field(default_factory=list)
     config_hash: str = ""
     missing_data: list = field(default_factory=list)
+    # کاندید عددی معامله (برای بک‌تست/پورتفوی)؛ در to_json منتشر نمی‌شود چون
+    # سطوح اجرایی همان entry/SL/TP فرمت‌شده بالای همین کلاس‌اند.
+    cand: dict = field(default_factory=dict)
 
     def fingerprint(self, inputs_hash: str = "") -> str:
         payload = json.dumps({

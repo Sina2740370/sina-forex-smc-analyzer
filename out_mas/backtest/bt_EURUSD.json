@@ -1,0 +1,136 @@
+{
+  "summary": {
+    "symbol": "EURUSD",
+    "points": 3630,
+    "signals": 6,
+    "trades": 6,
+    "wins": 1,
+    "losses": 5,
+    "win_rate_pct": 16.7,
+    "profit_factor": 0.43,
+    "expectancy_R": -0.469,
+    "total_pnl_usd": -282.48,
+    "max_drawdown_pct": 2.98,
+    "equity_end": 9717.52,
+    "by_regime": {
+      "strong_trend": {
+        "n": 6,
+        "wins": 1,
+        "pnl": -282.48,
+        "r_sum": -2.82
+      }
+    },
+    "by_session": {
+      "London": {
+        "n": 3,
+        "wins": 0,
+        "pnl": -300.09,
+        "r_sum": -3.02
+      },
+      "NewYork": {
+        "n": 3,
+        "wins": 1,
+        "pnl": 17.61,
+        "r_sum": 0.2
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3307,
+      "G5": 287,
+      "G2": 10
+    },
+    "elapsed_sec": 266.7
+  },
+  "trades": [
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-11 08:00:00+00:00",
+      "exit_time": "2023-07-11 11:30:00+00:00",
+      "entry": "1.10114",
+      "sl": "1.0993730395851746",
+      "tp2": "1.1047713129126155",
+      "lots": "0.57",
+      "pnl_usd": "-100.71674364504666",
+      "r_multiple": "-1.0071674364504666",
+      "bars_held": "14",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-12 08:00:00+00:00",
+      "exit_time": "2023-07-12 11:45:00+00:00",
+      "entry": "1.10304",
+      "sl": "1.1014617652246843",
+      "tp2": "1.1062561165056943",
+      "lots": "0.63",
+      "pnl_usd": "-99.42879084488987",
+      "r_multiple": "-1.0044039378412621",
+      "bars_held": "15",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-12 16:00:00+00:00",
+      "exit_time": "2023-07-17 08:30:00+00:00",
+      "entry": "1.1127900000000002",
+      "sl": "1.107212599368995",
+      "tp2": "1.1248042813882113",
+      "lots": "0.18",
+      "pnl_usd": "216.25706498780062",
+      "r_multiple": "2.206737515836618",
+      "bars_held": "258",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-17 16:00:00+00:00",
+      "exit_time": "2023-07-19 06:30:00+00:00",
+      "entry": "1.1235600000000001",
+      "sl": "1.1202031057939803",
+      "tp2": "1.1306891672532435",
+      "lots": "0.3",
+      "pnl_usd": "-100.70682618059433",
+      "r_multiple": "-1.0054483306615953",
+      "bars_held": "154",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-19 08:00:00+00:00",
+      "exit_time": "2023-07-19 14:00:00+00:00",
+      "entry": "1.12257",
+      "sl": "1.1194468228326155",
+      "tp2": "1.1291849897682458",
+      "lots": "0.32",
+      "pnl_usd": "-99.94166935630489",
+      "r_multiple": "-1.0079434207338935",
+      "bars_held": "24",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-19 16:00:00+00:00",
+      "exit_time": "2023-07-20 14:15:00+00:00",
+      "entry": "1.1186900000000002",
+      "sl": "1.1161786803319296",
+      "tp2": "1.1239589032697552",
+      "lots": "0.39",
+      "pnl_usd": "-97.94146705475383",
+      "r_multiple": "-0.9978282909925232",
+      "bars_held": "89",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    }
+  ]
+}

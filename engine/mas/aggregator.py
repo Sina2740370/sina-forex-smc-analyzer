@@ -16,12 +16,16 @@ from .weights import (DEFAULT, HIGH_VOL_RISK_DISCOUNT, get_threshold, get_weight
 
 
 def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
-                spread_price: float = 0.0, acct: AccountState | None = None,
+                spread_price: float | None = None, acct: AccountState | None = None,
                 top: dict | None = None) -> Signal:
-    """تحلیل چندایجنتی در یک نقطه زمانی (بدون lookahead: فقط داده ≤ now)."""
+    """تحلیل چندایجنتی در یک نقطه زمانی (بدون lookahead: فقط داده ≤ now).
+    spread_price خالی = اسپرد معمول نماد از engine/mas/symbols.py."""
     now = pd.Timestamp(now)
     if now.tzinfo is None:
         now = now.tz_localize("UTC")
+    if spread_price is None:
+        from .symbols import get_spec
+        spread_price = get_spec(symbol).spread_price()
 
     # --- A1: داده (فقط گذشته) ---
     past = df15[df15["time"] <= now]
@@ -126,6 +130,7 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     sig.gate_results.append(GateResult("G4", ok4, f"RR={rr:.2f}, SL_dist/cand={cand['risk_atr1h']:.2f}×ATR1h"))
     if not ok4:
         return _finish_wait(sig, "G4: نسبت ریسک/ریوارد کمتر از 1:2", reports, warnings, missing)
+    sig.cand = cand
 
     # G5: Risk Agent
     verdict = evaluate_risk(symbol, direction, cand["entry"], cand["sl"], cand["tp2"],
@@ -143,8 +148,9 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     sig.gate_results.append(GateResult("G6", True, "بدون داده تقویم؛ هشدار ثبت شد"))
 
     # --- سیگنال نهایی ---
-    pip = {"EURUSD": 0.0001, "GBPUSD": 0.0001, "XAUUSD": 0.1, "USDJPY": 0.01}[symbol]
-    f = lambda x: f"{x:.5f}" if pip == 0.0001 else f"{x:.2f}"
+    from .symbols import get_spec
+    spec = get_spec(symbol)
+    f = lambda x: spec.fmt(x)
     sig.entry_zone = f(cand["entry"])
     sig.entry_trigger = f"بسته‌شدن M15 {'بالای' if direction == BUY else 'زیر'} {f(cand['entry'])}"
     sig.stop_loss = f(cand["sl"])

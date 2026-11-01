@@ -1,0 +1,232 @@
+{
+  "summary": {
+    "symbol": "GBPUSD",
+    "points": 3630,
+    "signals": 12,
+    "trades": 12,
+    "wins": 5,
+    "losses": 7,
+    "win_rate_pct": 41.7,
+    "profit_factor": 1.46,
+    "expectancy_R": 0.281,
+    "total_pnl_usd": 327.95,
+    "max_drawdown_pct": 2.96,
+    "equity_end": 10327.95,
+    "by_regime": {
+      "strong_trend": {
+        "n": 12,
+        "wins": 5,
+        "pnl": 327.97,
+        "r_sum": 3.36
+      }
+    },
+    "by_session": {
+      "Asia": {
+        "n": 2,
+        "wins": 1,
+        "pnl": 101.08,
+        "r_sum": 1.03
+      },
+      "London": {
+        "n": 4,
+        "wins": 1,
+        "pnl": -99.03,
+        "r_sum": -1.0
+      },
+      "NewYork": {
+        "n": 6,
+        "wins": 3,
+        "pnl": 325.92,
+        "r_sum": 3.33
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3361,
+      "G5": 208,
+      "G2": 3
+    },
+    "elapsed_sec": 225.9
+  },
+  "trades": [
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-10 00:00:00+00:00",
+      "exit_time": "2023-07-10 05:30:00+00:00",
+      "entry": "1.28292",
+      "sl": "1.2801937123662142",
+      "tp2": "1.2885658327943288",
+      "lots": "0.37",
+      "pnl_usd": "-100.87264245007853",
+      "r_multiple": "-1.0087264245007852",
+      "bars_held": "22",
+      "regime": "strong_trend",
+      "session": "Asia"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-10 08:00:00+00:00",
+      "exit_time": "2023-07-10 10:30:00+00:00",
+      "entry": "1.28159",
+      "sl": "1.2790160555178507",
+      "tp2": "1.2869006778607284",
+      "lots": "0.38",
+      "pnl_usd": "-97.80989032167398",
+      "r_multiple": "-0.9880657838700881",
+      "bars_held": "10",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-10 16:00:00+00:00",
+      "exit_time": "2023-07-13 02:45:00+00:00",
+      "entry": "1.2840200000000002",
+      "sl": "1.2759435198440248",
+      "tp2": "1.3014362563431459",
+      "lots": "0.12",
+      "pnl_usd": "208.99507611774834",
+      "r_multiple": "2.1323161586852555",
+      "bars_held": "235",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-13 08:00:00+00:00",
+      "exit_time": "2023-07-19 06:00:00+00:00",
+      "entry": "1.3043900000000002",
+      "sl": "1.2981038004551766",
+      "tp2": "1.317867638998612",
+      "lots": "0.16",
+      "pnl_usd": "-100.57919271717708",
+      "r_multiple": "-1.0047557684303632",
+      "bars_held": "376",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-11-27 00:00:00+00:00",
+      "exit_time": "2023-11-27 12:15:00+00:00",
+      "entry": "1.25998",
+      "sl": "1.2578668978870151",
+      "tp2": "1.264276824648567",
+      "lots": "0.47",
+      "pnl_usd": "201.95075848264165",
+      "r_multiple": "2.037903052858904",
+      "bars_held": "49",
+      "regime": "strong_trend",
+      "session": "Asia"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-11-27 16:00:00+00:00",
+      "exit_time": "2023-11-28 14:45:00+00:00",
+      "entry": "1.26119",
+      "sl": "1.2587603496311308",
+      "tp2": "1.2661832308115122",
+      "lots": "0.42",
+      "pnl_usd": "209.71569408351027",
+      "r_multiple": "2.0739937266685295",
+      "bars_held": "91",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2023-11-28 16:00:00+00:00",
+      "exit_time": "2023-11-30 14:30:00+00:00",
+      "entry": "1.26894",
+      "sl": "1.260792819931628",
+      "tp2": "1.286511796150418",
+      "lots": "0.13",
+      "pnl_usd": "-105.91334088883464",
+      "r_multiple": "-1.0261528756598437",
+      "bars_held": "186",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2024-03-07 08:00:00+00:00",
+      "exit_time": "2024-03-07 15:15:00+00:00",
+      "entry": "1.2737500000000002",
+      "sl": "1.271938007310586",
+      "tp2": "1.2773843839167114",
+      "lots": "0.56",
+      "pnl_usd": "203.52549933582867",
+      "r_multiple": "1.9923231271150152",
+      "bars_held": "29",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2024-03-07 16:00:00+00:00",
+      "exit_time": "2024-03-08 13:30:00+00:00",
+      "entry": "1.27872",
+      "sl": "1.2743162720519103",
+      "tp2": "1.2880562014857972",
+      "lots": "0.24",
+      "pnl_usd": "224.06883565913205",
+      "r_multiple": "2.1505766236189285",
+      "bars_held": "86",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2024-03-08 16:00:00+00:00",
+      "exit_time": "2024-03-11 13:00:00+00:00",
+      "entry": "1.2863200000000001",
+      "sl": "1.2823011758858667",
+      "tp2": "1.2948094130510936",
+      "lots": "0.26",
+      "pnl_usd": "-104.48942696746988",
+      "r_multiple": "-0.9817592195106383",
+      "bars_held": "88",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2024-03-11 16:00:00+00:00",
+      "exit_time": "2024-03-12 08:15:00+00:00",
+      "entry": "1.28072",
+      "sl": "1.2784053274230056",
+      "tp2": "1.2854602796693877",
+      "lots": "0.46",
+      "pnl_usd": "-106.47493854174562",
+      "r_multiple": "-1.0103336850262072",
+      "bars_held": "65",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "entry_time": "2024-03-13 08:00:00+00:00",
+      "exit_time": "2024-03-13 10:00:00+00:00",
+      "entry": "1.2794",
+      "sl": "1.2774345097898425",
+      "tp2": "1.2833720784623466",
+      "lots": "0.53",
+      "pnl_usd": "-104.17098113835132",
+      "r_multiple": "-0.9985603766929804",
+      "bars_held": "8",
+      "regime": "strong_trend",
+      "session": "London"
+    }
+  ]
+}
