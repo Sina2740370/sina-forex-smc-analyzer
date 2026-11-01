@@ -1,0 +1,105 @@
+{
+  "summary": {
+    "symbol": "XAUUSD",
+    "points": 3630,
+    "signals": 4,
+    "trades": 4,
+    "wins": 1,
+    "losses": 3,
+    "win_rate_pct": 25.0,
+    "profit_factor": 0.72,
+    "expectancy_R": -0.205,
+    "total_pnl_usd": -85.38,
+    "max_drawdown_pct": 2.98,
+    "equity_end": 9914.62,
+    "by_regime": {
+      "strong_trend": {
+        "n": 4,
+        "wins": 1,
+        "pnl": -85.38,
+        "r_sum": -0.81
+      }
+    },
+    "by_session": {
+      "NewYork": {
+        "n": 2,
+        "wins": 1,
+        "pnl": 118.24,
+        "r_sum": 1.19
+      },
+      "London": {
+        "n": 2,
+        "wins": 0,
+        "pnl": -203.62,
+        "r_sum": -2.0
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3517,
+      "G5": 94
+    },
+    "elapsed_sec": 287.5
+  },
+  "trades": [
+    {
+      "symbol": "XAUUSD",
+      "direction": "BUY",
+      "entry_time": "2023-11-28 16:00:00+00:00",
+      "exit_time": "2023-12-03 23:15:00+00:00",
+      "entry": "2034.555",
+      "sl": "2011.0708003467855",
+      "tp2": "2085.420239237072",
+      "lots": "0.43",
+      "pnl_usd": "218.7205287194098",
+      "r_multiple": "2.187205287194098",
+      "bars_held": "301",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "BUY",
+      "entry_time": "2023-12-04 08:00:00+00:00",
+      "exit_time": "2023-12-04 14:15:00+00:00",
+      "entry": "2063.425",
+      "sl": "2045.7808388384246",
+      "tp2": "2101.4421545554665",
+      "lots": "0.58",
+      "pnl_usd": "-102.33613473713812",
+      "r_multiple": "-1.0014574177806845",
+      "bars_held": "25",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "BUY",
+      "entry_time": "2023-12-26 08:00:00+00:00",
+      "exit_time": "2023-12-26 14:30:00+00:00",
+      "entry": "2063.375",
+      "sl": "2056.964755279873",
+      "tp2": "2076.6775383842796",
+      "lots": "1.58",
+      "pnl_usd": "-101.2818665780088",
+      "r_multiple": "-1.001166648414984",
+      "bars_held": "26",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "XAUUSD",
+      "direction": "BUY",
+      "entry_time": "2023-12-28 16:00:00+00:00",
+      "exit_time": "2023-12-28 19:30:00+00:00",
+      "entry": "2075.235",
+      "sl": "2067.6227615832368",
+      "tp2": "2091.1819245168795",
+      "lots": "1.32",
+      "pnl_usd": "-100.48154710127656",
+      "r_multiple": "-1.0033002340847688",
+      "bars_held": "14",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    }
+  ]
+}

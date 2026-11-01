@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-01T09:17:37.315791+00:00",
+  "generated_at_utc": "2026-11-01T12:48:32.248442+00:00",
   "analysis_point": "آخرین کندل موجود هر نماد",
   "equity_usd": 10000.0,
   "symbols": {
@@ -9,8 +9,8 @@
       "session": "NewYork",
       "market_regime": "transition",
       "signal": "WAIT",
-      "final_score": 41.0,
-      "confidence": 24.4,
+      "final_score": 38.4,
+      "confidence": 33.4,
       "entry_zone": "",
       "entry_trigger": "",
       "stop_loss": "",
@@ -32,14 +32,14 @@
           "confidence": 50.0
         },
         "fundamental": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "SELL",
+          "score": 30.9,
+          "confidence": 49.0
         },
         "sentiment": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "SELL",
+          "score": 30.0,
+          "confidence": 25.0
         },
         "liquidity": {
           "direction": "NEUTRAL",
@@ -54,14 +54,9 @@
       },
       "risk_approved": false,
       "warnings": [],
-      "missing_data": [
-        "fundamental: نرخ بهره/CPI/NFP/GDP/PMI",
-        "fundamental: تقویم اقتصادی بلادرنگ",
-        "sentiment: COT CFTC",
-        "sentiment: سنتیمنت خرده‌فروشی"
-      ],
+      "missing_data": [],
       "wait_reason": "G1: امتیاز نهایی زیر آستانه رژیم | برای بازبینی مجدد: بررسی مجدد اگر امتیاز به 70 برسد",
-      "fingerprint": "sig_a0a1518b5f36"
+      "fingerprint": "sig_e9be660ce73e"
     },
     "GBPUSD": {
       "symbol": "GBPUSD",
@@ -69,8 +64,8 @@
       "session": "NewYork",
       "market_regime": "transition",
       "signal": "WAIT",
-      "final_score": 46.3,
-      "confidence": 15.2,
+      "final_score": 46.1,
+      "confidence": 22.0,
       "entry_zone": "",
       "entry_trigger": "",
       "stop_loss": "",
@@ -93,13 +88,13 @@
         },
         "fundamental": {
           "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "score": 54.3,
+          "confidence": 49.0
         },
         "sentiment": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "SELL",
+          "score": 32.0,
+          "confidence": 25.0
         },
         "liquidity": {
           "direction": "NEUTRAL",
@@ -114,14 +109,9 @@
       },
       "risk_approved": false,
       "warnings": [],
-      "missing_data": [
-        "fundamental: نرخ بهره/CPI/NFP/GDP/PMI",
-        "fundamental: تقویم اقتصادی بلادرنگ",
-        "sentiment: COT CFTC",
-        "sentiment: سنتیمنت خرده‌فروشی"
-      ],
+      "missing_data": [],
       "wait_reason": "G1: امتیاز نهایی زیر آستانه رژیم | برای بازبینی مجدد: بررسی مجدد اگر امتیاز به 70 برسد",
-      "fingerprint": "sig_13cb6d6a747f"
+      "fingerprint": "sig_e114137f2653"
     },
     "USDJPY": {
       "symbol": "USDJPY",
@@ -129,8 +119,8 @@
       "session": "NewYork",
       "market_regime": "transition",
       "signal": "WAIT",
-      "final_score": 52.3,
-      "confidence": 7.0,
+      "final_score": 56.5,
+      "confidence": 12.9,
       "entry_zone": "",
       "entry_trigger": "",
       "stop_loss": "",
@@ -152,14 +142,14 @@
           "confidence": 0.0
         },
         "fundamental": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "BUY",
+          "score": 71.5,
+          "confidence": 49.0
         },
         "sentiment": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "BUY",
+          "score": 64.9,
+          "confidence": 45.0
         },
         "liquidity": {
           "direction": "NEUTRAL",
@@ -174,14 +164,9 @@
       },
       "risk_approved": false,
       "warnings": [],
-      "missing_data": [
-        "fundamental: نرخ بهره/CPI/NFP/GDP/PMI",
-        "fundamental: تقویم اقتصادی بلادرنگ",
-        "sentiment: COT CFTC",
-        "sentiment: سنتیمنت خرده‌فروشی"
-      ],
+      "missing_data": [],
       "wait_reason": "G1: امتیاز نهایی زیر آستانه رژیم | برای بازبینی مجدد: بررسی مجدد اگر امتیاز به 70 برسد",
-      "fingerprint": "sig_d9da9465f095"
+      "fingerprint": "sig_0b0b5ec61bab"
     },
     "XAUUSD": {
       "symbol": "XAUUSD",
@@ -189,8 +174,8 @@
       "session": "NewYork",
       "market_regime": "strong_trend",
       "signal": "WAIT",
-      "final_score": 40.2,
-      "confidence": 35.9,
+      "final_score": 38.8,
+      "confidence": 44.4,
       "entry_zone": "",
       "entry_trigger": "",
       "stop_loss": "",
@@ -212,14 +197,14 @@
           "confidence": 60.0
         },
         "fundamental": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "SELL",
+          "score": 26.4,
+          "confidence": 50.0
         },
         "sentiment": {
-          "direction": "NEUTRAL",
-          "score": 50.0,
-          "confidence": 0.0
+          "direction": "SELL",
+          "score": 40.2,
+          "confidence": 45.0
         },
         "liquidity": {
           "direction": "NEUTRAL",
@@ -234,14 +219,9 @@
       },
       "risk_approved": false,
       "warnings": [],
-      "missing_data": [
-        "fundamental: نرخ بهره/CPI/NFP/GDP/PMI",
-        "fundamental: تقویم اقتصادی بلادرنگ",
-        "sentiment: COT CFTC",
-        "sentiment: سنتیمنت خرده‌فروشی"
-      ],
+      "missing_data": [],
       "wait_reason": "G1: امتیاز نهایی زیر آستانه رژیم | برای بازبینی مجدد: بررسی مجدد اگر امتیاز به 65 برسد",
-      "fingerprint": "sig_320251bfb10f"
+      "fingerprint": "sig_a62673711132"
     }
   },
   "summary": {

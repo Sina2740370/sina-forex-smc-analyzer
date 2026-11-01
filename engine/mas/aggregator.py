@@ -17,9 +17,10 @@ from .weights import (DEFAULT, HIGH_VOL_RISK_DISCOUNT, get_threshold, get_weight
 
 def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
                 spread_price: float | None = None, acct: AccountState | None = None,
-                top: dict | None = None) -> Signal:
+                top: dict | None = None, feeds=None) -> Signal:
     """تحلیل چندایجنتی در یک نقطه زمانی (بدون lookahead: فقط داده ≤ now).
-    spread_price خالی = اسپرد معمول نماد از engine/mas/symbols.py."""
+    spread_price خالی = اسپرد معمول نماد از engine/mas/symbols.py.
+    feeds (engine/mas/datafeeds.py: MASFeeds) = داده بیرونی فاز ۳؛ خالی → A4/A5 stub صادقانه."""
     now = pd.Timestamp(now)
     if now.tzinfo is None:
         now = now.tz_localize("UTC")
@@ -52,9 +53,15 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     rep_regime = run_regime_agent(top, now)
     rep_tech = run_technical_agent(top, now)
     rep_liq = run_liquidity_agent(top, now, spread_price)
-    # فاز ۳ وصل می‌شوند؛ فعلاً صادقانه خنثی
-    rep_fund = missing_report("fundamental", ["نرخ بهره/CPI/NFP/GDP/PMI", "تقویم اقتصادی بلادرنگ"])
-    rep_sent = missing_report("sentiment", ["COT CFTC", "سنتیمنت خرده‌فروشی"])
+    # فاز ۳: A4/A5 با فید واقعی اگر داده شد؛ وگرنه stub صادقانه (داده غایب رأی نمی‌دهد)
+    if feeds is not None:
+        from .fundamental import run_fundamental_agent
+        from .sentiment import run_sentiment_agent
+        rep_fund = run_fundamental_agent(symbol, now, feeds)
+        rep_sent = run_sentiment_agent(symbol, now, feeds)
+    else:
+        rep_fund = missing_report("fundamental", ["نرخ بهره/CPI/NFP/GDP/PMI", "تقویم اقتصادی بلادرنگ"])
+        rep_sent = missing_report("sentiment", ["COT CFTC", "سنتیمنت خرده‌فروشی"])
     reports = [rep_regime, rep_tech, rep_fund, rep_sent, rep_liq]
 
     regime_ctx = dict(rep_regime.context)

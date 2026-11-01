@@ -1,0 +1,105 @@
+{
+  "summary": {
+    "symbol": "EURUSD",
+    "points": 3630,
+    "signals": 4,
+    "trades": 4,
+    "wins": 1,
+    "losses": 3,
+    "win_rate_pct": 25.0,
+    "profit_factor": 0.68,
+    "expectancy_R": -0.233,
+    "total_pnl_usd": -96.43,
+    "max_drawdown_pct": 2.98,
+    "equity_end": 9903.57,
+    "by_regime": {
+      "strong_trend": {
+        "n": 4,
+        "wins": 1,
+        "pnl": -96.43,
+        "r_sum": -0.94
+      }
+    },
+    "by_session": {
+      "NewYork": {
+        "n": 2,
+        "wins": 1,
+        "pnl": 104.39,
+        "r_sum": 1.06
+      },
+      "Asia": {
+        "n": 2,
+        "wins": 0,
+        "pnl": -200.82,
+        "r_sum": -2.0
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3512,
+      "G5": 100
+    },
+    "elapsed_sec": 255.3
+  },
+  "trades": [
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-13 16:00:00+00:00",
+      "exit_time": "2023-07-18 01:15:00+00:00",
+      "entry": "1.12019",
+      "sl": "1.117657198020044",
+      "tp2": "1.125506164355903",
+      "lots": "0.39",
+      "pnl_usd": "207.33040988021645",
+      "r_multiple": "2.0733040988021645",
+      "bars_held": "229",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "entry_time": "2023-07-18 16:00:00+00:00",
+      "exit_time": "2023-07-19 06:30:00+00:00",
+      "entry": "1.12249",
+      "sl": "1.1197811262959656",
+      "tp2": "1.1281935221488755",
+      "lots": "0.38",
+      "pnl_usd": "-102.93720075330671",
+      "r_multiple": "-1.0084634926059446",
+      "bars_held": "58",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "SELL",
+      "entry_time": "2024-06-24 00:00:00+00:00",
+      "exit_time": "2024-06-24 05:45:00+00:00",
+      "entry": "1.06842",
+      "sl": "1.0699206315425442",
+      "tp2": "1.0653746106064026",
+      "lots": "0.67",
+      "pnl_usd": "-100.54231335046927",
+      "r_multiple": "-0.9950356371687246",
+      "bars_held": "23",
+      "regime": "strong_trend",
+      "session": "Asia"
+    },
+    {
+      "symbol": "EURUSD",
+      "direction": "SELL",
+      "entry_time": "2024-06-27 00:00:00+00:00",
+      "exit_time": "2024-06-27 04:15:00+00:00",
+      "entry": "1.06794",
+      "sl": "1.0692594693196886",
+      "tp2": "1.065293167496685",
+      "lots": "0.76",
+      "pnl_usd": "-100.27966829634404",
+      "r_multiple": "-1.0024106650638052",
+      "bars_held": "17",
+      "regime": "strong_trend",
+      "session": "Asia"
+    }
+  ]
+}

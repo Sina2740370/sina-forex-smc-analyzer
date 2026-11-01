@@ -104,7 +104,7 @@ class BTResult:
 def backtest_mas(df15: pd.DataFrame, symbol: str,
                  start: str | None = None, end: str | None = None,
                  step_hours: int = 8, spread_price: float | None = None,
-                 progress: bool = False) -> BTResult:
+                 progress: bool = False, feeds=None) -> BTResult:
     """بک‌تست walk-forward: در هر نقطه تصمیم فقط گذشته دیده می‌شود؛ خروج با M15 آینده."""
     spec = get_spec(symbol)
     sp = spec.spread_price() if spread_price is None else spread_price
@@ -148,7 +148,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 continue     # معامله باز است؛ قانون R-SYM ورود جدید را بسته نگه می‌دارد
 
         # ۲) تحلیل در نقطه تصمیم (فقط داده ≤ now — داخل analyze_mas)
-        sig = analyze_mas(df, symbol, now, spread_price=sp, acct=acct)
+        sig = analyze_mas(df, symbol, now, spread_price=sp, acct=acct, feeds=feeds)
         if sig.signal == "WAIT" or not sig.cand:
             key = (sig.wait_reason or "WAIT").split(":")[0].strip() or "WAIT"
             res.wait_reasons[key] = res.wait_reasons.get(key, 0) + 1

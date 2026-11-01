@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "symbol": "USDJPY",
+    "points": 3630,
+    "signals": 3,
+    "trades": 3,
+    "wins": 0,
+    "losses": 3,
+    "win_rate_pct": 0.0,
+    "profit_factor": 0.0,
+    "expectancy_R": -0.986,
+    "total_pnl_usd": -292.94,
+    "max_drawdown_pct": 2.93,
+    "equity_end": 9707.06,
+    "by_regime": {
+      "strong_trend": {
+        "n": 3,
+        "wins": 0,
+        "pnl": -292.94,
+        "r_sum": -2.96
+      }
+    },
+    "by_session": {
+      "NewYork": {
+        "n": 2,
+        "wins": 0,
+        "pnl": -195.11,
+        "r_sum": -1.97
+      },
+      "London": {
+        "n": 1,
+        "wins": 0,
+        "pnl": -97.83,
+        "r_sum": -0.99
+      }
+    },
+    "top_wait_reasons": {
+      "G1": 3486,
+      "G5": 130
+    },
+    "elapsed_sec": 264.7
+  },
+  "trades": [
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-07-21 16:00:00+00:00",
+      "exit_time": "2023-07-24 07:15:00+00:00",
+      "entry": "141.76399999999998",
+      "sl": "141.2469206502755",
+      "tp2": "142.86957456939385",
+      "lots": "0.27",
+      "pnl_usd": "-98.48157813380449",
+      "r_multiple": "-0.9848157813380449",
+      "bars_held": "61",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-07-24 08:00:00+00:00",
+      "exit_time": "2023-07-24 10:15:00+00:00",
+      "entry": "141.51399999999998",
+      "sl": "141.14968109418595",
+      "tp2": "142.28350159279088",
+      "lots": "0.38",
+      "pnl_usd": "-97.82861357132985",
+      "r_multiple": "-0.9880162759207546",
+      "bars_held": "9",
+      "regime": "strong_trend",
+      "session": "London"
+    },
+    {
+      "symbol": "USDJPY",
+      "direction": "BUY",
+      "entry_time": "2023-07-24 16:00:00+00:00",
+      "exit_time": "2023-07-26 06:15:00+00:00",
+      "entry": "141.307",
+      "sl": "140.71334308567668",
+      "tp2": "142.58104521151128",
+      "lots": "0.23",
+      "pnl_usd": "-96.62726566579153",
+      "r_multiple": "-0.9856214094415303",
+      "bars_held": "153",
+      "regime": "strong_trend",
+      "session": "NewYork"
+    }
+  ]
+}

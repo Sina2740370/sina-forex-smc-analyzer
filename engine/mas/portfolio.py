@@ -30,7 +30,8 @@ def _csv_path(csv_dir: str, symbol: str) -> str:
 
 
 def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
-                  symbols: list | None = None, equity: float = 10_000.0) -> dict:
+                  symbols: list | None = None, equity: float = 10_000.0,
+                  feeds=None) -> dict:
     """تحلیل چندجفتی هم‌زمان. نمادها با ریسک مشترک ارزیابی می‌شوند."""
     symbols = symbols or sorted(SYM_SPECS)
     now = pd.Timestamp(now, tz="UTC") if now else None
@@ -44,7 +45,7 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
             continue
         df = load_mt5_csv(path)
         t_now = now or df["time"].iloc[-1]      # پیش‌فرض: آخرین کندل هر نماد
-        sig = analyze_mas(df, sym, t_now, acct=acct)
+        sig = analyze_mas(df, sym, t_now, acct=acct, feeds=feeds)
         results[sym] = sig.to_json(include_reports=False)
         # سهم ریسک در سبد فقط برای سیگنال‌های تأییدشده ثبت می‌شود
         if sig.signal in ("BUY", "SELL"):

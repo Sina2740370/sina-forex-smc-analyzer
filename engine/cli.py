@@ -184,10 +184,12 @@ def cmd_mas_portfolio(args):
     """فاز ۴: تحلیل چندجفتی هم‌زمان با AccountState مشترک + گزارش ترکیبی."""
     from .mas.portfolio import run_portfolio, save_portfolio, portfolio_markdown
     from .mas.symbols import supported_symbols
+    from .mas.datafeeds import MASFeeds
 
     symbols = args.symbols or supported_symbols(args.csv_dir)
     now = pd.Timestamp(args.now, tz="UTC") if args.now else None
-    p = run_portfolio(args.csv_dir, now=now, symbols=symbols, equity=args.equity)
+    feeds = MASFeeds(online=not args.offline)
+    p = run_portfolio(args.csv_dir, now=now, symbols=symbols, equity=args.equity, feeds=feeds)
     jp, mp = save_portfolio(p, args.out)
     print(portfolio_markdown(p) if len(symbols) <= 2 else
           "\n".join(portfolio_markdown(p).splitlines()[:12]))
@@ -199,14 +201,16 @@ def cmd_mas_backtest(args):
     import json
     from .mas.backtest import backtest_mas
     from .mas.symbols import supported_symbols
+    from .mas.datafeeds import MASFeeds
 
+    feeds = MASFeeds(online=not args.offline)
     symbols = args.symbols or supported_symbols(args.csv_dir)
     os.makedirs(args.out, exist_ok=True)
     all_summaries = {}
     for sym in symbols:
         df = load_mt5_csv(_mas_csv_path(args.csv_dir, sym))
         r = backtest_mas(df, sym, start=args.start, end=args.end,
-                         step_hours=args.step_hours)
+                         step_hours=args.step_hours, feeds=feeds)
         all_summaries[sym] = r.summary()
         s = all_summaries[sym]
         print(f"== {sym}: {s['trades']} معامله | برد {s['win_rate_pct']}% | "
@@ -286,6 +290,7 @@ def main():
     mp.add_argument("--now", default=None, help="نقطه زمانی UTC؛ خالی = آخرین کندل هر نماد")
     mp.add_argument("--equity", type=float, default=10_000.0)
     mp.add_argument("--out", default="out_mas")
+    mp.add_argument("--offline", action="store_true", help="فقط کش؛ بدون شبکه (A4/A5 stub می‌شوند اگر کش نباشد)")
     mp.set_defaults(fn=cmd_mas_portfolio)
 
     mb = sub.add_parser("mas-backtest", help="فاز ۲: بک‌تست سیگنال MAS (هر سیگنال = یک معامله)")
@@ -296,6 +301,7 @@ def main():
     mb.add_argument("--end", default=None)
     mb.add_argument("--step-hours", type=int, default=8)
     mb.add_argument("--out", default="out_mas/backtest")
+    mb.add_argument("--offline", action="store_true", help="فقط کش؛ بدون شبکه")
     mb.set_defaults(fn=cmd_mas_backtest)
 
     args = p.parse_args()
