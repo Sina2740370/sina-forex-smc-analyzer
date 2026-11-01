@@ -26,9 +26,12 @@ from .strategy.smc_topdown import analyze
 
 
 def _strategy(name: str):
-    """smc پیش‌فرض؛ s1/s2 از engine/strategy/baselines.py (import تنبل)."""
+    """smc پیش‌فرض؛ s1/s2 پایه‌ها؛ v4 موتور ensemble جدید."""
     if name == "smc":
         return analyze
+    if name == "v4":
+        from .strategy.quant_v4 import analyze_v4
+        return analyze_v4
     from .strategy import baselines
     return {"s1": baselines.analyze_s1, "s2": baselines.analyze_s2}[name]
 
@@ -150,6 +153,33 @@ def cmd_scan(args):
         print(sym, d.direction or f"- ({d.blocked})", f"score={d.score:.2f}", d.reasons)
 
 
+def cmd_mas_analyze(args):
+    """سیستم چندایجنتی (MAS): تحلیل یک نقطه زمانی با ۷ گیت + Risk Agent."""
+    from .mas.aggregator import analyze_mas
+    from .mas.reports import signal_json, signal_markdown
+
+    df15 = load_mt5_csv(_mas_csv_path(args.csv_dir, args.symbol), tz_offset_hours=args.tz_offset)
+    now = pd.Timestamp(args.now, tz="UTC") if args.now else pd.Timestamp.now(tz="UTC")
+    sig = analyze_mas(df15, args.symbol, now, spread_price=args.spread)
+    os.makedirs(args.out, exist_ok=True)
+    jpath = os.path.join(args.out, f"mas_{args.symbol}_{sig.signal}.json")
+    mpath = os.path.join(args.out, f"mas_{args.symbol}_{sig.signal}.md")
+    with open(jpath, "w", encoding="utf-8") as f:
+        f.write(signal_json(sig))
+    with open(mpath, "w", encoding="utf-8") as f:
+        f.write(signal_markdown(sig))
+    print(signal_json(sig, include_reports=False))
+    print("\nذخیره شد ->", jpath, "و", mpath)
+
+
+def _mas_csv_path(csv_dir: str, symbol: str) -> str:
+    for suffix in ("_M15.csv", "_i_M15.csv"):
+        p = os.path.join(csv_dir, f"{symbol}{suffix}")
+        if os.path.exists(p):
+            return p
+    raise SystemExit(f"فایل {symbol}_M15.csv در {csv_dir} پیدا نشد")
+
+
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -163,7 +193,7 @@ def main():
     for name, fn in (("backtest", cmd_backtest), ("scan", cmd_scan),
                      ("report", cmd_report)):
         sp = sub.add_parser(name)
-        sp.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
+        sp.add_argument("--strategy", choices=["smc", "s1", "s2", "v4"], default="smc")
         sp.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
         sp.add_argument("--csv-dir", default="data")
         sp.add_argument("--symbols", nargs="+", default=["EURUSD"])
@@ -181,7 +211,7 @@ def main():
         sp.set_defaults(fn=fn)
 
     sw = sub.add_parser("sweep", help="سوییپ/حساسیت پارامترها (ضد overfitting)")
-    sw.add_argument("--strategy", choices=["smc", "s1", "s2"], default="smc")
+    sw.add_argument("--strategy", choices=["smc", "s1", "s2", "v4"], default="smc")
     sw.add_argument("--source", choices=["csv", "yfinance"], default="yfinance")
     sw.add_argument("--csv-dir", default="data")
     sw.add_argument("--symbols", nargs="+", default=["EURUSD"])
@@ -202,6 +232,15 @@ def main():
     sw.add_argument("--workers", type=int, default=0,
                     help="تعداد پروسه‌ی موازی (۰ = تعداد هسته‌ها)")
     sw.set_defaults(fn=cmd_sweep)
+
+    ma = sub.add_parser("mas-analyze", help="سیستم چندایجنتی (فاز ۱ MVP)")
+    ma.add_argument("--symbol", default="EURUSD")
+    ma.add_argument("--csv-dir", default="data_duka")
+    ma.add_argument("--tz-offset", type=float, default=0.0)
+    ma.add_argument("--now", default=None, help="نقطه زمانی UTC؛ خالی = الان")
+    ma.add_argument("--spread", type=float, default=0.0, help="اسپرد واقعی بر حسب قیمت")
+    ma.add_argument("--out", default="out")
+    ma.set_defaults(fn=cmd_mas_analyze)
 
     args = p.parse_args()
     args.fn(args)

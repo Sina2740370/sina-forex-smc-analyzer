@@ -11,3 +11,4 @@ venv/
 .DS_Store
 signals.db*
 data_duka/
+out_mas/
