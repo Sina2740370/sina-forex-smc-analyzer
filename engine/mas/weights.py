@@ -29,12 +29,30 @@ def regime_key(regime_ctx: dict) -> str:
     return r if r in WEIGHTS else DEFAULT
 
 
-def get_weights(regime_ctx: dict) -> dict:
+def get_weights(regime_ctx: dict, cfg: dict | None = None) -> dict:
     w = dict(WEIGHTS[regime_key(regime_ctx)])
     if MERGE_SESSION_INTO_LIQUIDITY:
         w["liquidity"] = round(w["liquidity"] + w.pop("session"), 4)
+    # OAT/walk-forward: مقیاس وزن ایجنت‌های فاز ۳ (پیش‌فرض ۱ = بدون تغییر)؛
+    # وزن باقی‌مانده بین بقیه بازتوزیع می‌شود تا جمع ۱ حفظ شود.
+    if cfg:
+        scale = float(cfg.get("ext_weight_scale", 1.0))
+        if scale != 1.0:
+            ext = {k: w.get(k, 0.0) * scale for k in ("fundamental", "sentiment")}
+            rest = [k for k in w if k not in ext]
+            base = sum(w[k] for k in rest)
+            keep = sum(ext.values())
+            if keep > 0.95:      # سقف: ایجنت‌های بیرونی حداکثر ۹۵٪ وزن
+                f = 0.95 / keep
+                ext = {k: v * f for k, v in ext.items()}
+                keep = 0.95
+            for k in ext:
+                w[k] = round(ext[k], 4)
+            rem = 1.0 - keep
+            for k in rest:
+                w[k] = round(w[k] / base * rem, 4) if base > 0 else 0.0
     return w
 
 
-def get_threshold(regime_ctx: dict) -> float:
-    return THRESHOLD[regime_key(regime_ctx)]
+def get_threshold(regime_ctx: dict, cfg: dict | None = None) -> float:
+    return THRESHOLD[regime_key(regime_ctx)] + float((cfg or {}).get("g1_delta", 0.0))

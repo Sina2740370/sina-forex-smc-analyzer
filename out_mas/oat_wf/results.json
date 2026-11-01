@@ -1,0 +1,2361 @@
+{
+  "GBPUSD": {
+    "oat:baseline": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 33,
+      "trades": 33,
+      "wins": 14,
+      "losses": 19,
+      "win_rate_pct": 42.4,
+      "profit_factor": 1.52,
+      "expectancy_R": 0.312,
+      "total_pnl_usd": 1040.25,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 11040.25,
+      "by_regime": {
+        "strong_trend": {
+          "n": 33,
+          "wins": 14,
+          "pnl": 1040.27,
+          "r_sum": 10.33
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 16,
+          "wins": 6,
+          "pnl": 231.33,
+          "r_sum": 2.53
+        },
+        "NewYork": {
+          "n": 14,
+          "wins": 7,
+          "pnl": 802.45,
+          "r_sum": 7.71
+        },
+        "Asia": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 6.49,
+          "r_sum": 0.09
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3395,
+        "G5": 33,
+        "G2": 1
+      },
+      "config": "oat:baseline",
+      "cfg": {},
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 260.4
+    },
+    "oat:g1_lo": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 9,
+      "trades": 9,
+      "wins": 3,
+      "losses": 6,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.02,
+      "expectancy_R": 0.025,
+      "total_pnl_usd": 13.15,
+      "max_drawdown_pct": 2.99,
+      "equity_end": 10013.15,
+      "by_regime": {
+        "strong_trend": {
+          "n": 9,
+          "wins": 3,
+          "pnl": 13.16,
+          "r_sum": 0.22
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 101.08,
+          "r_sum": 1.03
+        },
+        "London": {
+          "n": 4,
+          "wins": 0,
+          "pnl": -400.73,
+          "r_sum": -3.98
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 2,
+          "pnl": 312.81,
+          "r_sum": 3.17
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3270,
+        "G5": 304,
+        "G2": 8,
+        "G4": 4
+      },
+      "config": "oat:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 266.4
+    },
+    "oat:g1_hi": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 1,
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.016,
+      "total_pnl_usd": -101.55,
+      "max_drawdown_pct": 1.02,
+      "equity_end": 9898.45,
+      "by_regime": {
+        "strong_trend": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -101.55,
+          "r_sum": -1.02
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -101.55,
+          "r_sum": -1.02
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3619
+      },
+      "config": "oat:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 268.9
+    },
+    "oat:ext_off": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 12,
+      "trades": 12,
+      "wins": 5,
+      "losses": 7,
+      "win_rate_pct": 41.7,
+      "profit_factor": 1.46,
+      "expectancy_R": 0.281,
+      "total_pnl_usd": 327.95,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10327.95,
+      "by_regime": {
+        "strong_trend": {
+          "n": 12,
+          "wins": 5,
+          "pnl": 327.97,
+          "r_sum": 3.36
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 101.08,
+          "r_sum": 1.03
+        },
+        "London": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -99.03,
+          "r_sum": -1.0
+        },
+        "NewYork": {
+          "n": 6,
+          "wins": 3,
+          "pnl": 325.92,
+          "r_sum": 3.33
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3361,
+        "G5": 209,
+        "G2": 2
+      },
+      "config": "oat:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 256.4
+    },
+    "oat:ext_half": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 11,
+      "trades": 11,
+      "wins": 4,
+      "losses": 7,
+      "win_rate_pct": 36.4,
+      "profit_factor": 1.17,
+      "expectancy_R": 0.12,
+      "total_pnl_usd": 120.46,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 10120.46,
+      "by_regime": {
+        "strong_trend": {
+          "n": 11,
+          "wins": 4,
+          "pnl": 120.45,
+          "r_sum": 1.32
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -100.87,
+          "r_sum": -1.01
+        },
+        "London": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -100.71,
+          "r_sum": -0.99
+        },
+        "NewYork": {
+          "n": 6,
+          "wins": 3,
+          "pnl": 322.03,
+          "r_sum": 3.32
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3397,
+        "G5": 176,
+        "G2": 1
+      },
+      "config": "oat:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 267.2
+    },
+    "oat:ext_double": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 5,
+      "trades": 5,
+      "wins": 1,
+      "losses": 4,
+      "win_rate_pct": 20.0,
+      "profit_factor": 0.52,
+      "expectancy_R": -0.375,
+      "total_pnl_usd": -189.76,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9810.24,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -189.76,
+          "r_sum": -1.87
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.14,
+          "r_sum": -2.98
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 110.38,
+          "r_sum": 1.11
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3565,
+        "G5": 4
+      },
+      "config": "oat:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 247.7
+    },
+    "oat:min_rr_25": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 0,
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": 0.0,
+      "total_pnl_usd": 0,
+      "max_drawdown_pct": 0.0,
+      "equity_end": 10000.0,
+      "by_regime": {},
+      "by_session": {},
+      "top_wait_reasons": {
+        "G1": 3473,
+        "G4": 156,
+        "G2": 1
+      },
+      "config": "oat:min_rr_25",
+      "cfg": {
+        "min_rr": 2.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 260.3
+    },
+    "wf:F1:train:baseline": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.998,
+      "total_pnl_usd": -296.45,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 9703.55,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.45,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -196.94,
+          "r_sum": -1.99
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.51,
+          "r_sum": -1.01
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1826,
+        "G5": 83,
+        "G2": 1
+      },
+      "config": "wf:F1:train:baseline",
+      "cfg": {},
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 117.6
+    },
+    "wf:F1:train:g1_lo": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 6,
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "win_rate_pct": 16.7,
+      "profit_factor": 0.4,
+      "expectancy_R": -0.492,
+      "total_pnl_usd": -295.33,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9704.67,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 1,
+          "pnl": -295.34,
+          "r_sum": -2.95
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -197.49,
+          "r_sum": -1.98
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 0.3,
+          "r_sum": 0.03
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.15,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1723,
+        "G5": 165,
+        "G2": 7,
+        "G4": 2
+      },
+      "config": "wf:F1:train:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 120.4
+    },
+    "wf:F1:train:g1_hi": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 1,
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.016,
+      "total_pnl_usd": -101.55,
+      "max_drawdown_pct": 1.02,
+      "equity_end": 9898.45,
+      "by_regime": {
+        "strong_trend": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -101.55,
+          "r_sum": -1.02
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -101.55,
+          "r_sum": -1.02
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1907
+      },
+      "config": "wf:F1:train:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 116.9
+    },
+    "wf:F1:train:ext_off": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.999,
+      "total_pnl_usd": -296.78,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.22,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.79,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.13,
+          "r_sum": -0.99
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -197.66,
+          "r_sum": -2.01
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1790,
+        "G5": 119,
+        "G2": 1
+      },
+      "config": "wf:F1:train:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 118.5
+    },
+    "wf:F1:train:ext_half": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.999,
+      "total_pnl_usd": -296.78,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.22,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.79,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.13,
+          "r_sum": -0.99
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -197.66,
+          "r_sum": -2.01
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1809,
+        "G5": 100,
+        "G2": 1
+      },
+      "config": "wf:F1:train:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 117.4
+    },
+    "wf:F1:train:ext_double": {
+      "symbol": "GBPUSD",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 1,
+      "losses": 4,
+      "win_rate_pct": 20.0,
+      "profit_factor": 0.52,
+      "expectancy_R": -0.375,
+      "total_pnl_usd": -189.76,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9810.24,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -189.76,
+          "r_sum": -1.87
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.14,
+          "r_sum": -2.98
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 110.38,
+          "r_sum": 1.11
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1855,
+        "G5": 2
+      },
+      "config": "wf:F1:train:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 110.8
+    }
+  },
+  "EURUSD": {
+    "oat:baseline": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.68,
+      "expectancy_R": -0.233,
+      "total_pnl_usd": -96.43,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9903.57,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -96.43,
+          "r_sum": -0.94
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 104.39,
+          "r_sum": 1.06
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -200.82,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3512,
+        "G5": 100
+      },
+      "config": "oat:baseline",
+      "cfg": {},
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 271.3
+    },
+    "oat:g1_lo": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 6,
+      "trades": 6,
+      "wins": 2,
+      "losses": 4,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.02,
+      "expectancy_R": 0.027,
+      "total_pnl_usd": 9.7,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 10009.7,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 2,
+          "pnl": 9.71,
+          "r_sum": 0.16
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.78,
+          "r_sum": -2.02
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 1,
+          "pnl": 201.74,
+          "r_sum": 2.04
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 11.75,
+          "r_sum": 0.14
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3232,
+        "G5": 336,
+        "G4": 28,
+        "G2": 5,
+        "G3": 2
+      },
+      "config": "oat:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 272.1
+    },
+    "oat:g1_hi": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 5,
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "win_rate_pct": 40.0,
+      "profit_factor": 1.39,
+      "expectancy_R": 0.246,
+      "total_pnl_usd": 118.07,
+      "max_drawdown_pct": 1.97,
+      "equity_end": 10118.07,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.06,
+          "r_sum": 1.23
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.06,
+          "r_sum": 1.23
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3618
+      },
+      "config": "oat:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 262.4
+    },
+    "oat:ext_off": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 6,
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "win_rate_pct": 16.7,
+      "profit_factor": 0.43,
+      "expectancy_R": -0.469,
+      "total_pnl_usd": -282.48,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9717.52,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 1,
+          "pnl": -282.48,
+          "r_sum": -2.82
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.09,
+          "r_sum": -3.02
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 17.61,
+          "r_sum": 0.2
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3307,
+        "G5": 290,
+        "G2": 7
+      },
+      "config": "oat:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 262.5
+    },
+    "oat:ext_half": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 6,
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "win_rate_pct": 16.7,
+      "profit_factor": 0.44,
+      "expectancy_R": -0.463,
+      "total_pnl_usd": -279.02,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9720.98,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 1,
+          "pnl": -279.03,
+          "r_sum": -2.78
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.09,
+          "r_sum": -3.02
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 21.06,
+          "r_sum": 0.24
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3410,
+        "G5": 194
+      },
+      "config": "oat:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 263.2
+    },
+    "oat:ext_double": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.0,
+      "total_pnl_usd": -296.9,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.1,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.9,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -199.5,
+          "r_sum": -2.01
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.4,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3533,
+        "G5": 91,
+        "G4": 3
+      },
+      "config": "oat:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 266.0
+    },
+    "oat:min_rr_25": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 0,
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": 0.0,
+      "total_pnl_usd": 0,
+      "max_drawdown_pct": 0.0,
+      "equity_end": 10000.0,
+      "by_regime": {},
+      "by_session": {},
+      "top_wait_reasons": {
+        "G1": 3518,
+        "G4": 112
+      },
+      "config": "oat:min_rr_25",
+      "cfg": {
+        "min_rr": 2.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 260.3
+    },
+    "wf:F1:train:baseline": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.68,
+      "expectancy_R": -0.233,
+      "total_pnl_usd": -96.43,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9903.57,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -96.43,
+          "r_sum": -0.94
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 104.39,
+          "r_sum": 1.06
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -200.82,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1864,
+        "G5": 36
+      },
+      "config": "wf:F1:train:baseline",
+      "cfg": {},
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 120.4
+    },
+    "wf:F1:train:g1_lo": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 7,
+      "trades": 7,
+      "wins": 2,
+      "losses": 5,
+      "win_rate_pct": 28.6,
+      "profit_factor": 0.83,
+      "expectancy_R": -0.112,
+      "total_pnl_usd": -84.84,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9915.16,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 2,
+          "pnl": -84.84,
+          "r_sum": -0.79
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 98.95,
+          "r_sum": 1.03
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -198.89,
+          "r_sum": -1.99
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 15.1,
+          "r_sum": 0.17
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1719,
+        "G5": 143,
+        "G4": 25,
+        "G2": 3
+      },
+      "config": "wf:F1:train:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 112.5
+    },
+    "wf:F1:train:g1_hi": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 4,
+      "trades": 4,
+      "wins": 2,
+      "losses": 2,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.09,
+      "expectancy_R": 0.558,
+      "total_pnl_usd": 220.03,
+      "max_drawdown_pct": 1.97,
+      "equity_end": 10220.03,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 220.03,
+          "r_sum": 2.23
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 220.03,
+          "r_sum": 2.23
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1907
+      },
+      "config": "wf:F1:train:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 118.7
+    },
+    "wf:F1:train:ext_off": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 6,
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "win_rate_pct": 16.7,
+      "profit_factor": 0.43,
+      "expectancy_R": -0.469,
+      "total_pnl_usd": -282.48,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9717.52,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 1,
+          "pnl": -282.48,
+          "r_sum": -2.82
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.09,
+          "r_sum": -3.02
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 17.61,
+          "r_sum": 0.2
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1755,
+        "G5": 131,
+        "G2": 6
+      },
+      "config": "wf:F1:train:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 115.3
+    },
+    "wf:F1:train:ext_half": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 6,
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "win_rate_pct": 16.7,
+      "profit_factor": 0.44,
+      "expectancy_R": -0.463,
+      "total_pnl_usd": -279.02,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9720.98,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 1,
+          "pnl": -279.03,
+          "r_sum": -2.78
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -300.09,
+          "r_sum": -3.02
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 21.06,
+          "r_sum": 0.24
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1814,
+        "G5": 78
+      },
+      "config": "wf:F1:train:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 115.1
+    },
+    "wf:F1:train:ext_double": {
+      "symbol": "EURUSD",
+      "points": 1918,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.0,
+      "total_pnl_usd": -296.9,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.1,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.9,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -199.5,
+          "r_sum": -2.01
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.4,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1870,
+        "G5": 42,
+        "G4": 3
+      },
+      "config": "wf:F1:train:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 122.2
+    }
+  },
+  "USDJPY": {
+    "oat:baseline": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.986,
+      "total_pnl_usd": -292.94,
+      "max_drawdown_pct": 2.93,
+      "equity_end": 9707.06,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -292.94,
+          "r_sum": -2.96
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -195.11,
+          "r_sum": -1.97
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.83,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3486,
+        "G5": 130
+      },
+      "config": "oat:baseline",
+      "cfg": {},
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 270.7
+    },
+    "oat:g1_lo": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 10,
+      "trades": 10,
+      "wins": 5,
+      "losses": 5,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.06,
+      "expectancy_R": 0.563,
+      "total_pnl_usd": 564.08,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10564.08,
+      "by_regime": {
+        "strong_trend": {
+          "n": 10,
+          "wins": 5,
+          "pnl": 564.07,
+          "r_sum": 5.63
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 4,
+          "pnl": 776.77,
+          "r_sum": 7.57
+        },
+        "London": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 1.31,
+          "r_sum": 0.04
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -214.01,
+          "r_sum": -1.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3240,
+        "G5": 309,
+        "G4": 19,
+        "G3": 7,
+        "G2": 4
+      },
+      "config": "oat:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 266.1
+    },
+    "oat:g1_hi": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 3,
+      "losses": 1,
+      "win_rate_pct": 75.0,
+      "profit_factor": 6.1,
+      "expectancy_R": 1.316,
+      "total_pnl_usd": 532.98,
+      "max_drawdown_pct": 1.0,
+      "equity_end": 10532.98,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 3,
+          "pnl": 532.98,
+          "r_sum": 5.27
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 104.0,
+          "r_sum": 1.09
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 2,
+          "pnl": 428.98,
+          "r_sum": 4.18
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3619
+      },
+      "config": "oat:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 258.8
+    },
+    "oat:ext_off": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 7,
+      "trades": 7,
+      "wins": 3,
+      "losses": 4,
+      "win_rate_pct": 42.9,
+      "profit_factor": 1.53,
+      "expectancy_R": 0.326,
+      "total_pnl_usd": 221.83,
+      "max_drawdown_pct": 2.99,
+      "equity_end": 10221.83,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 3,
+          "pnl": 221.83,
+          "r_sum": 2.28
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -100.65,
+          "r_sum": -1.01
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 3,
+          "pnl": 531.82,
+          "r_sum": 5.29
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -209.34,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3405,
+        "G5": 201
+      },
+      "config": "oat:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 265.2
+    },
+    "oat:ext_half": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.988,
+      "total_pnl_usd": -293.49,
+      "max_drawdown_pct": 2.93,
+      "equity_end": 9706.51,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -293.49,
+          "r_sum": -2.96
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.48,
+          "r_sum": -0.98
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -195.01,
+          "r_sum": -1.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3448,
+        "G5": 172
+      },
+      "config": "oat:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 258.9
+    },
+    "oat:ext_double": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.986,
+      "total_pnl_usd": -292.94,
+      "max_drawdown_pct": 2.93,
+      "equity_end": 9707.06,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -292.94,
+          "r_sum": -2.96
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -195.11,
+          "r_sum": -1.97
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.83,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3514,
+        "G5": 102
+      },
+      "config": "oat:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 262.1
+    },
+    "oat:min_rr_25": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 0,
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": 0.0,
+      "total_pnl_usd": 0,
+      "max_drawdown_pct": 0.0,
+      "equity_end": 10000.0,
+      "by_regime": {},
+      "by_session": {},
+      "top_wait_reasons": {
+        "G1": 3497,
+        "G4": 133
+      },
+      "config": "oat:min_rr_25",
+      "cfg": {
+        "min_rr": 2.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 258.0
+    },
+    "wf:F1:train:baseline": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "win_rate_pct": 40.0,
+      "profit_factor": 1.38,
+      "expectancy_R": 0.247,
+      "total_pnl_usd": 118.42,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 10118.42,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.41,
+          "r_sum": 1.24
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 221.97,
+          "r_sum": 2.23
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.56,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1792,
+        "G5": 85
+      },
+      "config": "wf:F1:train:baseline",
+      "cfg": {},
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 120.2
+    },
+    "wf:F1:train:g1_lo": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 6,
+      "trades": 6,
+      "wins": 2,
+      "losses": 4,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.04,
+      "expectancy_R": 0.037,
+      "total_pnl_usd": 15.74,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10015.74,
+      "by_regime": {
+        "transition": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.79,
+          "r_sum": -1.0
+        },
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 115.53,
+          "r_sum": 1.22
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.35,
+          "r_sum": -2.0
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 219.09,
+          "r_sum": 2.22
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1642,
+        "G5": 225,
+        "G4": 4,
+        "G2": 3,
+        "G3": 2
+      },
+      "config": "wf:F1:train:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 113.8
+    },
+    "wf:F1:train:g1_hi": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 3,
+      "losses": 2,
+      "win_rate_pct": 60.0,
+      "profit_factor": 3.13,
+      "expectancy_R": 0.853,
+      "total_pnl_usd": 428.23,
+      "max_drawdown_pct": 1.0,
+      "equity_end": 10428.23,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 3,
+          "pnl": 428.23,
+          "r_sum": 4.27
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 3,
+          "wins": 2,
+          "pnl": 326.36,
+          "r_sum": 3.2
+        },
+        "London": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 101.87,
+          "r_sum": 1.07
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1865
+      },
+      "config": "wf:F1:train:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 118.5
+    },
+    "wf:F1:train:ext_off": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "win_rate_pct": 40.0,
+      "profit_factor": 1.38,
+      "expectancy_R": 0.247,
+      "total_pnl_usd": 118.42,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 10118.42,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.41,
+          "r_sum": 1.24
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 221.97,
+          "r_sum": 2.23
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.56,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1744,
+        "G5": 133
+      },
+      "config": "wf:F1:train:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 116.6
+    },
+    "wf:F1:train:ext_half": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "win_rate_pct": 40.0,
+      "profit_factor": 1.38,
+      "expectancy_R": 0.247,
+      "total_pnl_usd": 118.42,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 10118.42,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.41,
+          "r_sum": 1.24
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 221.97,
+          "r_sum": 2.23
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.56,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1768,
+        "G5": 109
+      },
+      "config": "wf:F1:train:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 123.0
+    },
+    "wf:F1:train:ext_double": {
+      "symbol": "USDJPY",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "win_rate_pct": 40.0,
+      "profit_factor": 1.38,
+      "expectancy_R": 0.247,
+      "total_pnl_usd": 118.42,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 10118.42,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 118.41,
+          "r_sum": 1.24
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 221.97,
+          "r_sum": 2.23
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.56,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1807,
+        "G5": 70
+      },
+      "config": "wf:F1:train:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 116.0
+    }
+  },
+  "XAUUSD": {
+    "oat:baseline": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.72,
+      "expectancy_R": -0.205,
+      "total_pnl_usd": -85.38,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9914.62,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -85.38,
+          "r_sum": -0.81
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 118.24,
+          "r_sum": 1.19
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.62,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3517,
+        "G5": 94
+      },
+      "config": "oat:baseline",
+      "cfg": {},
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 300.8
+    },
+    "oat:g1_lo": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.999,
+      "total_pnl_usd": -296.85,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.15,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.85,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -199.02,
+          "r_sum": -2.0
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.83,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3004,
+        "G5": 599,
+        "G2": 13,
+        "G4": 7
+      },
+      "config": "oat:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 294.9
+    },
+    "oat:g1_hi": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 0,
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": 0.0,
+      "total_pnl_usd": 0,
+      "max_drawdown_pct": 0.0,
+      "equity_end": 10000.0,
+      "by_regime": {},
+      "by_session": {},
+      "top_wait_reasons": {
+        "G1": 3630
+      },
+      "config": "oat:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 298.9
+    },
+    "oat:ext_off": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 6,
+      "trades": 6,
+      "wins": 2,
+      "losses": 4,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.05,
+      "expectancy_R": 0.046,
+      "total_pnl_usd": 21.17,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10021.17,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 2,
+          "pnl": 21.18,
+          "r_sum": 0.29
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 3.32,
+          "r_sum": 0.09
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 118.43,
+          "r_sum": 1.19
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -100.57,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3080,
+        "G5": 495
+      },
+      "config": "oat:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 290.0
+    },
+    "oat:ext_half": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.0,
+      "total_pnl_usd": -296.98,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9703.02,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.98,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -197.8,
+          "r_sum": -2.0
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.18,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3270,
+        "G5": 355
+      },
+      "config": "oat:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 302.2
+    },
+    "oat:ext_double": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.009,
+      "total_pnl_usd": -299.61,
+      "max_drawdown_pct": 3.0,
+      "equity_end": 9700.39,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -299.62,
+          "r_sum": -3.03
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -299.62,
+          "r_sum": -3.03
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3612,
+        "G4": 1
+      },
+      "config": "oat:ext_double",
+      "cfg": {
+        "ext_weight_scale": 2.0
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 293.3
+    },
+    "oat:min_rr_25": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 0,
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": 0.0,
+      "total_pnl_usd": 0,
+      "max_drawdown_pct": 0.0,
+      "equity_end": 10000.0,
+      "by_regime": {},
+      "by_session": {},
+      "top_wait_reasons": {
+        "G1": 3530,
+        "G4": 100
+      },
+      "config": "oat:min_rr_25",
+      "cfg": {
+        "min_rr": 2.5
+      },
+      "start": "None",
+      "end": "None",
+      "elapsed_sec": 235.3
+    },
+    "wf:F1:train:baseline": {
+      "symbol": "XAUUSD",
+      "points": 1918,
+      "signals": 7,
+      "trades": 7,
+      "wins": 2,
+      "losses": 5,
+      "win_rate_pct": 28.6,
+      "profit_factor": 0.84,
+      "expectancy_R": -0.108,
+      "total_pnl_usd": -82.51,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9917.49,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 2,
+          "pnl": -82.52,
+          "r_sum": -0.75
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 1,
+          "wins": 1,
+          "pnl": 206.34,
+          "r_sum": 2.06
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -85.24,
+          "r_sum": -0.81
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.62,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1785,
+        "G5": 56
+      },
+      "config": "wf:F1:train:baseline",
+      "cfg": {},
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 134.3
+    },
+    "wf:F1:train:g1_lo": {
+      "symbol": "XAUUSD",
+      "points": 1918,
+      "signals": 5,
+      "trades": 5,
+      "wins": 1,
+      "losses": 4,
+      "win_rate_pct": 20.0,
+      "profit_factor": 0.52,
+      "expectancy_R": -0.381,
+      "total_pnl_usd": -192.98,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9807.02,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -192.97,
+          "r_sum": -1.9
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -100.25,
+          "r_sum": -1.0
+        },
+        "NewYork": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 6.41,
+          "r_sum": 0.1
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.13,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1507,
+        "G5": 335,
+        "G2": 11,
+        "G4": 4
+      },
+      "config": "wf:F1:train:g1_lo",
+      "cfg": {
+        "g1_delta": -5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 136.3
+    },
+    "wf:F1:train:g1_hi": {
+      "symbol": "XAUUSD",
+      "points": 1918,
+      "signals": 1,
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.998,
+      "total_pnl_usd": -99.78,
+      "max_drawdown_pct": 1.0,
+      "equity_end": 9900.22,
+      "by_regime": {
+        "strong_trend": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.78,
+          "r_sum": -1.0
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.78,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1914
+      },
+      "config": "wf:F1:train:g1_hi",
+      "cfg": {
+        "g1_delta": 5.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 133.9
+    },
+    "wf:F1:train:ext_off": {
+      "symbol": "XAUUSD",
+      "points": 1918,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.68,
+      "expectancy_R": -0.236,
+      "total_pnl_usd": -97.55,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9902.45,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -97.55,
+          "r_sum": -0.94
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 105.93,
+          "r_sum": 1.06
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.48,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1571,
+        "G5": 284
+      },
+      "config": "wf:F1:train:ext_off",
+      "cfg": {
+        "ext_weight_scale": 0.0
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 132.5
+    },
+    "wf:F1:train:ext_half": {
+      "symbol": "XAUUSD",
+      "points": 1918,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.68,
+      "expectancy_R": -0.235,
+      "total_pnl_usd": -97.1,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9902.9,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -97.11,
+          "r_sum": -0.94
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 1,
+          "wins": 1,
+          "pnl": 206.34,
+          "r_sum": 2.06
+        },
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.48,
+          "r_sum": -2.0
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.97,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 1652,
+        "G5": 207
+      },
+      "config": "wf:F1:train:ext_half",
+      "cfg": {
+        "ext_weight_scale": 0.5
+      },
+      "start": "2023-06-01",
+      "end": "2025-03-01",
+      "elapsed_sec": 131.0
+    }
+  }
+}

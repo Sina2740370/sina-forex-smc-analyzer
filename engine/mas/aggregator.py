@@ -17,10 +17,15 @@ from .weights import (DEFAULT, HIGH_VOL_RISK_DISCOUNT, get_threshold, get_weight
 
 def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
                 spread_price: float | None = None, acct: AccountState | None = None,
-                top: dict | None = None, feeds=None) -> Signal:
+                top: dict | None = None, feeds=None, top_cache: dict | None = None,
+                cfg: dict | None = None) -> Signal:
     """تحلیل چندایجنتی در یک نقطه زمانی (بدون lookahead: فقط داده ≤ now).
     spread_price خالی = اسپرد معمول نماد از engine/mas/symbols.py.
-    feeds (engine/mas/datafeeds.py: MASFeeds) = داده بیرونی فاز ۳؛ خالی → A4/A5 stub صادقانه."""
+    feeds (engine/mas/datafeeds.py: MASFeeds) = داده بیرونی فاز ۳؛ خالی → A4/A5 stub صادقانه.
+    top_cache = topdown پیش‌محاسبهٔ کل تاریخچه (بهینه‌سازی بک‌تست)؛ در هر نقطه فقط slice ≤ now
+    گرفته می‌شود — دقیقاً معادل build_topdown روی گذشته (پاک‌سازی سطر-به-سطر، resample سبدی).
+    cfg = پارامترهای قابل‌تنظیم OAT/walk-forward: g1_delta، ext_weight_scale، min_rr؛
+    خالی = مقادیر پایه (بدون تغییر رفتار)."""
     now = pd.Timestamp(now)
     if now.tzinfo is None:
         now = now.tz_localize("UTC")
@@ -32,7 +37,10 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     past = df15[df15["time"] <= now]
     data = run_data_agent(past)
     df = data["df"]
-    top = top or build_topdown(df)
+    if top is None and top_cache is not None:
+        top = _top_from_cache(top_cache, df, now)
+    else:
+        top = top or build_topdown(df)
 
     sig = Signal(symbol=symbol, session="", market_regime="")
     warnings = list(data["warnings"])
@@ -79,7 +87,7 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     # --- تجمیع رژیم‌محور ---
     # ایجنت غایب رأی نمی‌دهد: وزنش بین ایجنت‌های فعال بازتوزیع می‌شود و
     # اطمینان نهایی با «پوشش وزنی» جریمه می‌شود (صادقانه، نه حدس).
-    w = get_weights(regime_ctx)
+    w = get_weights(regime_ctx, cfg)
     active = [rep for rep in reports if rep.agent in w and not rep.is_stub]
     wsum = sum(w[rep.agent] for rep in active)
     if wsum <= 0:
@@ -95,7 +103,7 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
                                     "confidence": round(rep.confidence, 1)} for rep in reports}
 
     # --- گیت‌ها G1..G6 ---
-    threshold = get_threshold(regime_ctx)
+    threshold = get_threshold(regime_ctx, cfg)
     direction = BUY if final >= threshold else (SELL if final <= 100 - threshold else None)
     if direction is None:
         sig.gate_results.append(GateResult("G1", False,
@@ -133,7 +141,7 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
                             reports, warnings, missing,
                             tip="تشکیل ستاپ در ناحیه فیبو/ساختار با تأیید مومنتوم")
     rr = cand["rr"]
-    ok4 = bool(rr >= 2.0)
+    ok4 = bool(rr >= float((cfg or {}).get("min_rr", 2.0)))
     sig.gate_results.append(GateResult("G4", ok4, f"RR={rr:.2f}, SL_dist/cand={cand['risk_atr1h']:.2f}×ATR1h"))
     if not ok4:
         return _finish_wait(sig, "G4: نسبت ریسک/ریوارد کمتر از 1:2", reports, warnings, missing)
@@ -170,6 +178,28 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
     sig.missing_data = missing
     sig.warnings = warnings
     return sig
+
+
+def _top_from_cache(top_cache: dict, df_past: pd.DataFrame, now: pd.Timestamp) -> dict:
+    """topdown از کش پیش‌محاسبه + بازسازی سبد ناقص انتهایی از دادهٔ گذشته.
+
+    سبدِ در حال شکل‌گیری (مثلاً کندل D1 امروز) در کش با کل روز تجمیع شده؛ برش با
+    «زمان ≤ now» نشت آینده می‌داد. راه درست: سندهای کاملِ قبل از سبد جاری از کش +
+    بازسازی سبد جاری فقط از ردیف‌های ≤ now (مطابق build_topdown روی گذشته)."""
+    out = {"15m": df_past}
+    for tf, fr in top_cache.items():
+        if tf == "15m":
+            continue
+        bs = fr.loc[fr["time"] <= now, "time"].max() if (fr["time"] <= now).any() else None
+        if bs is None:
+            out[tf] = fr.iloc[0:0]
+            continue
+        head = fr[fr["time"] < bs]
+        tail_rows = df_past[df_past["time"] >= bs]
+        from ..data.providers import resample_ohlc
+        tail = resample_ohlc(tail_rows, tf) if len(tail_rows) else fr.iloc[0:0]
+        out[tf] = pd.concat([head, tail], ignore_index=True) if len(tail) else head
+    return out
 
 
 def _htf_bias(top: dict) -> int:

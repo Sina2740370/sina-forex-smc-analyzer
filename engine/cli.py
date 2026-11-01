@@ -221,6 +221,26 @@ def cmd_mas_backtest(args):
     print("ذخیره شد ->", os.path.join(args.out, "bt_all.json"))
 
 
+def cmd_mas_paper(args):
+    """فاز ۵: یک چرخه اجرای کاغذی — تسویه بازها، تحلیل، ثبت سیگنال‌ها و ژورنال."""
+    from .mas.datafeeds import MASFeeds
+    from .mas.paper import run_paper
+    from .mas.symbols import supported_symbols
+
+    symbols = args.symbols or supported_symbols(args.csv_dir)
+    feeds = MASFeeds(online=not args.offline)
+    r = run_paper(args.csv_dir, symbols, out_dir=args.out, equity=args.equity, feeds=feeds)
+    a = r["attribution"]
+    print(f"چرخه {r['cycle']} | حقوق: {r['equity']} USD | باز: {len(r['open_positions'])} | "
+          f"بسته این چرخه: {len(r['closed_this_cycle'])} | جدید: {len(r['opened_this_cycle'])}")
+    if a["n_trades"]:
+        print(f"تجمعی: {a['n_trades']} معامله، برد {a['win_rate_pct']}٪، "
+              f"PnL={a['total_pnl_usd']} USD ({a['return_pct']}٪)")
+    for s, res in r["results"].items():
+        print(f"  {s}: {res.get('signal')} {res.get('wait_reason', '')[:60]}")
+    print("ژورنال: out_mas/paper/journal.jsonl | وضعیت: out_mas/paper/state.json")
+
+
 def main():
     p = argparse.ArgumentParser(prog="engine")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -303,6 +323,15 @@ def main():
     mb.add_argument("--out", default="out_mas/backtest")
     mb.add_argument("--offline", action="store_true", help="فقط کش؛ بدون شبکه")
     mb.set_defaults(fn=cmd_mas_backtest)
+
+    mpp = sub.add_parser("mas-paper", help="فاز ۵: یک چرخه اجرای کاغذی (تسویه + سیگنال + ژورنال)")
+    mpp.add_argument("--symbols", nargs="*", default=None)
+    mpp.add_argument("--csv-dir", default="data_duka")
+    mpp.add_argument("--equity", type=float, default=None,
+                     help="فقط در اولین اجرا؛ بعد از state.json خوانده می‌شود")
+    mpp.add_argument("--out", default="out_mas/paper")
+    mpp.add_argument("--offline", action="store_true", help="فقط کش؛ بدون شبکه")
+    mpp.set_defaults(fn=cmd_mas_paper)
 
     args = p.parse_args()
     args.fn(args)

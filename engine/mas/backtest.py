@@ -38,6 +38,8 @@ class BTTrade:
     bars_held: int
     regime: str
     session: str
+    final_score: float = 50.0    # امتیاز تجمیعی هنگام صدور سیگنال (برای کالیبراسیون Brier)
+    confidence: float = 0.0
 
 
 @dataclass
@@ -104,7 +106,7 @@ class BTResult:
 def backtest_mas(df15: pd.DataFrame, symbol: str,
                  start: str | None = None, end: str | None = None,
                  step_hours: int = 8, spread_price: float | None = None,
-                 progress: bool = False, feeds=None) -> BTResult:
+                 progress: bool = False, feeds=None, cfg: dict | None = None) -> BTResult:
     """بک‌تست walk-forward: در هر نقطه تصمیم فقط گذشته دیده می‌شود؛ خروج با M15 آینده."""
     spec = get_spec(symbol)
     sp = spec.spread_price() if spread_price is None else spread_price
@@ -125,6 +127,11 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     # ایندکس‌های عددی برای پیمایش سریع M15 (بدون lookup رشته‌ای)
     t_arr = df["time"].to_numpy()
 
+    # بهینه‌سازی: topdown کل تاریخچه یک‌بار پیش‌محاسبه می‌شود؛ در هر نقطه فقط slice ≤ now.
+    # پاک‌سازی داده سطر-به-سطر و resample داخل سبدی است → نتیجه دقیقاً برابر محاسبه از صفر است.
+    from ..data.providers import BASE_TFS, resample_ohlc
+    top_cache = {tf: resample_ohlc(df, tf) for tf in BASE_TFS}
+
     for i, now in enumerate(times):
         # ۱) مدیریت معامله باز روی کندل‌های M15 از آخرین ایندکس تا now
         if pos is not None:
@@ -139,7 +146,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 res.trades.append(BTTrade(symbol, pos["direction"], pos["entry_time"],
                                           exit_time, pos["entry"], pos["sl"], pos["tp2"],
                                           pos["lots"], pnl, r, last_idx - entry_idx,
-                                          pos["regime"], pos["session"]))
+                                          pos["regime"], pos["session"],
+                                          pos.get("final_score", 50.0),
+                                          pos.get("confidence", 0.0)))
                 equity += pnl
                 acct.equity = equity
                 acct.consecutive_losses = acct.consecutive_losses + 1 if was_loss else 0
@@ -148,7 +157,8 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 continue     # معامله باز است؛ قانون R-SYM ورود جدید را بسته نگه می‌دارد
 
         # ۲) تحلیل در نقطه تصمیم (فقط داده ≤ now — داخل analyze_mas)
-        sig = analyze_mas(df, symbol, now, spread_price=sp, acct=acct, feeds=feeds)
+        sig = analyze_mas(df, symbol, now, spread_price=sp, acct=acct, feeds=feeds,
+                          top_cache=top_cache, cfg=cfg)
         if sig.signal == "WAIT" or not sig.cand:
             key = (sig.wait_reason or "WAIT").split(":")[0].strip() or "WAIT"
             res.wait_reasons[key] = res.wait_reasons.get(key, 0) + 1
@@ -169,7 +179,8 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         lots = round(risk_usd / max(1e-9, pips * pip_value_usd(symbol, float(row["close"]))), 2)
         pos = {"direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
-               "last_idx": j, "regime": sig.market_regime, "session": sig.session}
+               "last_idx": j, "regime": sig.market_regime, "session": sig.session,
+               "final_score": float(sig.final_score), "confidence": float(sig.confidence)}
         res.n_signals += 1
         if progress and (i + 1) % 500 == 0:
             print(f"  [{symbol}] {i + 1}/{res.n_points} نقطه، {res.n_signals} سیگنال، "
@@ -188,7 +199,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
             res.trades.append(BTTrade(symbol, pos["direction"], pos["entry_time"],
                                       exit_time, pos["entry"], pos["sl"], pos["tp2"],
                                       pos["lots"], pnl, r, last_idx - entry_idx,
-                                      pos["regime"], pos["session"]))
+                                      pos["regime"], pos["session"],
+                                      pos.get("final_score", 50.0),
+                                      pos.get("confidence", 0.0)))
             equity += pnl
 
     res.equity_end = equity
