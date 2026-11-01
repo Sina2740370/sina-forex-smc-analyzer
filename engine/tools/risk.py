@@ -215,3 +215,23 @@ def fractional_kelly_risk_pct(win_rate: float, win_loss_ratio: float, fraction: 
         return min_risk_pct
     raw_risk = kelly_full * fraction * 100.0
     return max(min_risk_pct, min(max_risk_pct, round(raw_risk, 2)))
+
+
+def calculate_risk_of_ruin(win_rate: float, loss_rate: float, risk_per_trade_pct: float,
+                            capital_loss_threshold_pct: float = 50.0) -> float:
+    """
+    محاسبه احتمال ریاضی ورشکستگی (Risk of Ruin - Classic Formula):
+    win_rate: نرخ برد (بین 0 تا 1)
+    loss_rate: نرخ باخت (1 - win_rate)
+    risk_per_trade_pct: درصد ریسک در هر معامله
+    capital_loss_threshold_pct: آستانه افت سرمایه (مثلا 50٪)
+    """
+    if win_rate <= 0.50:
+        return 100.0  # بدون امید ریاضی مثبت، احتمال ورشکستگی قطعی ۱۰۰٪ است
+    if risk_per_trade_pct <= 0:
+        return 0.0
+
+    a = (1.0 - win_rate) / win_rate
+    units = capital_loss_threshold_pct / risk_per_trade_pct
+    ror = (a ** units) * 100.0
+    return round(max(0.0, min(100.0, ror)), 2)

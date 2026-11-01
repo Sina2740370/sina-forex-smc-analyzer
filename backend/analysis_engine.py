@@ -33,7 +33,8 @@ MIN_RISK_SPREAD_MULT = 3.0   # حداقل فاصلهٔ SL = ۳ برابر اسپ
 
 def _min_spread_risk(symbol) -> float:
     """حداقل فاصلهٔ SL بر حسب اسپرد معمول نماد.
-    استاپی که داخل نویز اسپرد باشد = باخت قطعی بدون تحرک بازار؛ مسدود می‌شود."""
+    استاپی که داخل نویز اسپرد باشد = باخت قطعی بدون تحرک بازار؛ مسدود می‌شود.
+    (از audit v1 — اینجا فقط برای سازگاری تست/ابزارهای جانبی حفظ شده.)"""
     try:
         spread_pips = SPREAD.get(symbol)
         pip = PIP_SIZE.get(symbol)
@@ -79,9 +80,7 @@ def ema_trend(df, period=50):
 
 def find_swings(df, left=3, right=3):
     """نسخه بهینه: به‌جای برش pandas در هر پله حلقه (کند روی دیتافریم بزرگ)،
-    ماکزیمم/مینیمم پنجره متحرک را یک‌بار به‌صورت برداری محاسبه می‌کند.
-    پلتو غیرمجاور در یک پنجره (دو سوئینگ هم‌قیمت نزدیک هم) یک‌بار شمرده می‌شود
-    تا ساختار به‌اشتباه RANGING نشود (هم‌راستا با engine/core/smc.py)."""
+    ماکزیمم/مینیمم پنجره متحرک را یک‌بار به‌صورت برداری محاسبه می‌کند."""
     n = len(df)
     if n < left + right + 1:
         return {"highs": [], "lows": []}
@@ -99,6 +98,8 @@ def find_swings(df, left=3, right=3):
     window = left + right + 1
 
     def _dedupe(pairs):
+        # پلتو غیرمجاور در یک پنجره (دو سوئینگ هم‌قیمت نزدیک هم) یک‌بار شمرده می‌شود
+        # تا ساختار به‌اشتباه RANGING نشود (هم‌راستا با engine/core/smc.py).
         out = []
         for i, p in pairs:
             if out and p == out[-1][1] and i - out[-1][0] < window:
@@ -369,23 +370,6 @@ def detect_unicorn_setup(df_4h, df_1h, df_15m):
     }
 
 
-def detect_market_regime(df):
-    """برچسب رژیم بازار روی 15m (نسخهٔ سبک برای لایهٔ زنده).
-    خروجی: TRENDING_HIGH_VOL | TRENDING_LOW_VOL | RANGING_HIGH_VOL | RANGING_LOW_VOL
-    رژیم RANGING_HIGH_VOL (نوسان بی‌جهت) منبع اصلی سیگنال‌های کاذب است و جریمه می‌شود."""
-    if df is None or len(df) < 25:
-        return "RANGING_LOW_VOL"
-    atr_short = calculate_atr(df, 10)
-    hist_period = min(40, max(10, len(df) // 2))
-    atr_hist = calculate_atr(df, hist_period) if hist_period >= 10 else 0.0
-    high_vol = atr_short > atr_hist * 1.15 if atr_hist > 0 else False
-    struct = detect_structure(df).get("trend")
-    trending = struct in ("BULLISH", "BEARISH")
-    if trending:
-        return "TRENDING_HIGH_VOL" if high_vol else "TRENDING_LOW_VOL"
-    return "RANGING_HIGH_VOL" if high_vol else "RANGING_LOW_VOL"
-
-
 def calculate_super_quant_score(tech_score: float, fund_score: float, news_score: float,
                                 mem_score: float, regime_label: str = "TRENDING_LOW_VOL") -> dict:
     """
@@ -530,344 +514,58 @@ def _drop_forming(df, minutes):
     return df
 
 
-def analyze_technical_topdown(data_dict, symbol: str = None):
+def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = None):
     """
-    تحلیل تکنیکال نسخه ۴.۳
-    اولویت‌بندی بر اساس روش ICT/SMC حرفه‌ای:
-    1. HTF Bias
-    2. Liquidity Sweep
-    3. Structure Shift (CHOCH)
-    4. Entry در FVG یا Order Block
+    تحلیل تکنیکال - استفاده مستقیم از استراتژی Top-Down SMC موتور بک‌تست
+    جهت تضمین ۱۰۰٪ انطباق عددی تحلیل زنده با بک‌تست.
+    """
+    from engine.strategy.smc_topdown import analyze as smc_analyze
+    from engine.core.config import EngineConfig
 
-    symbol: برای خواندن پروفایل هر نماد (min_score / sl_atr_mult)
-    """
     profile = get_symbol_profile(symbol) if symbol else {
         "min_score": MIN_SIGNAL_SCORE,
         "sl_atr_mult": SL_ATR_MULTIPLIER,
     }
-    min_score = profile["min_score"]
-    sl_atr_mult = profile["sl_atr_mult"]
 
-    price = None
-    atr = 0.0
-    zone = "-"
-    df_4h = df_1h = df_15m = None
+    # آماده‌سازی دیتافریم‌های پاک‌شده (حذف کندل‌های در حال تشکیل)
+    cleaned_data = {}
+    m_map = {"1wk": 10080, "1d": 1440, "4h": 240, "1h": 60, "15m": 15, "5m": 5, "1m": 1}
+    for tf, df in data_dict.items():
+        if df is not None:
+            df_m = pd.DataFrame(df)
+            cleaned_data[tf] = _drop_forming(df_m, m_map.get(tf, 15))
 
-    try:
-        df_15m = pd.DataFrame(data_dict["15m"])
-        df_15m = _drop_forming(df_15m, 15)
-        if len(df_15m) > 0:
-            price = float(df_15m["close"].iloc[-1])
-            atr = calculate_atr(df_15m)
-    except Exception:
-        logger.warning("analyze_technical_topdown: خطا در داده 15m", exc_info=True)
+    df_15m = cleaned_data.get("15m")
+    price = float(df_15m["close"].iloc[-1]) if (df_15m is not None and len(df_15m) > 0) else None
+    atr = calculate_atr(df_15m) if (df_15m is not None and len(df_15m) > 0) else 0.0
 
-    try:
-        df_4h = pd.DataFrame(data_dict["4h"])
-        if len(df_4h) >= 20:
-            pd_zone = get_premium_discount(df_4h, lookback=60)
-            zone = pd_zone["zone"]
-    except Exception:
-        logger.warning("analyze_technical_topdown: خطا در داده 4h", exc_info=True)
+    df_4h = cleaned_data.get("4h")
+    pd_zone = get_premium_discount(df_4h, lookback=60) if (df_4h is not None and len(df_4h) >= 20) else {"zone": "-"}
 
-    try:
-        df_1h = pd.DataFrame(data_dict["1h"])
-    except Exception:
-        logger.warning("analyze_technical_topdown: خطا در داده 1h", exc_info=True)
+    # اجرای استراتژی SMC موتور اصلی
+    cfg = EngineConfig(min_score=profile["min_score"], sl_atr1h_mult=profile["sl_atr_mult"])
+    now_dt = pd.Timestamp(now or datetime.now(timezone.utc))
+    if now_dt.tzinfo is None:
+        now_dt = now_dt.tz_localize("UTC")
 
-    td_dir, td_reason, wk_trend, d_trend, soft = top_down_filter(data_dict)
+    dec = smc_analyze(cleaned_data, cfg, now_dt)
 
-    base = {
-        "score": 0.0,
-        "direction": None,
-        "price": price,
-        "sl": None,
-        "tp": None,
-        "trend": td_dir if td_dir in ("BULLISH", "BEARISH") else (wk_trend or "RANGING"),
-        "wk_trend": wk_trend,
-        "d_trend": d_trend,
-        "zone": zone,
-        "atr": round(atr, 6) if atr else 0,
-        "reasons": [],
-        "blocked": False,
+    blocked = dec.blocked is not None or dec.direction is None
+
+    return {
+        "score": round(dec.score, 2),
+        "direction": dec.direction,
+        "price": price if price is not None else dec.entry,
+        "suggested_sl": dec.sl,
+        "suggested_tp": dec.tp,
+        "sl": dec.sl,
+        "tp": dec.tp,
+        "trend": dec.bias,
+        "zone": pd_zone["zone"],
+        "atr": round(atr, 6),
+        "reasons": dec.reasons or ([f"🚫 {dec.blocked}"] if dec.blocked else ["در انتظار"]),
+        "blocked": blocked,
     }
-
-    # فقط تضاد مستقیم سخت بلاک می‌شود
-    if td_dir == "CONFLICT":
-        base["reasons"] = [f"🚫 {td_reason}", f"هفتگی: {wk_trend}", f"روزانه: {d_trend}"]
-        base["blocked"] = True
-        logger.info("بلاک شد (CONFLICT): wk=%s d=%s", wk_trend, d_trend)
-        return base
-
-    if td_dir == "NEUTRAL":
-        base["reasons"] = [f"⏸ {td_reason}"]
-        base["blocked"] = True
-        logger.debug("بلاک شد (NEUTRAL): wk=%s d=%s", wk_trend, d_trend)
-        return base
-
-    if df_4h is None or df_1h is None or df_15m is None:
-        base["reasons"] = ["داده کافی نیست"]
-        base["blocked"] = True
-        return base
-
-    if len(df_4h) < 30 or len(df_1h) < MIN_CANDLES or len(df_15m) < MIN_CANDLES:
-        base["reasons"] = ["داده کافی نیست"]
-        base["blocked"] = True
-        return base
-
-    if atr == 0 or price is None:
-        base["reasons"] = ["ATR یا قیمت نامعتبر"]
-        base["blocked"] = True
-        return base
-
-    # آماده‌سازی داده‌ها
-    df_1h = _drop_forming(df_1h, 60)
-    df_4h = _drop_forming(df_4h, 240)
-    htf_obs = find_order_blocks(df_4h, lookback=60)
-    htf_pd = get_premium_discount(df_4h, lookback=60)
-    ltf_fvg = detect_fvg(df_15m, lookback=15)
-    sweep = detect_liquidity_sweep(df_15m, lookback=30)
-    choch = detect_choch(df_1h, lookback=20)
-    unicorn = detect_unicorn_setup(df_4h, df_1h, df_15m)
-    sweep_mult = sweep_strength_multiplier(sweep, atr)
-    session = current_session_label()
-
-    score = 0.0
-    reasons = [f"🎯 فیلتر محیطی: {td_reason}"]
-    base["session"] = session
-
-    # جریمه حالت soft
-    if soft:
-        # جریمه همیشه به سمت صفر: BUY منفی، SELL مثبت (قبلاً همیشه منفی بود و SELL را تقویت می‌کرد)
-        score += -0.10 if td_dir == "BULLISH" else 0.10
-        reasons.append("⚠️ هم‌راستایی ناقص HTF (جریمه ۰.۱۰ به سمت صفر)")
-
-    # بونوس کوچک و غیرمسدودکننده برای معامله داخل کیل‌زون (فقط تقویت، نه فیلتر سخت)
-    if session == "KILLZONE":
-        reasons.append("⏰ داخل کیل‌زون لندن/نیویورک")
-
-    # جریمه ورود خارج سشن (نقدشوندگی کم / اسپرد پهن = منبع اصلی استاپ‌های کاذب)
-    if session == "OFF_HOURS":
-        score = score - 0.05 if score > 0 else score + 0.05
-        reasons.append("🌙 خارج سشن لندن/نیویورک (جریمه ۰.۰۵ به سمت صفر)")
-
-    # رژیم بازار: نوسان بی‌جهت (RANGING_HIGH_VOL) جریمه می‌شود — دیگر خروجی تزئینی نیست
-    regime = detect_market_regime(df_15m)
-    base["regime"] = regime
-    if regime == "RANGING_HIGH_VOL":
-        score = score - 0.08 if score > 0 else score + 0.08
-        reasons.append("🌀 رژیم رنج پرنوسان (جریمه ۰.۰۸ به سمت صفر)")
-
-    direction = None
-    sl = tp = None
-
-    # ============================================================
-    #  BUY Logic
-    # ============================================================
-    if td_dir == "BULLISH":
-        # ۱. امتیاز پایه هم‌راستایی HTF
-        score += 0.15
-        reasons.append("هم‌راستایی صعودی HTF (+۰.۱۵)")
-
-        # ۲. Liquidity Sweep (مهم‌ترین تریگر از نظر ICT) — امتیاز متناسب با قدرت Sweep
-        if sweep and sweep["type"] == "BULLISH_SWEEP":
-            add = round(0.25 * sweep_mult, 4)
-            score += add
-            reasons.append(f"🔄 Liquidity Sweep صعودی ×{sweep_mult:.2f} (+{add:.2f})")
-        elif sweep and sweep["type"] == "BEARISH_SWEEP":
-            pen = round(0.08 * sweep_mult, 4)
-            score -= pen
-            reasons.append(f"Sweep مخالف جهت (جریمه -{pen:.2f})")
-
-        # کیل‌زون: بونوس کوچک غیرمسدودکننده
-        if session == "KILLZONE":
-            score += 0.05
-            reasons.append("⏰ کیل‌زون فعال (+۰.۰۵)")
-
-        # ۳. Structure Shift (CHOCH)
-        if choch and choch["type"] == "BULLISH_CHOCH":
-            score += 0.18
-            reasons.append("CHOCH صعودی (+۰.۱۸)")
-
-        # ۴. Order Block + فاصله
-        ob = htf_obs.get("bullish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
-
-        if ob:
-            if dist == 0.0:
-                score += 0.30
-                reasons.append("داخل OB صعودی 4H (+۰.۳۰)")
-            elif dist <= 0.50:
-                score += 0.20
-                reasons.append(f"نزدیک OB صعودی ({dist:.2f} ATR) (+۰.۲۰)")
-            elif dist <= 1.0:
-                score += 0.10
-                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (+۰.۱۰)")
-            else:
-                reasons.append(f"دور از OB صعودی ({dist:.2f} ATR)")
-        else:
-            reasons.append("OB صعودی 4H پیدا نشد")
-
-        # ۵. Premium / Discount (نرم)
-        if htf_pd["zone"] == "DISCOUNT":
-            score += 0.12
-            reasons.append("ناحیه Discount (+۰.۱۲)")
-        else:
-            score -= 0.12
-            reasons.append("ناحیه PREMIUM (جریمه -۰.۱۲)")
-
-        # ۶. FVG
-        if ltf_fvg and ltf_fvg["type"] == "BULLISH":
-            score += 0.12
-            reasons.append("FVG صعودی 15m (+۰.۱۲)")
-
-        # ۷. Unicorn کامل (بالاترین confluence)
-        if unicorn and unicorn["direction"] == "BUY":
-            score += 0.22
-            reasons.append("🦄 ستاپ Unicorn کامل صعودی (+۰.۲۲)")
-
-        # ۸. تأیید کندلی
-        if get_candle_confirmation(df_15m, "BUY"):
-            score += 0.10
-            reasons.append("تأییدیه کندلی (+۰.۱۰)")
-
-        # صدور جهت فقط با confluence کافی
-        # شرط: امتیاز کافی + (نزدیک OB یا Unicorn یا Sweep+CHOCH)
-        strong_confluence = (
-            (ob and dist <= 0.75) or
-            (unicorn and unicorn["direction"] == "BUY") or
-            (sweep and sweep["type"] == "BULLISH_SWEEP" and choch and choch["type"] == "BULLISH_CHOCH")
-        )
-
-        if score >= min_score and strong_confluence:
-            direction = "BUY"
-            # SL منطقی: زیر OB یا زیر سطح Sweep (ضریب از پروفایل نماد)
-            if ob:
-                ob_size = ob["high"] - ob["low"]
-                buf = max(atr * sl_atr_mult, ob_size * SL_OB_BUFFER)
-                sl = round(ob["low"] - buf, 6)
-            elif sweep:
-                sl = round(sweep["level"] - atr * sl_atr_mult, 6)
-            else:
-                sl = round(price - atr * sl_atr_mult * 1.5, 6)
-
-            risk = price - sl
-            min_risk = max(atr * MIN_RISK_ATR_RATIO, _min_spread_risk(symbol))
-            if risk <= 0:
-                direction = None
-                sl = None
-                reasons.append("ریسک نامعتبر")
-                logger.warning("BUY: ریسک نامعتبر (risk=%.6f)", risk)
-            elif risk < min_risk:
-                direction = None
-                sl = None
-                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
-                logger.warning("BUY: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
-            else:
-                tp = round(price + risk * RISK_REWARD, 6)
-
-    # ============================================================
-    #  SELL Logic
-    # ============================================================
-    elif td_dir == "BEARISH":
-        score -= 0.15
-        reasons.append("هم‌راستایی نزولی HTF (-۰.۱۵)")
-
-        if sweep and sweep["type"] == "BEARISH_SWEEP":
-            add = round(0.25 * sweep_mult, 4)
-            score -= add
-            reasons.append(f"🔄 Liquidity Sweep نزولی ×{sweep_mult:.2f} (-{add:.2f})")
-        elif sweep and sweep["type"] == "BULLISH_SWEEP":
-            pen = round(0.08 * sweep_mult, 4)
-            score += pen
-            reasons.append(f"Sweep مخالف جهت (جریمه +{pen:.2f})")
-
-        if session == "KILLZONE":
-            score -= 0.05
-            reasons.append("⏰ کیل‌زون فعال (-۰.۰۵)")
-
-        if choch and choch["type"] == "BEARISH_CHOCH":
-            score -= 0.18
-            reasons.append("CHOCH نزولی (-۰.۱۸)")
-
-        ob = htf_obs.get("bearish")
-        dist = _distance_to_ob(price, ob, atr) if ob else 999.0
-
-        if ob:
-            if dist == 0.0:
-                score -= 0.30
-                reasons.append("داخل OB نزولی 4H (-۰.۳۰)")
-            elif dist <= 0.50:
-                score -= 0.20
-                reasons.append(f"نزدیک OB نزولی ({dist:.2f} ATR) (-۰.۲۰)")
-            elif dist <= 1.0:
-                score -= 0.10
-                reasons.append(f"نسبتاً نزدیک OB ({dist:.2f} ATR) (-۰.۱۰)")
-            else:
-                reasons.append(f"دور از OB نزولی ({dist:.2f} ATR)")
-        else:
-            reasons.append("OB نزولی 4H پیدا نشد")
-
-        if htf_pd["zone"] == "PREMIUM":
-            score -= 0.12
-            reasons.append("ناحیه Premium (-۰.۱۲)")
-        else:
-            score += 0.12
-            reasons.append("ناحیه DISCOUNT (جریمه معکوس +۰.۱۲)")
-
-        if ltf_fvg and ltf_fvg["type"] == "BEARISH":
-            score -= 0.12
-            reasons.append("FVG نزولی 15m (-۰.۱۲)")
-
-        if unicorn and unicorn["direction"] == "SELL":
-            score -= 0.22
-            reasons.append("🦄 ستاپ Unicorn کامل نزولی (-۰.۲۲)")
-
-        if get_candle_confirmation(df_15m, "SELL"):
-            score -= 0.10
-            reasons.append("تأییدیه کندلی (-۰.۱۰)")
-
-        strong_confluence = (
-            (ob and dist <= 0.75) or
-            (unicorn and unicorn["direction"] == "SELL") or
-            (sweep and sweep["type"] == "BEARISH_SWEEP" and choch and choch["type"] == "BEARISH_CHOCH")
-        )
-
-        if score <= -min_score and strong_confluence:
-            direction = "SELL"
-            if ob:
-                ob_size = ob["high"] - ob["low"]
-                buf = max(atr * sl_atr_mult, ob_size * SL_OB_BUFFER)
-                sl = round(ob["high"] + buf, 6)
-            elif sweep:
-                sl = round(sweep["level"] + atr * sl_atr_mult, 6)
-            else:
-                sl = round(price + atr * sl_atr_mult * 1.5, 6)
-
-            risk = sl - price
-            min_risk = max(atr * MIN_RISK_ATR_RATIO, _min_spread_risk(symbol))
-            if risk <= 0:
-                direction = None
-                sl = None
-                reasons.append("ریسک نامعتبر")
-                logger.warning("SELL: ریسک نامعتبر (risk=%.6f)", risk)
-            elif risk < min_risk:
-                direction = None
-                sl = None
-                reasons.append(f"ریسک خیلی کوچک ({risk:.5f} < حداقل {min_risk:.5f})")
-                logger.warning("SELL: ریسک کمتر از حداقل مجاز (risk=%.6f, min=%.6f)", risk, min_risk)
-            else:
-                tp = round(price - risk * RISK_REWARD, 6)
-
-    base.update({
-        "score": round(score, 2),
-        "direction": direction,
-        "sl": sl,
-        "tp": tp,
-        "zone": htf_pd["zone"],
-        "reasons": reasons,
-    })
-    return base
 
 
 # ============================================================
@@ -904,17 +602,6 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         fund["score"] * WEIGHT_FUNDAMENTAL +
         news_score * WEIGHT_NEWS +
         mem["score"] * WEIGHT_MEMORY
-    )
-
-    regime = tech.get("regime") or "RANGING_LOW_VOL"
-    # Super Quant Score (فعال‌سازی کد مرده): امتیاز ترکیبی نرمال‌شده + گرید کیفیت،
-    # در خروجی سیگنال و پیام تلگرام گزارش می‌شود.
-    sq = calculate_super_quant_score(
-        max(-1.0, min(1.0, tech["score"] / 1.5)),
-        max(-1.0, min(1.0, fund["score"])),
-        max(-1.0, min(1.0, news_score)),
-        max(-1.0, min(1.0, mem["score"])),
-        regime_label=regime,
     )
 
     if not news_safe:
@@ -964,9 +651,6 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     return {
         "score": round(final_score, 2),
         "grade": grade,
-        "super_quant_score": sq["super_quant_score"],
-        "super_grade": sq["super_grade"],
-        "regime": regime,
         "technical_score": tech["score"],
         "fundamental_score": fund["score"],
         "news_score": news_score,

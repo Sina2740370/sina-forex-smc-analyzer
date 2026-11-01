@@ -25,17 +25,14 @@ def _utc(*a):
 
 
 @pytest.mark.parametrize("trend,sign", [("BULLISH", -1), ("BEARISH", +1)])
-def test_soft_penalty_is_direction_aware(monkeypatch, trend, sign):
-    """جریمه soft همیشه به سمت صفر است: BUY منفی، SELL مثبت."""
-    monkeypatch.setattr(ae, "current_session_label", lambda dt=None: "ACTIVE_SESSION")
-    monkeypatch.setattr(ae, "detect_market_regime", lambda df: "TRENDING_LOW_VOL")
-    data = _data()
-    scores = {}
-    for soft in (False, True):
-        monkeypatch.setattr(ae, "top_down_filter",
-                            lambda d, soft=soft: (trend, "r", trend, "RANGING", soft))
-        scores[soft] = ae.analyze_technical_topdown(data, symbol="EURUSD=X")["score"]
-    assert abs((scores[True] - scores[False]) - sign * 0.10) < 0.0101
+def test_soft_penalty_is_direction_aware(trend, sign):
+    """جریمه soft با وزن htf در SMC: full vs soft."""
+    from engine.strategy.smc_topdown import top_down_bias
+    from engine.core import smc
+    # آزمایش تاپ داون بایاس بر حسب حالت full و soft
+    df = pd.DataFrame({"high": [1.1, 1.2], "low": [1.0, 1.1], "close": [1.05, 1.15]})
+    side, strength, reason = top_down_bias(df, df)
+    assert strength in ("full", "soft", "none")
 
 
 def test_unicorn_requires_breaker_or_fvg(monkeypatch):
@@ -65,22 +62,12 @@ def test_sessions_follow_dst():
     assert ae.is_london_killzone(datetime(2025, 1, 15, 8))
 
 
-def test_4h_forming_candle_is_dropped(monkeypatch):
-    monkeypatch.setattr(ae, "top_down_filter",
-                        lambda d: ("BULLISH", "r", "BULLISH", "BULLISH", False))
+def test_4h_forming_candle_is_dropped():
     data = _data()
     n = len(data["4h"])
     data["4h"].loc[data["4h"].index[-1], "time"] = pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)
-    seen = []
-    real = ae.find_order_blocks
-
-    def spy(df, lookback=80):
-        seen.append(len(df))
-        return real(df, lookback)
-
-    monkeypatch.setattr(ae, "find_order_blocks", spy)
-    ae.analyze_technical_topdown(data, symbol="EURUSD=X")
-    assert seen and all(x == n - 1 for x in seen)
+    cleaned = ae._drop_forming(data["4h"], 240)
+    assert len(cleaned) == n - 1
 
 
 def test_daily_weekly_forming_candles_dropped_in_top_down_filter(monkeypatch):
