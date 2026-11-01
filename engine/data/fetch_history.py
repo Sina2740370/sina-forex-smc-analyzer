@@ -38,7 +38,7 @@ def _read_cache_csv(path: str) -> pd.DataFrame:
 def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) -> str:
     import dukascopy_python as dk
 
-    pair = f"{symbol[:3]}/{symbol[3:]}"
+    pair = f"{symbol[:3]}-{symbol[3:]}"
     end = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
     start = (end - timedelta(days=int(365 * years))).replace(day=1, hour=0)
     cache = os.path.join(out_dir, ".cache")
@@ -53,8 +53,8 @@ def fetch_symbol(symbol: str, years: float, out_dir: str, verbose: bool = True) 
             continue
         if verbose:
             print(f"  {symbol} {a:%Y-%m-%d} -> {b:%Y-%m-%d} ...", flush=True)
-        df = dk.fetch(pair, dk.INTERVAL_MIN_15, dk.OFFER_SIDE_BID, a, b)
-        df = df[COLS]
+        raw = dk.fetch_candles(pair, 15, dk.TimeUnit.MINUTE, dk.OfferSide.BID, a, b)
+        df = dk.to_dataframe(raw)[COLS]
         if fresh:
             df.to_csv(f)
         parts.append(df)

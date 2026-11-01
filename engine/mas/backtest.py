@@ -159,6 +159,11 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         # ۲) تحلیل در نقطه تصمیم (فقط داده ≤ now — داخل analyze_mas)
         sig = analyze_mas(df, symbol, now, spread_price=sp, acct=acct, feeds=feeds,
                           top_cache=top_cache, cfg=cfg)
+        # فاکتور تجربی session_filter: فقط معامله در سشن‌های مجاز
+        allowed = (cfg or {}).get("session_filter")
+        if allowed and sig.signal in ("BUY", "SELL") and sig.session not in allowed:
+            res.wait_reasons["S-FLT"] = res.wait_reasons.get("S-FLT", 0) + 1
+            continue
         if sig.signal == "WAIT" or not sig.cand:
             key = (sig.wait_reason or "WAIT").split(":")[0].strip() or "WAIT"
             res.wait_reasons[key] = res.wait_reasons.get(key, 0) + 1

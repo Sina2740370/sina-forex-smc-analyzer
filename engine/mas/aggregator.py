@@ -126,9 +126,16 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
 
     # G3: هم‌خوانی رژیم با جهت
     htb = regime_ctx.get("htf_bias", 0)
-    regime_ok = bool((htb > 0 and direction == BUY) or (htb < 0 and direction == SELL)
-                     or (sig.market_regime in ("range",)))  # در رنج، برگشت از سطح مجاز است
-    sig.gate_results.append(GateResult("G3", regime_ok, f"htf_bias={htb:+d}, regime={sig.market_regime}"))
+    # فاکتور تجربی w1_bias: هم‌خوانی با روند هفتگی (EMA8 روی W1) — فقط با cfg فعال می‌شود
+    w1b = _w1_bias(top) if (cfg or {}).get("w1_bias") else 0
+    w1_ok = bool(not (cfg or {}).get("w1_bias")
+                 or (htb > 0 and w1b > 0) or (htb < 0 and w1b < 0)
+                 or sig.market_regime in ("range",))
+    regime_ok = bool(((htb > 0 and direction == BUY) or (htb < 0 and direction == SELL)
+                      or (sig.market_regime in ("range",)))  # در رنج، برگشت از سطح مجاز است
+                     and w1_ok)
+    sig.gate_results.append(GateResult("G3", regime_ok,
+                                       f"htf_bias={htb:+d}, regime={sig.market_regime}, w1={w1b or 'off'}"))
     if not regime_ok:
         return _finish_wait(sig, "G3: رژیم/ساختار بلندمدت با جهت سیگنال هم‌خوان نیست",
                             reports, warnings, missing, tip="تغییر ساختار H4/D1 به هم‌جهت سیگنال")
@@ -140,6 +147,17 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
         return _finish_wait(sig, "G4: ستاپ معتبر با SL ساختاری و RR≥2 پیدا نشد",
                             reports, warnings, missing,
                             tip="تشکیل ستاپ در ناحیه فیبو/ساختار با تأیید مومنتوم")
+    # فاکتور تجربی sl_mode=atr: جایگزینی SL ساختاری با k×ATR1h (SL تنگ‌تر → RR بالاتر).
+    # ادعایی درباره کیفیت نیست؛ فقط آزمون تجربی که خروج آن در بک‌تست سنجیده می‌شود.
+    if (cfg or {}).get("sl_mode") == "atr" and cand.get("risk_atr1h"):
+        d2 = 1 if direction == BUY else -1
+        atr1h = abs(cand["entry"] - cand["sl"]) / max(1e-9, cand["risk_atr1h"])
+        k = float(cfg.get("atr_k", 1.5))
+        sl_new = cand["entry"] - d2 * k * atr1h
+        dist = abs(cand["entry"] - sl_new)
+        if dist > 0:
+            cand = {**cand, "sl": sl_new, "tp1": cand["entry"] + d2 * dist,
+                    "tp2": cand["entry"] + d2 * 2.0 * dist, "rr": 2.0}
     rr = cand["rr"]
     ok4 = bool(rr >= float((cfg or {}).get("min_rr", 2.0)))
     sig.gate_results.append(GateResult("G4", ok4, f"RR={rr:.2f}, SL_dist/cand={cand['risk_atr1h']:.2f}×ATR1h"))
@@ -200,6 +218,18 @@ def _top_from_cache(top_cache: dict, df_past: pd.DataFrame, now: pd.Timestamp) -
         tail = resample_ohlc(tail_rows, tf) if len(tail_rows) else fr.iloc[0:0]
         out[tf] = pd.concat([head, tail], ignore_index=True) if len(tail) else head
     return out
+
+
+def _w1_bias(top: dict) -> int:
+    """جهت روند هفتگی: کلوز W1 نسبت به EMA8 هفتگی (۱=بالای EMA، −۱=زیر)."""
+    w = top.get("1wk")
+    if w is None or len(w) < 10:
+        return 0
+    from .indicators import ema
+    c = w["close"]
+    e8 = ema(c, 8).iloc[-1]
+    px = float(c.iloc[-1])
+    return 1 if px > e8 else -1
 
 
 def _htf_bias(top: dict) -> int:

@@ -1,0 +1,3056 @@
+{
+  "EURJPY": {
+    "baseline": {
+      "symbol": "EURJPY",
+      "points": 3087,
+      "signals": 10,
+      "trades": 10,
+      "wins": 5,
+      "losses": 5,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.03,
+      "expectancy_R": 0.542,
+      "total_pnl_usd": 543.08,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10543.08,
+      "by_regime": {
+        "strong_trend": {
+          "n": 10,
+          "wins": 5,
+          "pnl": 543.07,
+          "r_sum": 5.44
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 3,
+          "pnl": 427.96,
+          "r_sum": 4.23
+        },
+        "London": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 224.21,
+          "r_sum": 2.21
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -109.1,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2869,
+        "G5": 184
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 2.079,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-19 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-26 08:00:00+00:00",
+          "r": 2.095,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-21 16:00:00+00:00",
+          "r": 2.084,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.065,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 08:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 00:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-03-21 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 241.6
+    },
+    "sess_ny": {
+      "symbol": "EURJPY",
+      "points": 3087,
+      "signals": 7,
+      "trades": 7,
+      "wins": 3,
+      "losses": 4,
+      "win_rate_pct": 42.9,
+      "profit_factor": 1.53,
+      "expectancy_R": 0.324,
+      "total_pnl_usd": 220.91,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 10220.91,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 3,
+          "pnl": 220.9,
+          "r_sum": 2.28
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 7,
+          "wins": 3,
+          "pnl": 220.9,
+          "r_sum": 2.28
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2853,
+        "G5": 182,
+        "S-FLT": 6
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 2.079,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": -0.993,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-21 16:00:00+00:00",
+          "r": 2.107,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 16:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 16:00:00+00:00",
+          "r": -1.009,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 192.4
+    },
+    "sess_lnny": {
+      "symbol": "EURJPY",
+      "points": 3087,
+      "signals": 10,
+      "trades": 10,
+      "wins": 5,
+      "losses": 5,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.03,
+      "expectancy_R": 0.542,
+      "total_pnl_usd": 542.86,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10542.86,
+      "by_regime": {
+        "strong_trend": {
+          "n": 10,
+          "wins": 5,
+          "pnl": 542.85,
+          "r_sum": 5.44
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 3,
+          "pnl": 427.96,
+          "r_sum": 4.24
+        },
+        "London": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 114.89,
+          "r_sum": 1.2
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2863,
+        "G5": 182,
+        "S-FLT": 1
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 2.079,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-19 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-26 08:00:00+00:00",
+          "r": 2.095,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-21 16:00:00+00:00",
+          "r": 2.084,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.065,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 08:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 08:00:00+00:00",
+          "r": -1.002,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -0.994,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 08:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 185.8
+    },
+    "w1_bias": {
+      "symbol": "EURJPY",
+      "points": 3087,
+      "signals": 10,
+      "trades": 10,
+      "wins": 5,
+      "losses": 5,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.03,
+      "expectancy_R": 0.542,
+      "total_pnl_usd": 543.08,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10543.08,
+      "by_regime": {
+        "strong_trend": {
+          "n": 10,
+          "wins": 5,
+          "pnl": 543.07,
+          "r_sum": 5.44
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 3,
+          "pnl": 427.96,
+          "r_sum": 4.23
+        },
+        "London": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 224.21,
+          "r_sum": 2.21
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -109.1,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2869,
+        "G5": 184
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 2.079,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-19 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-26 08:00:00+00:00",
+          "r": 2.095,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-21 16:00:00+00:00",
+          "r": 2.084,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.065,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 08:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 00:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-03-21 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "w1_bias",
+      "elapsed_sec": 183.7
+    }
+  },
+  "AUDUSD": {
+    "baseline": {
+      "symbol": "AUDUSD",
+      "points": 3087,
+      "signals": 6,
+      "trades": 6,
+      "wins": 2,
+      "losses": 4,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.0,
+      "expectancy_R": 0.008,
+      "total_pnl_usd": -1.48,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9998.52,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 2,
+          "pnl": -1.48,
+          "r_sum": 0.03
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 204.74,
+          "r_sum": 2.04
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.89,
+          "r_sum": -1.01
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -102.33,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2939,
+        "G5": 131
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-02-29 00:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-15 00:00:00+00:00",
+          "r": 2.023,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-16 00:00:00+00:00",
+          "r": 2.025,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-18 00:00:00+00:00",
+          "r": -0.996,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 283.5
+    },
+    "sess_ny": {
+      "symbol": "AUDUSD",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.996,
+      "total_pnl_usd": -295.95,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 9704.05,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -295.95,
+          "r_sum": -2.99
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -295.95,
+          "r_sum": -2.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2941,
+        "G5": 122,
+        "S-FLT": 12
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-19 16:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 208.9
+    },
+    "sess_lnny": {
+      "symbol": "AUDUSD",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.001,
+      "total_pnl_usd": -297.25,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9702.75,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -297.26,
+          "r_sum": -3.01
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -198.59,
+          "r_sum": -2.01
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.67,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2941,
+        "G5": 122,
+        "S-FLT": 7
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-04-16 08:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-17 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-19 08:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 201.1
+    },
+    "w1_bias": {
+      "symbol": "AUDUSD",
+      "points": 3087,
+      "signals": 6,
+      "trades": 6,
+      "wins": 2,
+      "losses": 4,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.0,
+      "expectancy_R": 0.008,
+      "total_pnl_usd": -1.48,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9998.52,
+      "by_regime": {
+        "strong_trend": {
+          "n": 6,
+          "wins": 2,
+          "pnl": -1.48,
+          "r_sum": 0.03
+        }
+      },
+      "by_session": {
+        "Asia": {
+          "n": 4,
+          "wins": 2,
+          "pnl": 204.74,
+          "r_sum": 2.04
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -103.89,
+          "r_sum": -1.01
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -102.33,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2939,
+        "G5": 131
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-02-29 00:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-15 00:00:00+00:00",
+          "r": 2.023,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-16 00:00:00+00:00",
+          "r": 2.025,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-18 00:00:00+00:00",
+          "r": -0.996,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "w1_bias",
+      "elapsed_sec": 203.9
+    }
+  },
+  "GBPJPY": {
+    "baseline": {
+      "symbol": "GBPJPY",
+      "points": 3087,
+      "signals": 9,
+      "trades": 9,
+      "wins": 4,
+      "losses": 5,
+      "win_rate_pct": 44.4,
+      "profit_factor": 1.6,
+      "expectancy_R": 0.353,
+      "total_pnl_usd": 311.48,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10311.48,
+      "by_regime": {
+        "strong_trend": {
+          "n": 9,
+          "wins": 4,
+          "pnl": 311.48,
+          "r_sum": 3.18
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -107.37,
+          "r_sum": -0.95
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 3,
+          "pnl": 521.73,
+          "r_sum": 5.13
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -102.88,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2827,
+        "G5": 192
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 08:00:00+00:00",
+          "r": 2.037,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": 2.025,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-12 00:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-02-12 16:00:00+00:00",
+          "r": 2.086,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.019,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-26 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-27 08:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-01 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 191.4
+    },
+    "sess_ny": {
+      "symbol": "GBPJPY",
+      "points": 3087,
+      "signals": 8,
+      "trades": 8,
+      "wins": 3,
+      "losses": 5,
+      "win_rate_pct": 37.5,
+      "profit_factor": 1.21,
+      "expectancy_R": 0.141,
+      "total_pnl_usd": 104.99,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10104.99,
+      "by_regime": {
+        "strong_trend": {
+          "n": 8,
+          "wins": 3,
+          "pnl": 104.99,
+          "r_sum": 1.14
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 8,
+          "wins": 3,
+          "pnl": 104.99,
+          "r_sum": 1.14
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2787,
+        "G5": 181,
+        "S-FLT": 14
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": -1.012,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-12 16:00:00+00:00",
+          "r": 2.068,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.034,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-26 16:00:00+00:00",
+          "r": -0.993,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-01 16:00:00+00:00",
+          "r": 2.022,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 16:00:00+00:00",
+          "r": -0.991,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 16:00:00+00:00",
+          "r": -1.002,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 195.1
+    },
+    "sess_lnny": {
+      "symbol": "GBPJPY",
+      "points": 3087,
+      "signals": 9,
+      "trades": 9,
+      "wins": 4,
+      "losses": 5,
+      "win_rate_pct": 44.4,
+      "profit_factor": 1.6,
+      "expectancy_R": 0.352,
+      "total_pnl_usd": 310.64,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10310.64,
+      "by_regime": {
+        "strong_trend": {
+          "n": 9,
+          "wins": 4,
+          "pnl": 310.63,
+          "r_sum": 3.16
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -211.1,
+          "r_sum": -1.97
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 3,
+          "pnl": 521.73,
+          "r_sum": 5.13
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2827,
+        "G5": 192,
+        "S-FLT": 3
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 08:00:00+00:00",
+          "r": 2.037,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": 2.025,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-12 08:00:00+00:00",
+          "r": -1.006,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-12 16:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": 2.019,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-26 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-27 08:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-01 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 187.3
+    }
+  },
+  "EURUSD": {
+    "baseline": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.68,
+      "expectancy_R": -0.233,
+      "total_pnl_usd": -96.43,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9903.57,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -96.43,
+          "r_sum": -0.94
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 104.39,
+          "r_sum": 1.06
+        },
+        "Asia": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -200.82,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3512,
+        "G5": 100
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-13 16:00:00+00:00",
+          "r": 2.073,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-18 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-06-24 00:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-06-27 00:00:00+00:00",
+          "r": -1.002,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 284.8
+    },
+    "sess_ny": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 14,
+      "trades": 14,
+      "wins": 7,
+      "losses": 7,
+      "win_rate_pct": 50.0,
+      "profit_factor": 1.94,
+      "expectancy_R": 0.488,
+      "total_pnl_usd": 689.11,
+      "max_drawdown_pct": 2.01,
+      "equity_end": 10689.11,
+      "by_regime": {
+        "strong_trend": {
+          "n": 14,
+          "wins": 7,
+          "pnl": 689.12,
+          "r_sum": 6.82
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 14,
+          "wins": 7,
+          "pnl": 689.12,
+          "r_sum": 6.82
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3440,
+        "S-FLT": 38
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-13 16:00:00+00:00",
+          "r": 2.073,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-18 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-14 16:00:00+00:00",
+          "r": -1.014,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-21 16:00:00+00:00",
+          "r": 2.14,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-22 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-17 16:00:00+00:00",
+          "r": 2.06,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-16 16:00:00+00:00",
+          "r": -0.991,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-27 16:00:00+00:00",
+          "r": 2.098,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-23 16:00:00+00:00",
+          "r": 2.073,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-24 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-25 16:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-22 16:00:00+00:00",
+          "r": 2.112,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-24 16:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-01 16:00:00+00:00",
+          "r": 1.315,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 243.0
+    },
+    "sess_lnny": {
+      "symbol": "EURUSD",
+      "points": 3630,
+      "signals": 9,
+      "trades": 9,
+      "wins": 3,
+      "losses": 6,
+      "win_rate_pct": 33.3,
+      "profit_factor": 1.03,
+      "expectancy_R": 0.03,
+      "total_pnl_usd": 17.08,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 10017.08,
+      "by_regime": {
+        "strong_trend": {
+          "n": 9,
+          "wins": 3,
+          "pnl": 17.08,
+          "r_sum": 0.27
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 112.98,
+          "r_sum": 1.18
+        },
+        "London": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -95.9,
+          "r_sum": -0.91
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3509,
+        "G5": 64,
+        "S-FLT": 10
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-13 16:00:00+00:00",
+          "r": 2.073,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-18 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-06-27 08:00:00+00:00",
+          "r": -1.005,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-14 08:00:00+00:00",
+          "r": 2.104,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-14 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-21 16:00:00+00:00",
+          "r": 2.117,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-22 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-03 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-03 08:00:00+00:00",
+          "r": -1.014,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 255.2
+    }
+  },
+  "GBPUSD": {
+    "baseline": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 33,
+      "trades": 33,
+      "wins": 14,
+      "losses": 19,
+      "win_rate_pct": 42.4,
+      "profit_factor": 1.52,
+      "expectancy_R": 0.312,
+      "total_pnl_usd": 1040.25,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 11040.25,
+      "by_regime": {
+        "strong_trend": {
+          "n": 33,
+          "wins": 14,
+          "pnl": 1040.27,
+          "r_sum": 10.33
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 16,
+          "wins": 6,
+          "pnl": 231.33,
+          "r_sum": 2.53
+        },
+        "NewYork": {
+          "n": 14,
+          "wins": 7,
+          "pnl": 802.45,
+          "r_sum": 7.71
+        },
+        "Asia": {
+          "n": 3,
+          "wins": 1,
+          "pnl": 6.49,
+          "r_sum": 0.09
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3395,
+        "G5": 33,
+        "G2": 1
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-10 08:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-10 16:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-13 08:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": -0.977,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-07 16:00:00+00:00",
+          "r": 2.167,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-08 16:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 08:00:00+00:00",
+          "r": 2.057,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-16 08:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-16 16:00:00+00:00",
+          "r": 2.036,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-20 16:00:00+00:00",
+          "r": -1.011,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-21 08:00:00+00:00",
+          "r": 2.014,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-21 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-23 16:00:00+00:00",
+          "r": -1.023,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-16 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-18 08:00:00+00:00",
+          "r": 2.162,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-19 08:00:00+00:00",
+          "r": 2.115,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-23 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-25 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-13 00:00:00+00:00",
+          "r": 2.113,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-14 00:00:00+00:00",
+          "r": -1.01,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-20 00:00:00+00:00",
+          "r": -1.01,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-04-14 08:00:00+00:00",
+          "r": 2.08,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-21 08:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-22 08:00:00+00:00",
+          "r": -1.013,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-24 08:00:00+00:00",
+          "r": 2.108,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 08:00:00+00:00",
+          "r": -0.988,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 16:00:00+00:00",
+          "r": 2.101,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-23 16:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-26 08:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-27 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-05 16:00:00+00:00",
+          "r": -0.989,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 250.0
+    },
+    "sess_ny": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.69,
+      "expectancy_R": -0.222,
+      "total_pnl_usd": -91.91,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 9908.09,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -91.91,
+          "r_sum": -0.89
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -91.91,
+          "r_sum": -0.89
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3465,
+        "G5": 131,
+        "S-FLT": 4,
+        "G2": 1
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-10 16:00:00+00:00",
+          "r": 2.09,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-13 16:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-17 16:00:00+00:00",
+          "r": -1.005,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": -0.977,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 254.7
+    },
+    "sess_lnny": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 31,
+      "trades": 31,
+      "wins": 13,
+      "losses": 18,
+      "win_rate_pct": 41.9,
+      "profit_factor": 1.49,
+      "expectancy_R": 0.3,
+      "total_pnl_usd": 932.87,
+      "max_drawdown_pct": 2.95,
+      "equity_end": 10932.87,
+      "by_regime": {
+        "strong_trend": {
+          "n": 31,
+          "wins": 13,
+          "pnl": 932.89,
+          "r_sum": 9.31
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 16,
+          "wins": 6,
+          "pnl": 242.91,
+          "r_sum": 2.61
+        },
+        "NewYork": {
+          "n": 15,
+          "wins": 7,
+          "pnl": 689.98,
+          "r_sum": 6.7
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3396,
+        "G5": 33,
+        "S-FLT": 5,
+        "G2": 1
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-10 08:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-10 16:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-13 08:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": -0.977,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-07 16:00:00+00:00",
+          "r": 2.167,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-08 16:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 08:00:00+00:00",
+          "r": 2.057,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-16 08:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-16 16:00:00+00:00",
+          "r": 2.036,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-20 16:00:00+00:00",
+          "r": -1.011,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-21 08:00:00+00:00",
+          "r": 2.014,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-21 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-23 16:00:00+00:00",
+          "r": -1.023,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-16 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-18 08:00:00+00:00",
+          "r": 2.162,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-19 08:00:00+00:00",
+          "r": 2.115,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-23 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-25 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-14 16:00:00+00:00",
+          "r": -0.983,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-04-14 08:00:00+00:00",
+          "r": 2.102,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-21 08:00:00+00:00",
+          "r": -0.989,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-22 08:00:00+00:00",
+          "r": -0.996,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-24 08:00:00+00:00",
+          "r": 2.129,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 08:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 16:00:00+00:00",
+          "r": 2.063,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-23 16:00:00+00:00",
+          "r": 2.098,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-26 08:00:00+00:00",
+          "r": -0.988,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-27 08:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-05 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 251.3
+    }
+  },
+  "NZDUSD": {
+    "baseline": {
+      "symbol": "NZDUSD",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.002,
+      "total_pnl_usd": -297.73,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9702.27,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -297.72,
+          "r_sum": -3.01
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -100.88,
+          "r_sum": -1.01
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.94,
+          "r_sum": -1.0
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.9,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2953,
+        "G5": 120
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-02-22 08:00:00+00:00",
+          "r": -1.009,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-12 00:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 214.4
+    },
+    "sess_ny": {
+      "symbol": "NZDUSD",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.997,
+      "total_pnl_usd": -296.19,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 9703.81,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.19,
+          "r_sum": -2.99
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -296.19,
+          "r_sum": -2.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2953,
+        "G5": 104,
+        "S-FLT": 13
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-29 16:00:00+00:00",
+          "r": -0.99,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-19 16:00:00+00:00",
+          "r": -0.995,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 196.2
+    },
+    "sess_lnny": {
+      "symbol": "NZDUSD",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -1.0,
+      "total_pnl_usd": -297.06,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9702.94,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -297.05,
+          "r_sum": -3.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -198.11,
+          "r_sum": -2.0
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.94,
+          "r_sum": -1.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2954,
+        "G5": 110,
+        "S-FLT": 10
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-02-22 08:00:00+00:00",
+          "r": -1.009,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-29 08:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "London"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 207.6
+    }
+  },
+  "USDCAD": {
+    "baseline": {
+      "symbol": "USDCAD",
+      "points": 3087,
+      "signals": 7,
+      "trades": 7,
+      "wins": 3,
+      "losses": 4,
+      "win_rate_pct": 42.9,
+      "profit_factor": 1.47,
+      "expectancy_R": 0.285,
+      "total_pnl_usd": 193.4,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10193.4,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 3,
+          "pnl": 193.41,
+          "r_sum": 2.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 2,
+          "pnl": 296.85,
+          "r_sum": 2.98
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -103.44,
+          "r_sum": -0.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2967,
+        "G5": 102
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-04-11 08:00:00+00:00",
+          "r": 1.983,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-12 08:00:00+00:00",
+          "r": 1.999,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-12 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-15 16:00:00+00:00",
+          "r": 2.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-16 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -1.002,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 16:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 210.9
+    },
+    "sess_ny": {
+      "symbol": "USDCAD",
+      "points": 3087,
+      "signals": 5,
+      "trades": 5,
+      "wins": 1,
+      "losses": 4,
+      "win_rate_pct": 20.0,
+      "profit_factor": 0.5,
+      "expectancy_R": -0.397,
+      "total_pnl_usd": -200.58,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 9799.42,
+      "by_regime": {
+        "strong_trend": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -200.58,
+          "r_sum": -1.98
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 5,
+          "wins": 1,
+          "pnl": -200.58,
+          "r_sum": -1.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2967,
+        "G5": 100,
+        "S-FLT": 4
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-04-12 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-15 16:00:00+00:00",
+          "r": 2.013,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -0.993,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-06-11 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 203.2
+    },
+    "sess_lnny": {
+      "symbol": "USDCAD",
+      "points": 3087,
+      "signals": 7,
+      "trades": 7,
+      "wins": 3,
+      "losses": 4,
+      "win_rate_pct": 42.9,
+      "profit_factor": 1.47,
+      "expectancy_R": 0.285,
+      "total_pnl_usd": 193.4,
+      "max_drawdown_pct": 2.97,
+      "equity_end": 10193.4,
+      "by_regime": {
+        "strong_trend": {
+          "n": 7,
+          "wins": 3,
+          "pnl": 193.41,
+          "r_sum": 2.0
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 3,
+          "wins": 2,
+          "pnl": 296.85,
+          "r_sum": 2.98
+        },
+        "NewYork": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -103.44,
+          "r_sum": -0.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2967,
+        "G5": 102
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-04-11 08:00:00+00:00",
+          "r": 1.983,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-12 08:00:00+00:00",
+          "r": 1.999,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-12 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-15 16:00:00+00:00",
+          "r": 2.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-16 08:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-16 16:00:00+00:00",
+          "r": -1.002,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-17 16:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 205.6
+    }
+  },
+  "USDCHF": {
+    "baseline": {
+      "symbol": "USDCHF",
+      "points": 3087,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.991,
+      "total_pnl_usd": -294.42,
+      "max_drawdown_pct": 2.94,
+      "equity_end": 9705.58,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -294.41,
+          "r_sum": -2.97
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -99.16,
+          "r_sum": -0.99
+        },
+        "NewYork": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -98.88,
+          "r_sum": -1.0
+        },
+        "Asia": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -96.37,
+          "r_sum": -0.98
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3011,
+        "G5": 57
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-03-28 08:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-22 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-07 00:00:00+00:00",
+          "r": -0.983,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 214.5
+    },
+    "sess_ny": {
+      "symbol": "USDCHF",
+      "points": 3087,
+      "signals": 9,
+      "trades": 9,
+      "wins": 3,
+      "losses": 6,
+      "win_rate_pct": 33.3,
+      "profit_factor": 0.97,
+      "expectancy_R": -0.007,
+      "total_pnl_usd": -15.41,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9984.59,
+      "by_regime": {
+        "strong_trend": {
+          "n": 9,
+          "wins": 3,
+          "pnl": -15.41,
+          "r_sum": -0.07
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 9,
+          "wins": 3,
+          "pnl": -15.41,
+          "r_sum": -0.07
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2995,
+        "S-FLT": 28,
+        "G5": 7
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-05-22 16:00:00+00:00",
+          "r": -1.006,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-16 16:00:00+00:00",
+          "r": 1.996,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-31 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-02 16:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-07 16:00:00+00:00",
+          "r": 2.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-14 16:00:00+00:00",
+          "r": 1.961,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-17 16:00:00+00:00",
+          "r": -1.004,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-28 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-29 16:00:00+00:00",
+          "r": -1.008,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 206.4
+    },
+    "sess_lnny": {
+      "symbol": "USDCHF",
+      "points": 3087,
+      "signals": 13,
+      "trades": 13,
+      "wins": 5,
+      "losses": 8,
+      "win_rate_pct": 38.5,
+      "profit_factor": 1.2,
+      "expectancy_R": 0.132,
+      "total_pnl_usd": 159.78,
+      "max_drawdown_pct": 2.0,
+      "equity_end": 10159.78,
+      "by_regime": {
+        "strong_trend": {
+          "n": 13,
+          "wins": 5,
+          "pnl": 159.78,
+          "r_sum": 1.7
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 78.37,
+          "r_sum": 0.82
+        },
+        "NewYork": {
+          "n": 8,
+          "wins": 3,
+          "pnl": 81.41,
+          "r_sum": 0.88
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2992,
+        "S-FLT": 19
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-03-28 08:00:00+00:00",
+          "r": -0.992,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-22 16:00:00+00:00",
+          "r": -0.999,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-16 16:00:00+00:00",
+          "r": 1.969,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-31 16:00:00+00:00",
+          "r": -1.009,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-02 08:00:00+00:00",
+          "r": 1.922,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-02 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-07 16:00:00+00:00",
+          "r": 1.982,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-14 08:00:00+00:00",
+          "r": -1.007,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-14 16:00:00+00:00",
+          "r": 1.964,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-17 16:00:00+00:00",
+          "r": -1.005,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-28 08:00:00+00:00",
+          "r": 1.899,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-29 08:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-30 16:00:00+00:00",
+          "r": -1.011,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 201.2
+    }
+  },
+  "USDJPY": {
+    "baseline": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.986,
+      "total_pnl_usd": -292.94,
+      "max_drawdown_pct": 2.93,
+      "equity_end": 9707.06,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -292.94,
+          "r_sum": -2.96
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -195.11,
+          "r_sum": -1.97
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.83,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3486,
+        "G5": 130
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-21 16:00:00+00:00",
+          "r": -0.985,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-24 08:00:00+00:00",
+          "r": -0.988,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-24 16:00:00+00:00",
+          "r": -0.986,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 252.2
+    },
+    "sess_ny": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 15,
+      "trades": 15,
+      "wins": 8,
+      "losses": 7,
+      "win_rate_pct": 53.3,
+      "profit_factor": 2.34,
+      "expectancy_R": 0.657,
+      "total_pnl_usd": 1012.66,
+      "max_drawdown_pct": 2.99,
+      "equity_end": 11012.66,
+      "by_regime": {
+        "strong_trend": {
+          "n": 15,
+          "wins": 8,
+          "pnl": 1012.66,
+          "r_sum": 9.84
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 15,
+          "wins": 8,
+          "pnl": 1012.66,
+          "r_sum": 9.84
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3390,
+        "G5": 62,
+        "S-FLT": 19
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-21 16:00:00+00:00",
+          "r": -0.985,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-24 16:00:00+00:00",
+          "r": -1.018,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-10 16:00:00+00:00",
+          "r": 2.155,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-14 16:00:00+00:00",
+          "r": 2.102,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-16 16:00:00+00:00",
+          "r": 2.072,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-17 16:00:00+00:00",
+          "r": -1.01,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-18 16:00:00+00:00",
+          "r": 2.125,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-28 16:00:00+00:00",
+          "r": 2.066,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-09-01 16:00:00+00:00",
+          "r": 2.133,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-10-05 16:00:00+00:00",
+          "r": 2.107,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-14 16:00:00+00:00",
+          "r": -0.996,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-19 16:00:00+00:00",
+          "r": 2.122,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.005,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-13 16:00:00+00:00",
+          "r": -1.011,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 251.8
+    },
+    "sess_lnny": {
+      "symbol": "USDJPY",
+      "points": 3630,
+      "signals": 3,
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_R": -0.986,
+      "total_pnl_usd": -292.94,
+      "max_drawdown_pct": 2.93,
+      "equity_end": 9707.06,
+      "by_regime": {
+        "strong_trend": {
+          "n": 3,
+          "wins": 0,
+          "pnl": -292.94,
+          "r_sum": -2.96
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -195.11,
+          "r_sum": -1.97
+        },
+        "London": {
+          "n": 1,
+          "wins": 0,
+          "pnl": -97.83,
+          "r_sum": -0.99
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3486,
+        "G5": 130
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-21 16:00:00+00:00",
+          "r": -0.985,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-24 08:00:00+00:00",
+          "r": -0.988,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-24 16:00:00+00:00",
+          "r": -0.986,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 253.6
+    }
+  },
+  "XAUUSD": {
+    "baseline": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.72,
+      "expectancy_R": -0.205,
+      "total_pnl_usd": -85.38,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9914.62,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -85.38,
+          "r_sum": -0.81
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 118.24,
+          "r_sum": 1.19
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.62,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3517,
+        "G5": 94
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": 2.187,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-12-04 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-12-26 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-12-28 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 289.6
+    },
+    "sess_ny": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 12,
+      "trades": 12,
+      "wins": 6,
+      "losses": 6,
+      "win_rate_pct": 50.0,
+      "profit_factor": 2.09,
+      "expectancy_R": 0.575,
+      "total_pnl_usd": 696.54,
+      "max_drawdown_pct": 2.96,
+      "equity_end": 10696.54,
+      "by_regime": {
+        "strong_trend": {
+          "n": 12,
+          "wins": 6,
+          "pnl": 696.53,
+          "r_sum": 6.89
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 12,
+          "wins": 6,
+          "pnl": 696.53,
+          "r_sum": 6.89
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3480,
+        "G5": 67,
+        "S-FLT": 7
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": 2.187,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-12-28 16:00:00+00:00",
+          "r": -0.998,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-06 16:00:00+00:00",
+          "r": 2.159,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-08 16:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-27 16:00:00+00:00",
+          "r": 2.106,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-01 16:00:00+00:00",
+          "r": 2.142,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-02 16:00:00+00:00",
+          "r": 2.149,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-04 16:00:00+00:00",
+          "r": -0.997,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-05 16:00:00+00:00",
+          "r": 2.144,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-20 16:00:00+00:00",
+          "r": -0.996,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-21 16:00:00+00:00",
+          "r": -1.006,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-16 16:00:00+00:00",
+          "r": -0.989,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_ny",
+      "elapsed_sec": 293.7
+    },
+    "sess_lnny": {
+      "symbol": "XAUUSD",
+      "points": 3630,
+      "signals": 4,
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "win_rate_pct": 25.0,
+      "profit_factor": 0.72,
+      "expectancy_R": -0.205,
+      "total_pnl_usd": -85.38,
+      "max_drawdown_pct": 2.98,
+      "equity_end": 9914.62,
+      "by_regime": {
+        "strong_trend": {
+          "n": 4,
+          "wins": 1,
+          "pnl": -85.38,
+          "r_sum": -0.81
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 2,
+          "wins": 1,
+          "pnl": 118.24,
+          "r_sum": 1.19
+        },
+        "London": {
+          "n": 2,
+          "wins": 0,
+          "pnl": -203.62,
+          "r_sum": -2.0
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3517,
+        "G5": 94
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": 2.187,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-12-04 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-12-26 08:00:00+00:00",
+          "r": -1.001,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-12-28 16:00:00+00:00",
+          "r": -1.003,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        }
+      ],
+      "config": "sess_lnny",
+      "elapsed_sec": 290.2
+    }
+  }
+}

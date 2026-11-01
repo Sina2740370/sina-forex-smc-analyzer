@@ -27,9 +27,12 @@ SYM_SPECS: dict = {
     "EURUSD": SymbolSpec(0.0001, 10.0, True, 0.8, 5),
     "GBPUSD": SymbolSpec(0.0001, 10.0, True, 1.1, 5),
     "AUDUSD": SymbolSpec(0.0001, 10.0, True, 1.0, 5),
+    "NZDUSD": SymbolSpec(0.0001, 10.0, True, 1.4, 5),
     "USDCAD": SymbolSpec(0.0001, 10.0, False, 1.4, 5),
     "USDCHF": SymbolSpec(0.0001, 10.0, False, 1.4, 5),
     "USDJPY": SymbolSpec(0.01, 1000.0, False, 1.0, 3),
+    "EURJPY": SymbolSpec(0.01, 1000.0, False, 1.2, 3),
+    "GBPJPY": SymbolSpec(0.01, 1000.0, False, 2.2, 3),
     "XAUUSD": SymbolSpec(0.1, 1.0, True, 2.5, 2),
 }
 

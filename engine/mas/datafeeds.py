@@ -33,13 +33,21 @@ COT_FIN_URL = "https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
 COT_COM_URL = "https://www.cftc.gov/files/dea/history/deacot{year}.zip"
 
 FRED_SERIES = ["DGS10", "T10YIE", "IRLTLT01DEM156N", "IRLTLT01GBM156N", "IRLTLT01JPM156N"]
-COT_FIN_CODES = {"EURUSD": "099741", "GBPUSD": "096742", "USDJPY": "097741"}
+COT_FIN_CODES = {"EURUSD": "099741", "GBPUSD": "096742", "USDJPY": "097741",
+                 "AUDUSD": "232741", "NZDUSD": "112541", "USDCAD": "090741",
+                 "USDCHF": "092741"}
 COT_COM_CODES = {"XAUUSD": "088691"}
 
 YIELD_SERIES = {   # (سری کوت، سری بِیس) — امتیاز مثبت = بِیس قوی‌تر از کوت
     "EURUSD": ("DGS10", "IRLTLT01DEM156N"),      # diff = EUR − US
     "GBPUSD": ("DGS10", "IRLTLT01GBM156N"),      # diff = GBP − US
+    "AUDUSD": ("DGS10", "IRLTLT01AUM156N"),      # diff = AUD − US
+    "NZDUSD": ("DGS10", "IRLTLT01NZM156N"),      # diff = NZD − US
+    "USDCAD": ("IRLTLT01CAM156N", "DGS10"),      # diff = US − CAD
+    "USDCHF": ("IRLTLT01CHM156N", "DGS10"),      # diff = US − CHF
     "USDJPY": ("IRLTLT01JPM156N", "DGS10"),      # diff = US − JP
+    "EURJPY": ("IRLTLT01JPM156N", "IRLTLT01DEM156N"),   # diff = EUR − JP
+    "GBPJPY": ("IRLTLT01JPM156N", "IRLTLT01GBM156N"),   # diff = GBP − JP
     "XAUUSD": ("T10YIE", "DGS10"),               # diff = ییلد واقعی US؛ fundamental با امضای منفی معکوس می‌کند
 }
 
@@ -103,7 +111,11 @@ class MASFeeds:
         now = pd.Timestamp(now).tz_localize(None) if pd.Timestamp(now).tzinfo else pd.Timestamp(now)
         if not self._ensure_yields():
             return None
+        if symbol not in YIELD_SERIES:
+            return None
         q, b = YIELD_SERIES[symbol]
+        if q not in self._yields or b not in self._yields:
+            return None
         qb, bb = self._yields[q], self._yields[b]
         vq = qb[qb["date"] <= now].iloc[-1] if (qb["date"] <= now).any() else None
         vb = bb[bb["date"] <= now].iloc[-1] if (bb["date"] <= now).any() else None
