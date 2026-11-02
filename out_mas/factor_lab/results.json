@@ -3,175 +3,683 @@
     "baseline": {
       "symbol": "EURJPY",
       "points": 3087,
-      "signals": 10,
-      "trades": 10,
-      "wins": 5,
-      "losses": 5,
-      "win_rate_pct": 50.0,
-      "profit_factor": 2.03,
-      "expectancy_R": 0.542,
-      "total_pnl_usd": 543.08,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 10543.08,
+      "signals": 95,
+      "trades": 95,
+      "wins": 35,
+      "losses": 60,
+      "win_rate_pct": 36.8,
+      "profit_factor": 1.01,
+      "expectancy_R": 0.046,
+      "total_pnl_usd": 25.52,
+      "max_drawdown_pct": 12.62,
+      "equity_end": 10025.52,
       "by_regime": {
         "strong_trend": {
-          "n": 10,
-          "wins": 5,
-          "pnl": 543.07,
-          "r_sum": 5.44
+          "n": 95,
+          "wins": 35,
+          "pnl": 25.52,
+          "r_sum": 4.39
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 5,
-          "wins": 3,
-          "pnl": 427.96,
-          "r_sum": 4.23
+          "n": 30,
+          "wins": 10,
+          "pnl": -182.11,
+          "r_sum": -3.82
         },
         "London": {
-          "n": 4,
-          "wins": 2,
-          "pnl": 224.21,
-          "r_sum": 2.21
+          "n": 39,
+          "wins": 15,
+          "pnl": 382.88,
+          "r_sum": 5.46
         },
         "Asia": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -109.1,
-          "r_sum": -1.0
+          "n": 26,
+          "wins": 10,
+          "pnl": -175.25,
+          "r_sum": 2.75
         }
       },
       "top_wait_reasons": {
-        "G1": 2869,
-        "G5": 184
+        "G1": 2793
       },
       "trades_detail": [
         {
           "entry_time": "2024-01-18 16:00:00+00:00",
-          "r": 2.079,
+          "r": 2.083,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-01-19 08:00:00+00:00",
-          "r": -0.99,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": -1.003,
+          "r": 0.305,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-01-22 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
           "entry_time": "2024-01-26 08:00:00+00:00",
-          "r": 2.095,
+          "r": 2.09,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-02-21 16:00:00+00:00",
-          "r": 2.084,
+          "r": 2.102,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.065,
+          "r": -0.251,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-03-20 08:00:00+00:00",
-          "r": 2.087,
+          "r": 2.073,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-03-21 00:00:00+00:00",
-          "r": -1.004,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-03-21 08:00:00+00:00",
-          "r": -0.99,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-03-21 16:00:00+00:00",
-          "r": -1.004,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 241.6
-    },
-    "sess_ny": {
-      "symbol": "EURJPY",
-      "points": 3087,
-      "signals": 7,
-      "trades": 7,
-      "wins": 3,
-      "losses": 4,
-      "win_rate_pct": 42.9,
-      "profit_factor": 1.53,
-      "expectancy_R": 0.324,
-      "total_pnl_usd": 220.91,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 10220.91,
-      "by_regime": {
-        "strong_trend": {
-          "n": 7,
-          "wins": 3,
-          "pnl": 220.9,
-          "r_sum": 2.28
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 7,
-          "wins": 3,
-          "pnl": 220.9,
-          "r_sum": 2.28
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2853,
-        "G5": 182,
-        "S-FLT": 6
-      },
-      "trades_detail": [
+        },
         {
-          "entry_time": "2024-01-18 16:00:00+00:00",
+          "entry_time": "2024-03-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-25 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-26 08:00:00+00:00",
+          "r": 0.939,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-29 00:00:00+00:00",
+          "r": 2.136,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-29 08:00:00+00:00",
+          "r": 0.984,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-14 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-15 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-06-04 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-01 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-04 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-04 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-05 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-06 00:00:00+00:00",
+          "r": 2.123,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-09-09 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-09-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-11-28 00:00:00+00:00",
+          "r": 2.125,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-04 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-30 08:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-31 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-02-03 00:00:00+00:00",
+          "r": -0.405,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-06 00:00:00+00:00",
+          "r": 2.118,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-07 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-10 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-11 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-11 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-13 08:00:00+00:00",
+          "r": 2.088,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-13 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-14 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-14 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-29 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-06 16:00:00+00:00",
+          "r": -0.499,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-09 08:00:00+00:00",
+          "r": 2.066,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-10 08:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-10 16:00:00+00:00",
           "r": 2.079,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": -0.993,
+          "entry_time": "2025-06-11 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-02-21 16:00:00+00:00",
-          "r": 2.107,
+          "entry_time": "2025-06-12 08:00:00+00:00",
+          "r": 2.106,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-12 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-02-22 16:00:00+00:00",
+          "entry_time": "2025-06-13 08:00:00+00:00",
+          "r": 1.697,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-16 08:00:00+00:00",
+          "r": -0.194,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-20 16:00:00+00:00",
+          "r": 0.043,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-23 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-24 08:00:00+00:00",
+          "r": 2.104,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-07-08 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-07-10 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-07-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-07-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-08-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-08-13 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-02 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-02 16:00:00+00:00",
+          "r": 0.924,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-08 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-12 08:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-14 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-14 16:00:00+00:00",
+          "r": -0.198,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-17 00:00:00+00:00",
+          "r": 2.081,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-19 16:00:00+00:00",
           "r": 2.087,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2025-11-20 08:00:00+00:00",
+          "r": 2.104,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-20 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-21 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-21 16:00:00+00:00",
+          "r": 0.347,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-02-26 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-02-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-08 08:00:00+00:00",
+          "r": 2.082,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-09 16:00:00+00:00",
+          "r": 2.06,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-13 00:00:00+00:00",
+          "r": 2.107,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-04-14 00:00:00+00:00",
+          "r": 0.401,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-04-16 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-04-16 08:00:00+00:00",
+          "r": 2.047,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-07-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-30 00:00:00+00:00",
+          "r": 2.083,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-05 00:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-06 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-09 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-26 00:00:00+00:00",
+          "r": 0.866,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 187.9
+    },
+    "sess_ny": {
+      "symbol": "EURJPY",
+      "points": 3087,
+      "signals": 48,
+      "trades": 48,
+      "wins": 16,
+      "losses": 32,
+      "win_rate_pct": 33.3,
+      "profit_factor": 0.9,
+      "expectancy_R": -0.1,
+      "total_pnl_usd": -214.98,
+      "max_drawdown_pct": 12.04,
+      "equity_end": 9785.02,
+      "by_regime": {
+        "strong_trend": {
+          "n": 48,
+          "wins": 16,
+          "pnl": -214.96,
+          "r_sum": -4.81
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 48,
+          "wins": 16,
+          "pnl": -214.96,
+          "r_sum": -4.81
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2827,
+        "S-FLT": 83
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 2.083,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-01-19 16:00:00+00:00",
+          "r": 0.305,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-21 16:00:00+00:00",
+          "r": 2.102,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-02-22 16:00:00+00:00",
+          "r": -0.251,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
           "entry_time": "2024-03-20 16:00:00+00:00",
-          "r": -1.001,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
@@ -183,350 +691,721 @@
         },
         {
           "entry_time": "2024-03-22 16:00:00+00:00",
-          "r": -1.009,
+          "r": -0.517,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-26 16:00:00+00:00",
+          "r": 0.866,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-14 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-01 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-04 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-05 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-31 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-13 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-14 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-06 16:00:00+00:00",
+          "r": -0.499,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-10 16:00:00+00:00",
+          "r": 2.079,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-11 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-20 16:00:00+00:00",
+          "r": 0.043,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-07-08 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-07-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-07-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-08-13 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-02 16:00:00+00:00",
+          "r": 0.924,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-08 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-27 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-12 16:00:00+00:00",
+          "r": 2.051,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-14 16:00:00+00:00",
+          "r": -0.198,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-17 16:00:00+00:00",
+          "r": 2.114,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-19 16:00:00+00:00",
+          "r": 2.087,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-20 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-21 16:00:00+00:00",
+          "r": 0.347,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-02-26 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-08 16:00:00+00:00",
+          "r": 2.071,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-09 16:00:00+00:00",
+          "r": 2.06,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-13 16:00:00+00:00",
+          "r": 1.338,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-26 16:00:00+00:00",
+          "r": 2.095,
           "regime": "strong_trend",
           "session": "NewYork"
         }
       ],
       "config": "sess_ny",
-      "elapsed_sec": 192.4
-    },
-    "sess_lnny": {
-      "symbol": "EURJPY",
-      "points": 3087,
-      "signals": 10,
-      "trades": 10,
-      "wins": 5,
-      "losses": 5,
-      "win_rate_pct": 50.0,
-      "profit_factor": 2.03,
-      "expectancy_R": 0.542,
-      "total_pnl_usd": 542.86,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 10542.86,
-      "by_regime": {
-        "strong_trend": {
-          "n": 10,
-          "wins": 5,
-          "pnl": 542.85,
-          "r_sum": 5.44
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 5,
-          "wins": 3,
-          "pnl": 427.96,
-          "r_sum": 4.24
-        },
-        "London": {
-          "n": 5,
-          "wins": 2,
-          "pnl": 114.89,
-          "r_sum": 1.2
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2863,
-        "G5": 182,
-        "S-FLT": 1
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-01-18 16:00:00+00:00",
-          "r": 2.079,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-01-19 08:00:00+00:00",
-          "r": -0.99,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-01-26 08:00:00+00:00",
-          "r": 2.095,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-02-21 16:00:00+00:00",
-          "r": 2.084,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.065,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-20 08:00:00+00:00",
-          "r": 2.087,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-03-21 08:00:00+00:00",
-          "r": -1.002,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-03-21 16:00:00+00:00",
-          "r": -0.994,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-22 08:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "London"
-        }
-      ],
-      "config": "sess_lnny",
-      "elapsed_sec": 185.8
-    },
-    "w1_bias": {
-      "symbol": "EURJPY",
-      "points": 3087,
-      "signals": 10,
-      "trades": 10,
-      "wins": 5,
-      "losses": 5,
-      "win_rate_pct": 50.0,
-      "profit_factor": 2.03,
-      "expectancy_R": 0.542,
-      "total_pnl_usd": 543.08,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 10543.08,
-      "by_regime": {
-        "strong_trend": {
-          "n": 10,
-          "wins": 5,
-          "pnl": 543.07,
-          "r_sum": 5.44
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 5,
-          "wins": 3,
-          "pnl": 427.96,
-          "r_sum": 4.23
-        },
-        "London": {
-          "n": 4,
-          "wins": 2,
-          "pnl": 224.21,
-          "r_sum": 2.21
-        },
-        "Asia": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -109.1,
-          "r_sum": -1.0
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2869,
-        "G5": 184
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-01-18 16:00:00+00:00",
-          "r": 2.079,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-01-19 08:00:00+00:00",
-          "r": -0.99,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-01-26 08:00:00+00:00",
-          "r": 2.095,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-02-21 16:00:00+00:00",
-          "r": 2.084,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.065,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-20 08:00:00+00:00",
-          "r": 2.087,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-03-21 00:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "Asia"
-        },
-        {
-          "entry_time": "2024-03-21 08:00:00+00:00",
-          "r": -0.99,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-03-21 16:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "w1_bias",
-      "elapsed_sec": 183.7
+      "elapsed_sec": 182.0
     }
   },
   "AUDUSD": {
     "baseline": {
       "symbol": "AUDUSD",
       "points": 3087,
-      "signals": 6,
-      "trades": 6,
-      "wins": 2,
-      "losses": 4,
-      "win_rate_pct": 33.3,
-      "profit_factor": 1.0,
-      "expectancy_R": 0.008,
-      "total_pnl_usd": -1.48,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9998.52,
+      "signals": 63,
+      "trades": 63,
+      "wins": 18,
+      "losses": 45,
+      "win_rate_pct": 28.6,
+      "profit_factor": 0.72,
+      "expectancy_R": -0.202,
+      "total_pnl_usd": -829.53,
+      "max_drawdown_pct": 14.89,
+      "equity_end": 9170.47,
       "by_regime": {
         "strong_trend": {
-          "n": 6,
-          "wins": 2,
-          "pnl": -1.48,
-          "r_sum": 0.03
+          "n": 63,
+          "wins": 18,
+          "pnl": -829.54,
+          "r_sum": -12.73
         }
       },
       "by_session": {
         "Asia": {
-          "n": 4,
-          "wins": 2,
-          "pnl": 204.74,
-          "r_sum": 2.04
+          "n": 23,
+          "wins": 7,
+          "pnl": -67.35,
+          "r_sum": -3.58
         },
         "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -103.89,
-          "r_sum": -1.01
+          "n": 16,
+          "wins": 4,
+          "pnl": -424.87,
+          "r_sum": -6.03
         },
         "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -102.33,
-          "r_sum": -1.0
+          "n": 24,
+          "wins": 7,
+          "pnl": -337.32,
+          "r_sum": -3.12
         }
       },
       "top_wait_reasons": {
-        "G1": 2939,
-        "G5": 131
+        "G1": 2878
       },
       "trades_detail": [
         {
           "entry_time": "2024-02-29 00:00:00+00:00",
-          "r": -0.995,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-04-15 00:00:00+00:00",
-          "r": 2.023,
+          "r": 2.013,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-04-16 00:00:00+00:00",
-          "r": 2.025,
+          "r": 2.008,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-04-16 16:00:00+00:00",
-          "r": -1.008,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-04-17 08:00:00+00:00",
-          "r": -1.003,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-04-18 00:00:00+00:00",
-          "r": -0.996,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-19 00:00:00+00:00",
+          "r": 1.99,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-19 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-22 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-05 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-05 16:00:00+00:00",
+          "r": 0.106,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-08 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 08:00:00+00:00",
+          "r": -0.347,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-22 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-08-27 08:00:00+00:00",
+          "r": 1.981,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-29 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-20 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-26 16:00:00+00:00",
+          "r": 0.973,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-30 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-01 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-10-01 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-02 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-20 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-02 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-13 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-31 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-03-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-09-09 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-11 16:00:00+00:00",
+          "r": -0.243,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-16 08:00:00+00:00",
+          "r": 1.959,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-04 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-05 00:00:00+00:00",
+          "r": 1.919,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-05 08:00:00+00:00",
+          "r": 0.374,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-08 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-09 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-09 08:00:00+00:00",
+          "r": 1.989,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-11 08:00:00+00:00",
+          "r": -0.019,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-26 00:00:00+00:00",
+          "r": 0.453,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-21 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-22 00:00:00+00:00",
+          "r": 1.986,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-22 08:00:00+00:00",
+          "r": 2.004,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-23 08:00:00+00:00",
+          "r": 1.968,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-23 16:00:00+00:00",
+          "r": 2.032,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-26 00:00:00+00:00",
+          "r": 2.048,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-27 16:00:00+00:00",
+          "r": 2.103,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-02-03 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-17 08:00:00+00:00",
+          "r": 1.976,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-17 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-05-07 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-08-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-08-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-08-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
         }
       ],
       "config": "baseline",
-      "elapsed_sec": 283.5
+      "elapsed_sec": 207.9
     },
     "sess_ny": {
       "symbol": "AUDUSD",
       "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -0.996,
-      "total_pnl_usd": -295.95,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 9704.05,
+      "signals": 29,
+      "trades": 29,
+      "wins": 6,
+      "losses": 23,
+      "win_rate_pct": 20.7,
+      "profit_factor": 0.31,
+      "expectancy_R": -0.495,
+      "total_pnl_usd": -1118.59,
+      "max_drawdown_pct": 11.19,
+      "equity_end": 8881.41,
       "by_regime": {
         "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -295.95,
-          "r_sum": -2.99
+          "n": 29,
+          "wins": 6,
+          "pnl": -1118.57,
+          "r_sum": -14.34
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -295.95,
-          "r_sum": -2.99
+          "n": 29,
+          "wins": 6,
+          "pnl": -1118.57,
+          "r_sum": -14.34
         }
       },
       "top_wait_reasons": {
-        "G1": 2941,
-        "G5": 122,
-        "S-FLT": 12
+        "G1": 2907,
+        "S-FLT": 71
       },
       "trades_detail": [
         {
@@ -537,220 +1416,226 @@
         },
         {
           "entry_time": "2024-04-17 16:00:00+00:00",
-          "r": -0.997,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-04-19 16:00:00+00:00",
-          "r": -0.992,
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-05 16:00:00+00:00",
+          "r": 0.106,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-08 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-26 16:00:00+00:00",
+          "r": 0.973,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-30 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-01 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-11 16:00:00+00:00",
+          "r": -0.243,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-10 16:00:00+00:00",
+          "r": 1.971,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-26 16:00:00+00:00",
+          "r": 0.667,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-21 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-22 16:00:00+00:00",
+          "r": 2.075,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-26 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-27 16:00:00+00:00",
+          "r": 2.103,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-02-03 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-17 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-05-07 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-17 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-18 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-24 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         }
       ],
       "config": "sess_ny",
-      "elapsed_sec": 208.9
-    },
-    "sess_lnny": {
-      "symbol": "AUDUSD",
-      "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -1.001,
-      "total_pnl_usd": -297.25,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 9702.75,
-      "by_regime": {
-        "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -297.26,
-          "r_sum": -3.01
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -198.59,
-          "r_sum": -2.01
-        },
-        "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -98.67,
-          "r_sum": -1.0
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2941,
-        "G5": 122,
-        "S-FLT": 7
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-04-16 08:00:00+00:00",
-          "r": -1.007,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-04-17 16:00:00+00:00",
-          "r": -0.997,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-19 08:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "London"
-        }
-      ],
-      "config": "sess_lnny",
-      "elapsed_sec": 201.1
-    },
-    "w1_bias": {
-      "symbol": "AUDUSD",
-      "points": 3087,
-      "signals": 6,
-      "trades": 6,
-      "wins": 2,
-      "losses": 4,
-      "win_rate_pct": 33.3,
-      "profit_factor": 1.0,
-      "expectancy_R": 0.008,
-      "total_pnl_usd": -1.48,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9998.52,
-      "by_regime": {
-        "strong_trend": {
-          "n": 6,
-          "wins": 2,
-          "pnl": -1.48,
-          "r_sum": 0.03
-        }
-      },
-      "by_session": {
-        "Asia": {
-          "n": 4,
-          "wins": 2,
-          "pnl": 204.74,
-          "r_sum": 2.04
-        },
-        "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -103.89,
-          "r_sum": -1.01
-        },
-        "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -102.33,
-          "r_sum": -1.0
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2939,
-        "G5": 131
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-02-29 00:00:00+00:00",
-          "r": -0.995,
-          "regime": "strong_trend",
-          "session": "Asia"
-        },
-        {
-          "entry_time": "2024-04-15 00:00:00+00:00",
-          "r": 2.023,
-          "regime": "strong_trend",
-          "session": "Asia"
-        },
-        {
-          "entry_time": "2024-04-16 00:00:00+00:00",
-          "r": 2.025,
-          "regime": "strong_trend",
-          "session": "Asia"
-        },
-        {
-          "entry_time": "2024-04-16 16:00:00+00:00",
-          "r": -1.008,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-17 08:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-04-18 00:00:00+00:00",
-          "r": -0.996,
-          "regime": "strong_trend",
-          "session": "Asia"
-        }
-      ],
-      "config": "w1_bias",
-      "elapsed_sec": 203.9
+      "elapsed_sec": 213.2
     }
   },
   "GBPJPY": {
     "baseline": {
       "symbol": "GBPJPY",
       "points": 3087,
-      "signals": 9,
-      "trades": 9,
-      "wins": 4,
-      "losses": 5,
-      "win_rate_pct": 44.4,
-      "profit_factor": 1.6,
-      "expectancy_R": 0.353,
-      "total_pnl_usd": 311.48,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 10311.48,
+      "signals": 87,
+      "trades": 87,
+      "wins": 31,
+      "losses": 56,
+      "win_rate_pct": 35.6,
+      "profit_factor": 0.89,
+      "expectancy_R": -0.078,
+      "total_pnl_usd": -466.51,
+      "max_drawdown_pct": 13.07,
+      "equity_end": 9533.49,
       "by_regime": {
         "strong_trend": {
-          "n": 9,
-          "wins": 4,
-          "pnl": 311.48,
-          "r_sum": 3.18
+          "n": 87,
+          "wins": 31,
+          "pnl": -466.49,
+          "r_sum": -6.76
         }
       },
       "by_session": {
         "London": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -107.37,
-          "r_sum": -0.95
+          "n": 31,
+          "wins": 13,
+          "pnl": 382.82,
+          "r_sum": 5.49
         },
         "NewYork": {
-          "n": 4,
-          "wins": 3,
-          "pnl": 521.73,
-          "r_sum": 5.13
+          "n": 34,
+          "wins": 12,
+          "pnl": -644.01,
+          "r_sum": -7.98
         },
         "Asia": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -102.88,
-          "r_sum": -1.0
+          "n": 22,
+          "wins": 6,
+          "pnl": -205.3,
+          "r_sum": -4.27
         }
       },
       "top_wait_reasons": {
-        "G1": 2827,
-        "G5": 192
+        "G1": 2785
       },
       "trades_detail": [
         {
           "entry_time": "2024-01-18 08:00:00+00:00",
-          "r": 2.037,
+          "r": 2.021,
           "regime": "strong_trend",
           "session": "London"
         },
@@ -762,2295 +1647,3519 @@
         },
         {
           "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": 2.025,
+          "r": 0.701,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-01-22 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
           "entry_time": "2024-02-12 00:00:00+00:00",
-          "r": -0.998,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-02-12 16:00:00+00:00",
-          "r": 2.086,
+          "r": 0.414,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.019,
+          "r": 0.783,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-02-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-02-26 08:00:00+00:00",
+          "r": 1.971,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
           "entry_time": "2024-02-26 16:00:00+00:00",
-          "r": -0.998,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-02-27 08:00:00+00:00",
-          "r": -0.995,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-03-01 08:00:00+00:00",
-          "r": -1.001,
-          "regime": "strong_trend",
-          "session": "London"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 191.4
-    },
-    "sess_ny": {
-      "symbol": "GBPJPY",
-      "points": 3087,
-      "signals": 8,
-      "trades": 8,
-      "wins": 3,
-      "losses": 5,
-      "win_rate_pct": 37.5,
-      "profit_factor": 1.21,
-      "expectancy_R": 0.141,
-      "total_pnl_usd": 104.99,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 10104.99,
-      "by_regime": {
-        "strong_trend": {
-          "n": 8,
-          "wins": 3,
-          "pnl": 104.99,
-          "r_sum": 1.14
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 8,
-          "wins": 3,
-          "pnl": 104.99,
-          "r_sum": 1.14
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2787,
-        "G5": 181,
-        "S-FLT": 14
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-01-18 16:00:00+00:00",
-          "r": -1.012,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-12 16:00:00+00:00",
-          "r": 2.068,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.034,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-26 16:00:00+00:00",
-          "r": -0.993,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-01 16:00:00+00:00",
-          "r": 2.022,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-20 16:00:00+00:00",
-          "r": -0.991,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-21 16:00:00+00:00",
-          "r": -0.995,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-22 16:00:00+00:00",
-          "r": -1.002,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 195.1
-    },
-    "sess_lnny": {
-      "symbol": "GBPJPY",
-      "points": 3087,
-      "signals": 9,
-      "trades": 9,
-      "wins": 4,
-      "losses": 5,
-      "win_rate_pct": 44.4,
-      "profit_factor": 1.6,
-      "expectancy_R": 0.352,
-      "total_pnl_usd": 310.64,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 10310.64,
-      "by_regime": {
-        "strong_trend": {
-          "n": 9,
-          "wins": 4,
-          "pnl": 310.63,
-          "r_sum": 3.16
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 5,
-          "wins": 1,
-          "pnl": -211.1,
-          "r_sum": -1.97
-        },
-        "NewYork": {
-          "n": 4,
-          "wins": 3,
-          "pnl": 521.73,
-          "r_sum": 5.13
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2827,
-        "G5": 192,
-        "S-FLT": 3
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-01-18 08:00:00+00:00",
-          "r": 2.037,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-01-19 08:00:00+00:00",
           "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2024-01-19 16:00:00+00:00",
-          "r": 2.025,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-12 08:00:00+00:00",
-          "r": -1.006,
+          "entry_time": "2024-03-01 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
+          "entry_time": "2024-03-01 16:00:00+00:00",
+          "r": 0.155,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-20 00:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-03-21 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 08:00:00+00:00",
+          "r": -0.073,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-25 08:00:00+00:00",
+          "r": 2.009,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-26 08:00:00+00:00",
+          "r": 1.108,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-29 00:00:00+00:00",
+          "r": 2.125,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-04-29 08:00:00+00:00",
+          "r": 1.042,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-24 00:00:00+00:00",
+          "r": 2.019,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-05-24 16:00:00+00:00",
+          "r": -0.343,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-27 00:00:00+00:00",
+          "r": 1.978,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-05-28 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-29 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-30 08:00:00+00:00",
+          "r": 1.553,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-03 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-04 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-11 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-11 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-31 16:00:00+00:00",
+          "r": 2.127,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-27 16:00:00+00:00",
+          "r": 0.204,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-30 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-31 08:00:00+00:00",
+          "r": 2.071,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-10 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-11 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-05-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-06-23 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-24 08:00:00+00:00",
+          "r": 2.053,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-25 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-26 08:00:00+00:00",
+          "r": 2.04,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-30 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-08-12 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-08-14 08:00:00+00:00",
+          "r": 2.04,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-09 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-13 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-10 16:00:00+00:00",
+          "r": 1.121,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-19 16:00:00+00:00",
+          "r": 2.056,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-20 08:00:00+00:00",
+          "r": 2.062,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-20 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-21 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-21 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-21 16:00:00+00:00",
+          "r": 0.309,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-24 00:00:00+00:00",
+          "r": 0.776,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-11 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-19 16:00:00+00:00",
+          "r": 0.449,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-23 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-14 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-02-26 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-03-12 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-03-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-03-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-09 08:00:00+00:00",
+          "r": 1.98,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-04-09 16:00:00+00:00",
+          "r": 2.002,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-13 00:00:00+00:00",
+          "r": 2.049,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-04-13 16:00:00+00:00",
+          "r": 1.445,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-16 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-04-16 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-30 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-07-02 08:00:00+00:00",
+          "r": 0.617,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-07-15 16:00:00+00:00",
+          "r": -0.336,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-07-17 16:00:00+00:00",
+          "r": -0.05,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-26 00:00:00+00:00",
+          "r": -0.309,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 187.3
+    },
+    "sess_ny": {
+      "symbol": "GBPJPY",
+      "points": 3087,
+      "signals": 48,
+      "trades": 48,
+      "wins": 15,
+      "losses": 33,
+      "win_rate_pct": 31.2,
+      "profit_factor": 0.48,
+      "expectancy_R": -0.281,
+      "total_pnl_usd": -1104.22,
+      "max_drawdown_pct": 12.34,
+      "equity_end": 8895.78,
+      "by_regime": {
+        "strong_trend": {
+          "n": 48,
+          "wins": 15,
+          "pnl": -1104.2,
+          "r_sum": -13.53
+        }
+      },
+      "by_session": {
+        "NewYork": {
+          "n": 48,
+          "wins": 15,
+          "pnl": -1104.2,
+          "r_sum": -13.53
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 2809,
+        "S-FLT": 75
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2024-01-18 16:00:00+00:00",
+          "r": 0.265,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
           "entry_time": "2024-02-12 16:00:00+00:00",
-          "r": 2.087,
+          "r": 0.414,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": 2.019,
+          "r": 0.783,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-02-26 16:00:00+00:00",
-          "r": -0.998,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-02-27 08:00:00+00:00",
-          "r": -0.995,
+          "entry_time": "2024-03-01 16:00:00+00:00",
+          "r": 0.155,
           "regime": "strong_trend",
-          "session": "London"
+          "session": "NewYork"
         },
         {
-          "entry_time": "2024-03-01 08:00:00+00:00",
-          "r": -1.001,
+          "entry_time": "2024-03-20 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
-          "session": "London"
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-21 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-22 16:00:00+00:00",
+          "r": -0.405,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-26 16:00:00+00:00",
+          "r": 1.006,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-24 16:00:00+00:00",
+          "r": -0.343,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-27 16:00:00+00:00",
+          "r": -0.058,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-05-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-03 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-04 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-11 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-31 16:00:00+00:00",
+          "r": 2.127,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-27 16:00:00+00:00",
+          "r": 0.204,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-30 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-31 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-24 16:00:00+00:00",
+          "r": 2.047,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-25 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-26 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-27 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-08-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-10 16:00:00+00:00",
+          "r": 1.121,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-19 16:00:00+00:00",
+          "r": 2.056,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-20 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-21 16:00:00+00:00",
+          "r": 0.309,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-19 16:00:00+00:00",
+          "r": 0.449,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-23 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-03-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-09 16:00:00+00:00",
+          "r": 2.002,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-13 16:00:00+00:00",
+          "r": 1.445,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-04-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-30 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-07-02 16:00:00+00:00",
+          "r": 1.299,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-07-15 16:00:00+00:00",
+          "r": -0.336,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-07-17 16:00:00+00:00",
+          "r": -0.05,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-27 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
         }
       ],
-      "config": "sess_lnny",
-      "elapsed_sec": 187.3
+      "config": "sess_ny",
+      "elapsed_sec": 184.7
     }
   },
   "EURUSD": {
     "baseline": {
       "symbol": "EURUSD",
       "points": 3630,
-      "signals": 4,
-      "trades": 4,
-      "wins": 1,
-      "losses": 3,
-      "win_rate_pct": 25.0,
-      "profit_factor": 0.68,
-      "expectancy_R": -0.233,
-      "total_pnl_usd": -96.43,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9903.57,
+      "signals": 44,
+      "trades": 44,
+      "wins": 17,
+      "losses": 27,
+      "win_rate_pct": 38.6,
+      "profit_factor": 1.18,
+      "expectancy_R": 0.159,
+      "total_pnl_usd": 402.5,
+      "max_drawdown_pct": 3.46,
+      "equity_end": 10402.5,
       "by_regime": {
         "strong_trend": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -96.43,
-          "r_sum": -0.94
+          "n": 44,
+          "wins": 17,
+          "pnl": 402.51,
+          "r_sum": 7.02
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 2,
-          "wins": 1,
-          "pnl": 104.39,
-          "r_sum": 1.06
+          "n": 13,
+          "wins": 5,
+          "pnl": 153.48,
+          "r_sum": 1.12
+        },
+        "London": {
+          "n": 16,
+          "wins": 6,
+          "pnl": 233.96,
+          "r_sum": 2.54
         },
         "Asia": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -200.82,
-          "r_sum": -2.0
+          "n": 15,
+          "wins": 6,
+          "pnl": 15.07,
+          "r_sum": 3.36
         }
       },
       "top_wait_reasons": {
-        "G1": 3512,
-        "G5": 100
+        "G1": 3501
       },
       "trades_detail": [
         {
           "entry_time": "2023-07-13 16:00:00+00:00",
-          "r": 2.073,
+          "r": 0.959,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2023-07-18 16:00:00+00:00",
-          "r": -1.008,
+          "entry_time": "2023-07-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-17 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-06-24 00:00:00+00:00",
-          "r": -0.995,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
           "entry_time": "2024-06-27 00:00:00+00:00",
-          "r": -1.002,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 284.8
-    },
-    "sess_ny": {
-      "symbol": "EURUSD",
-      "points": 3630,
-      "signals": 14,
-      "trades": 14,
-      "wins": 7,
-      "losses": 7,
-      "win_rate_pct": 50.0,
-      "profit_factor": 1.94,
-      "expectancy_R": 0.488,
-      "total_pnl_usd": 689.11,
-      "max_drawdown_pct": 2.01,
-      "equity_end": 10689.11,
-      "by_regime": {
-        "strong_trend": {
-          "n": 14,
-          "wins": 7,
-          "pnl": 689.12,
-          "r_sum": 6.82
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 14,
-          "wins": 7,
-          "pnl": 689.12,
-          "r_sum": 6.82
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3440,
-        "S-FLT": 38
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-13 16:00:00+00:00",
-          "r": 2.073,
-          "regime": "strong_trend",
-          "session": "NewYork"
         },
         {
-          "entry_time": "2023-07-18 16:00:00+00:00",
-          "r": -1.008,
+          "entry_time": "2024-06-27 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-14 00:00:00+00:00",
+          "r": 2.099,
+          "regime": "strong_trend",
+          "session": "Asia"
         },
         {
           "entry_time": "2024-11-14 16:00:00+00:00",
-          "r": -1.014,
+          "r": 0.937,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-11-21 16:00:00+00:00",
-          "r": 2.14,
+          "r": 2.141,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-11-22 16:00:00+00:00",
-          "r": -1.008,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2025-09-17 16:00:00+00:00",
+          "entry_time": "2024-11-25 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-11-27 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-06 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-08 00:00:00+00:00",
+          "r": 2.09,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-02-03 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-30 08:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-17 08:00:00+00:00",
           "r": 2.06,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-16 08:00:00+00:00",
+          "r": 2.027,
+          "regime": "strong_trend",
+          "session": "London"
         },
         {
           "entry_time": "2025-12-16 16:00:00+00:00",
-          "r": -0.991,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-26 08:00:00+00:00",
+          "r": 2.112,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-27 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
         },
         {
           "entry_time": "2026-01-27 16:00:00+00:00",
-          "r": 2.098,
+          "r": 2.151,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2026-06-23 16:00:00+00:00",
-          "r": 2.073,
+          "entry_time": "2026-01-28 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
         },
         {
-          "entry_time": "2026-06-24 16:00:00+00:00",
-          "r": -0.998,
+          "entry_time": "2026-01-29 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-23 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-23 08:00:00+00:00",
+          "r": 2.106,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
         },
         {
           "entry_time": "2026-06-25 16:00:00+00:00",
-          "r": -1.007,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2026-07-06 00:00:00+00:00",
+          "r": 2.002,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
           "entry_time": "2026-09-22 16:00:00+00:00",
-          "r": 2.112,
+          "r": 2.116,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2026-09-24 16:00:00+00:00",
-          "r": -1.007,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-25 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-10-01 00:00:00+00:00",
+          "r": 2.046,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-01 08:00:00+00:00",
+          "r": 2.118,
+          "regime": "strong_trend",
+          "session": "London"
         },
         {
           "entry_time": "2026-10-01 16:00:00+00:00",
-          "r": 1.315,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 243.0
-    },
-    "sess_lnny": {
-      "symbol": "EURUSD",
-      "points": 3630,
-      "signals": 9,
-      "trades": 9,
-      "wins": 3,
-      "losses": 6,
-      "win_rate_pct": 33.3,
-      "profit_factor": 1.03,
-      "expectancy_R": 0.03,
-      "total_pnl_usd": 17.08,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 10017.08,
-      "by_regime": {
-        "strong_trend": {
-          "n": 9,
-          "wins": 3,
-          "pnl": 17.08,
-          "r_sum": 0.27
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 5,
-          "wins": 2,
-          "pnl": 112.98,
-          "r_sum": 1.18
-        },
-        "London": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -95.9,
-          "r_sum": -0.91
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3509,
-        "G5": 64,
-        "S-FLT": 10
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-13 16:00:00+00:00",
-          "r": 2.073,
+          "r": -0.192,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2023-07-18 16:00:00+00:00",
-          "r": -1.008,
+          "entry_time": "2026-10-05 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-06-27 08:00:00+00:00",
-          "r": -1.005,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-11-14 08:00:00+00:00",
-          "r": 2.104,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-11-14 16:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-11-21 16:00:00+00:00",
-          "r": 2.117,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-11-22 16:00:00+00:00",
-          "r": -0.997,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-01-03 08:00:00+00:00",
+          "entry_time": "2026-10-06 08:00:00+00:00",
           "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2025-02-03 08:00:00+00:00",
-          "r": -1.014,
+          "entry_time": "2026-10-07 00:00:00+00:00",
+          "r": 2.063,
           "regime": "strong_trend",
-          "session": "London"
-        }
-      ],
-      "config": "sess_lnny",
-      "elapsed_sec": 255.2
-    }
-  },
-  "GBPUSD": {
-    "baseline": {
-      "symbol": "GBPUSD",
-      "points": 3630,
-      "signals": 33,
-      "trades": 33,
-      "wins": 14,
-      "losses": 19,
-      "win_rate_pct": 42.4,
-      "profit_factor": 1.52,
-      "expectancy_R": 0.312,
-      "total_pnl_usd": 1040.25,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 11040.25,
-      "by_regime": {
-        "strong_trend": {
-          "n": 33,
-          "wins": 14,
-          "pnl": 1040.27,
-          "r_sum": 10.33
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 16,
-          "wins": 6,
-          "pnl": 231.33,
-          "r_sum": 2.53
-        },
-        "NewYork": {
-          "n": 14,
-          "wins": 7,
-          "pnl": 802.45,
-          "r_sum": 7.71
-        },
-        "Asia": {
-          "n": 3,
-          "wins": 1,
-          "pnl": 6.49,
-          "r_sum": 0.09
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3395,
-        "G5": 33,
-        "G2": 1
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-10 08:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "London"
+          "session": "Asia"
         },
         {
-          "entry_time": "2023-07-10 16:00:00+00:00",
-          "r": 2.111,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-07-13 08:00:00+00:00",
-          "r": -0.995,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": -0.977,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-07 16:00:00+00:00",
-          "r": 2.167,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-08 16:00:00+00:00",
-          "r": -0.992,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-13 08:00:00+00:00",
+          "entry_time": "2026-10-07 08:00:00+00:00",
           "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2024-07-12 08:00:00+00:00",
-          "r": 2.057,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-07-12 16:00:00+00:00",
-          "r": -0.997,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-07-16 08:00:00+00:00",
-          "r": -1.007,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-07-16 16:00:00+00:00",
-          "r": 2.036,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-20 16:00:00+00:00",
-          "r": -1.011,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-21 08:00:00+00:00",
-          "r": 2.014,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-08-21 16:00:00+00:00",
-          "r": 2.096,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-23 16:00:00+00:00",
-          "r": -1.023,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-16 16:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-18 08:00:00+00:00",
-          "r": 2.162,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-09-19 08:00:00+00:00",
-          "r": 2.115,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-09-23 16:00:00+00:00",
-          "r": 2.096,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-25 08:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-01-13 00:00:00+00:00",
-          "r": 2.113,
+          "entry_time": "2026-10-28 00:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
         },
         {
-          "entry_time": "2025-01-14 00:00:00+00:00",
-          "r": -1.01,
+          "entry_time": "2026-10-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-29 00:00:00+00:00",
+          "r": 2.056,
           "regime": "strong_trend",
           "session": "Asia"
-        },
-        {
-          "entry_time": "2025-01-20 00:00:00+00:00",
-          "r": -1.01,
-          "regime": "strong_trend",
-          "session": "Asia"
-        },
-        {
-          "entry_time": "2025-04-14 08:00:00+00:00",
-          "r": 2.08,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-21 08:00:00+00:00",
-          "r": -1.008,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-22 08:00:00+00:00",
-          "r": -1.013,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-24 08:00:00+00:00",
-          "r": 2.108,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-22 08:00:00+00:00",
-          "r": -0.988,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-22 16:00:00+00:00",
-          "r": 2.101,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-05-23 16:00:00+00:00",
-          "r": 2.077,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-05-26 08:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-27 08:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-06-05 16:00:00+00:00",
-          "r": -0.989,
-          "regime": "strong_trend",
-          "session": "NewYork"
         }
       ],
       "config": "baseline",
-      "elapsed_sec": 250.0
+      "elapsed_sec": 257.6
     },
     "sess_ny": {
-      "symbol": "GBPUSD",
+      "symbol": "EURUSD",
       "points": 3630,
-      "signals": 4,
-      "trades": 4,
-      "wins": 1,
-      "losses": 3,
-      "win_rate_pct": 25.0,
-      "profit_factor": 0.69,
-      "expectancy_R": -0.222,
-      "total_pnl_usd": -91.91,
-      "max_drawdown_pct": 2.95,
-      "equity_end": 9908.09,
+      "signals": 17,
+      "trades": 17,
+      "wins": 7,
+      "losses": 10,
+      "win_rate_pct": 41.2,
+      "profit_factor": 1.44,
+      "expectancy_R": 0.19,
+      "total_pnl_usd": 354.82,
+      "max_drawdown_pct": 3.62,
+      "equity_end": 10354.82,
       "by_regime": {
         "strong_trend": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -91.91,
-          "r_sum": -0.89
+          "n": 17,
+          "wins": 7,
+          "pnl": 354.83,
+          "r_sum": 3.25
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -91.91,
-          "r_sum": -0.89
+          "n": 17,
+          "wins": 7,
+          "pnl": 354.83,
+          "r_sum": 3.25
         }
       },
       "top_wait_reasons": {
-        "G1": 3465,
-        "G5": 131,
-        "S-FLT": 4,
-        "G2": 1
+        "G1": 3508,
+        "S-FLT": 46
       },
       "trades_detail": [
         {
-          "entry_time": "2023-07-10 16:00:00+00:00",
-          "r": 2.09,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
           "entry_time": "2023-07-13 16:00:00+00:00",
-          "r": -0.995,
+          "r": 0.959,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2023-07-17 16:00:00+00:00",
-          "r": -1.005,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": -0.977,
+          "entry_time": "2024-11-14 16:00:00+00:00",
+          "r": 0.937,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-21 16:00:00+00:00",
+          "r": 2.141,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-11-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-17 16:00:00+00:00",
+          "r": 2.058,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-12-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-27 16:00:00+00:00",
+          "r": 2.151,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-23 16:00:00+00:00",
+          "r": 2.066,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-25 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-22 16:00:00+00:00",
+          "r": 2.116,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-01 16:00:00+00:00",
+          "r": -0.192,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-05 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-07 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-28 16:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         }
       ],
       "config": "sess_ny",
-      "elapsed_sec": 254.7
-    },
-    "sess_lnny": {
-      "symbol": "GBPUSD",
-      "points": 3630,
-      "signals": 31,
-      "trades": 31,
-      "wins": 13,
-      "losses": 18,
-      "win_rate_pct": 41.9,
-      "profit_factor": 1.49,
-      "expectancy_R": 0.3,
-      "total_pnl_usd": 932.87,
-      "max_drawdown_pct": 2.95,
-      "equity_end": 10932.87,
-      "by_regime": {
-        "strong_trend": {
-          "n": 31,
-          "wins": 13,
-          "pnl": 932.89,
-          "r_sum": 9.31
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 16,
-          "wins": 6,
-          "pnl": 242.91,
-          "r_sum": 2.61
-        },
-        "NewYork": {
-          "n": 15,
-          "wins": 7,
-          "pnl": 689.98,
-          "r_sum": 6.7
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3396,
-        "G5": 33,
-        "S-FLT": 5,
-        "G2": 1
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-10 08:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2023-07-10 16:00:00+00:00",
-          "r": 2.111,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-07-13 08:00:00+00:00",
-          "r": -0.995,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": -0.977,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-07 16:00:00+00:00",
-          "r": 2.167,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-08 16:00:00+00:00",
-          "r": -0.992,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-13 08:00:00+00:00",
-          "r": -1.0,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-07-12 08:00:00+00:00",
-          "r": 2.057,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-07-12 16:00:00+00:00",
-          "r": -0.997,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-07-16 08:00:00+00:00",
-          "r": -1.007,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-07-16 16:00:00+00:00",
-          "r": 2.036,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-20 16:00:00+00:00",
-          "r": -1.011,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-21 08:00:00+00:00",
-          "r": 2.014,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-08-21 16:00:00+00:00",
-          "r": 2.096,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-23 16:00:00+00:00",
-          "r": -1.023,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-16 16:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-18 08:00:00+00:00",
-          "r": 2.162,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-09-19 08:00:00+00:00",
-          "r": 2.115,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-09-23 16:00:00+00:00",
-          "r": 2.096,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-09-25 08:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-01-14 16:00:00+00:00",
-          "r": -0.983,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-04-14 08:00:00+00:00",
-          "r": 2.102,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-21 08:00:00+00:00",
-          "r": -0.989,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-22 08:00:00+00:00",
-          "r": -0.996,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-04-24 08:00:00+00:00",
-          "r": 2.129,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-22 08:00:00+00:00",
-          "r": -0.997,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-22 16:00:00+00:00",
-          "r": 2.063,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-05-23 16:00:00+00:00",
-          "r": 2.098,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-05-26 08:00:00+00:00",
-          "r": -0.988,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-05-27 08:00:00+00:00",
-          "r": -0.99,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2025-06-05 16:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_lnny",
-      "elapsed_sec": 251.3
+      "elapsed_sec": 264.5
     }
   },
   "NZDUSD": {
     "baseline": {
       "symbol": "NZDUSD",
       "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -1.002,
-      "total_pnl_usd": -297.73,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9702.27,
+      "signals": 63,
+      "trades": 63,
+      "wins": 16,
+      "losses": 47,
+      "win_rate_pct": 25.4,
+      "profit_factor": 0.59,
+      "expectancy_R": -0.337,
+      "total_pnl_usd": -1190.39,
+      "max_drawdown_pct": 12.99,
+      "equity_end": 8809.61,
       "by_regime": {
         "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -297.72,
-          "r_sum": -3.01
+          "n": 63,
+          "wins": 16,
+          "pnl": -1190.41,
+          "r_sum": -21.23
         }
       },
       "by_session": {
         "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -100.88,
-          "r_sum": -1.01
+          "n": 19,
+          "wins": 4,
+          "pnl": -551.56,
+          "r_sum": -8.73
         },
         "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -98.94,
-          "r_sum": -1.0
+          "n": 8,
+          "wins": 3,
+          "pnl": -70.18,
+          "r_sum": -1.52
         },
         "Asia": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -97.9,
-          "r_sum": -1.0
+          "n": 36,
+          "wins": 9,
+          "pnl": -568.67,
+          "r_sum": -10.98
         }
       },
       "top_wait_reasons": {
-        "G1": 2953,
-        "G5": 120
+        "G1": 2893
       },
       "trades_detail": [
         {
           "entry_time": "2024-02-22 08:00:00+00:00",
-          "r": -1.009,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": -1.0,
+          "r": -0.006,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-03-12 00:00:00+00:00",
-          "r": -0.999,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "Asia"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 214.4
-    },
-    "sess_ny": {
-      "symbol": "NZDUSD",
-      "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -0.997,
-      "total_pnl_usd": -296.19,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 9703.81,
-      "by_regime": {
-        "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -296.19,
-          "r_sum": -2.99
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -296.19,
-          "r_sum": -2.99
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2953,
-        "G5": 104,
-        "S-FLT": 13
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-02-22 16:00:00+00:00",
-          "r": -1.007,
-          "regime": "strong_trend",
-          "session": "NewYork"
         },
         {
-          "entry_time": "2024-08-29 16:00:00+00:00",
-          "r": -0.99,
+          "entry_time": "2024-04-19 00:00:00+00:00",
+          "r": 1.878,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "Asia"
         },
         {
-          "entry_time": "2024-09-19 16:00:00+00:00",
-          "r": -0.995,
+          "entry_time": "2024-07-25 00:00:00+00:00",
+          "r": 1.856,
           "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 196.2
-    },
-    "sess_lnny": {
-      "symbol": "NZDUSD",
-      "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -1.0,
-      "total_pnl_usd": -297.06,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 9702.94,
-      "by_regime": {
-        "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -297.05,
-          "r_sum": -3.0
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -198.11,
-          "r_sum": -2.0
+          "session": "Asia"
         },
-        "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -98.94,
-          "r_sum": -1.0
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2954,
-        "G5": 110,
-        "S-FLT": 10
-      },
-      "trades_detail": [
         {
-          "entry_time": "2024-02-22 08:00:00+00:00",
-          "r": -1.009,
+          "entry_time": "2024-07-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-31 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-08-29 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2024-02-22 16:00:00+00:00",
+          "entry_time": "2024-08-29 16:00:00+00:00",
           "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-08-29 08:00:00+00:00",
-          "r": -0.992,
+          "entry_time": "2024-09-19 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-30 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-15 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-11-18 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-11-19 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-12 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-13 00:00:00+00:00",
+          "r": -0.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-16 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-20 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-20 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-12-27 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-06 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-13 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-03-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-03-04 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-04-08 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-06-06 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-09-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-10 00:00:00+00:00",
+          "r": 1.036,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-13 00:00:00+00:00",
+          "r": 0.737,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-15 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-04 00:00:00+00:00",
+          "r": 1.926,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-05 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-05 08:00:00+00:00",
+          "r": 1.9,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-06 16:00:00+00:00",
+          "r": 0.044,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-10 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-21 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-02-02 08:00:00+00:00",
+          "r": 1.034,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-05-07 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-05-29 08:00:00+00:00",
+          "r": 1.906,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-05-29 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-01 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-02 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-19 00:00:00+00:00",
+          "r": 1.922,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-22 00:00:00+00:00",
+          "r": 1.865,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-23 00:00:00+00:00",
+          "r": 1.871,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-23 16:00:00+00:00",
+          "r": 1.905,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-24 08:00:00+00:00",
+          "r": -0.479,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-29 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-08-21 08:00:00+00:00",
+          "r": 0.908,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-08-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-09-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-17 16:00:00+00:00",
+          "r": 0.54,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-28 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-02 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-10-05 00:00:00+00:00",
+          "r": 1.917,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-06 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-29 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         }
       ],
-      "config": "sess_lnny",
-      "elapsed_sec": 207.6
+      "config": "baseline",
+      "elapsed_sec": 202.0
+    }
+  },
+  "GBPUSD": {
+    "baseline": {
+      "symbol": "GBPUSD",
+      "points": 3630,
+      "signals": 61,
+      "trades": 61,
+      "wins": 22,
+      "losses": 39,
+      "win_rate_pct": 36.1,
+      "profit_factor": 0.92,
+      "expectancy_R": -0.023,
+      "total_pnl_usd": -229.46,
+      "max_drawdown_pct": 7.24,
+      "equity_end": 9770.54,
+      "by_regime": {
+        "strong_trend": {
+          "n": 61,
+          "wins": 22,
+          "pnl": -229.45,
+          "r_sum": -1.38
+        }
+      },
+      "by_session": {
+        "London": {
+          "n": 26,
+          "wins": 8,
+          "pnl": -565.11,
+          "r_sum": -4.23
+        },
+        "NewYork": {
+          "n": 26,
+          "wins": 13,
+          "pnl": 780.57,
+          "r_sum": 8.75
+        },
+        "Asia": {
+          "n": 9,
+          "wins": 1,
+          "pnl": -444.91,
+          "r_sum": -5.9
+        }
+      },
+      "top_wait_reasons": {
+        "G1": 3407,
+        "G2": 1
+      },
+      "trades_detail": [
+        {
+          "entry_time": "2023-07-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-07-10 16:00:00+00:00",
+          "r": 1.906,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-12 16:00:00+00:00",
+          "r": 2.096,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-13 16:00:00+00:00",
+          "r": -0.596,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-07-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-07-17 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-11-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-07 16:00:00+00:00",
+          "r": 2.12,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-08 16:00:00+00:00",
+          "r": -0.276,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-11 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 08:00:00+00:00",
+          "r": 2.078,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-12 16:00:00+00:00",
+          "r": -0.786,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-15 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-16 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-07-16 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-16 16:00:00+00:00",
+          "r": 2.027,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-20 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-21 08:00:00+00:00",
+          "r": 2.001,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-21 16:00:00+00:00",
+          "r": 2.123,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-23 16:00:00+00:00",
+          "r": 0.256,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-08-28 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-08-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-18 08:00:00+00:00",
+          "r": 2.119,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-19 08:00:00+00:00",
+          "r": 1.256,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-09-23 16:00:00+00:00",
+          "r": 2.098,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-25 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-13 00:00:00+00:00",
+          "r": 2.099,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-14 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-01-20 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-04-14 08:00:00+00:00",
+          "r": 1.114,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-16 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-04-17 08:00:00+00:00",
+          "r": 1.977,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-21 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-04-24 08:00:00+00:00",
+          "r": -0.054,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-22 16:00:00+00:00",
+          "r": 2.085,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-23 16:00:00+00:00",
+          "r": 0.833,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-05-26 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-06-05 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-06-26 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-07-04 16:00:00+00:00",
+          "r": 0.22,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-27 08:00:00+00:00",
+          "r": 2.064,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-27 16:00:00+00:00",
+          "r": 2.108,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-28 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-28 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-25 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-25 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-07-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-08-12 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-18 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-19 16:00:00+00:00",
+          "r": 2.052,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-21 16:00:00+00:00",
+          "r": 0.49,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-08-24 08:00:00+00:00",
+          "r": 0.206,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-10-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        }
+      ],
+      "config": "baseline",
+      "elapsed_sec": 255.9
     }
   },
   "USDCAD": {
     "baseline": {
       "symbol": "USDCAD",
       "points": 3087,
-      "signals": 7,
-      "trades": 7,
-      "wins": 3,
-      "losses": 4,
-      "win_rate_pct": 42.9,
-      "profit_factor": 1.47,
-      "expectancy_R": 0.285,
-      "total_pnl_usd": 193.4,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 10193.4,
+      "signals": 47,
+      "trades": 47,
+      "wins": 22,
+      "losses": 25,
+      "win_rate_pct": 46.8,
+      "profit_factor": 1.42,
+      "expectancy_R": 0.176,
+      "total_pnl_usd": 900.31,
+      "max_drawdown_pct": 6.61,
+      "equity_end": 10900.31,
       "by_regime": {
         "strong_trend": {
-          "n": 7,
-          "wins": 3,
-          "pnl": 193.41,
-          "r_sum": 2.0
+          "n": 47,
+          "wins": 22,
+          "pnl": 900.31,
+          "r_sum": 8.28
         }
       },
       "by_session": {
         "London": {
-          "n": 3,
-          "wins": 2,
-          "pnl": 296.85,
-          "r_sum": 2.98
+          "n": 24,
+          "wins": 9,
+          "pnl": -28.47,
+          "r_sum": 0.32
         },
         "NewYork": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -103.44,
-          "r_sum": -0.98
+          "n": 18,
+          "wins": 11,
+          "pnl": 784.79,
+          "r_sum": 7.6
+        },
+        "Asia": {
+          "n": 5,
+          "wins": 2,
+          "pnl": 143.99,
+          "r_sum": 0.36
         }
       },
       "top_wait_reasons": {
-        "G1": 2967,
-        "G5": 102
+        "G1": 2930
       },
       "trades_detail": [
         {
           "entry_time": "2024-04-11 08:00:00+00:00",
-          "r": 1.983,
+          "r": 1.995,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-04-12 08:00:00+00:00",
-          "r": 1.999,
+          "r": 1.995,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-04-12 16:00:00+00:00",
-          "r": -0.998,
+          "r": -0.195,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-04-15 16:00:00+00:00",
-          "r": 2.008,
+          "entry_time": "2024-04-15 08:00:00+00:00",
+          "r": 2.004,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
         },
         {
           "entry_time": "2024-04-16 08:00:00+00:00",
-          "r": -1.003,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-04-16 16:00:00+00:00",
-          "r": -1.002,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-04-17 16:00:00+00:00",
-          "r": -0.992,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 210.9
-    },
-    "sess_ny": {
-      "symbol": "USDCAD",
-      "points": 3087,
-      "signals": 5,
-      "trades": 5,
-      "wins": 1,
-      "losses": 4,
-      "win_rate_pct": 20.0,
-      "profit_factor": 0.5,
-      "expectancy_R": -0.397,
-      "total_pnl_usd": -200.58,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 9799.42,
-      "by_regime": {
-        "strong_trend": {
-          "n": 5,
-          "wins": 1,
-          "pnl": -200.58,
-          "r_sum": -1.98
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 5,
-          "wins": 1,
-          "pnl": -200.58,
-          "r_sum": -1.98
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2967,
-        "G5": 100,
-        "S-FLT": 4
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-04-12 16:00:00+00:00",
-          "r": -1.003,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-04-15 16:00:00+00:00",
-          "r": 2.013,
+          "entry_time": "2024-06-11 08:00:00+00:00",
+          "r": 1.888,
           "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-16 16:00:00+00:00",
-          "r": -0.993,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-17 16:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
         },
         {
           "entry_time": "2024-06-11 16:00:00+00:00",
-          "r": -1.004,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-22 16:00:00+00:00",
+          "r": 1.939,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-24 16:00:00+00:00",
+          "r": 1.942,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-25 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-07-25 16:00:00+00:00",
+          "r": 0.644,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-07-29 08:00:00+00:00",
+          "r": 0.391,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-15 08:00:00+00:00",
+          "r": 1.913,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-15 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-23 08:00:00+00:00",
+          "r": 1.854,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-25 08:00:00+00:00",
+          "r": 1.871,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-25 16:00:00+00:00",
+          "r": 0.13,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-28 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-30 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-31 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-10-31 16:00:00+00:00",
+          "r": -0.364,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-12-19 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-12-19 16:00:00+00:00",
+          "r": 2.054,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-20 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-28 16:00:00+00:00",
+          "r": 0.654,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-03-03 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-03-12 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-05-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-24 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-06-19 08:00:00+00:00",
+          "r": 1.411,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-22 16:00:00+00:00",
+          "r": 2.006,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-23 00:00:00+00:00",
+          "r": 1.91,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-09-23 16:00:00+00:00",
+          "r": 1.953,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-24 16:00:00+00:00",
+          "r": 1.129,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-09-28 00:00:00+00:00",
+          "r": 1.455,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-09-30 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-09-30 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-09-30 16:00:00+00:00",
+          "r": 0.704,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-02 16:00:00+00:00",
+          "r": 0.006,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-10-05 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
         }
       ],
-      "config": "sess_ny",
-      "elapsed_sec": 203.2
-    },
-    "sess_lnny": {
-      "symbol": "USDCAD",
-      "points": 3087,
-      "signals": 7,
-      "trades": 7,
-      "wins": 3,
-      "losses": 4,
-      "win_rate_pct": 42.9,
-      "profit_factor": 1.47,
-      "expectancy_R": 0.285,
-      "total_pnl_usd": 193.4,
-      "max_drawdown_pct": 2.97,
-      "equity_end": 10193.4,
-      "by_regime": {
-        "strong_trend": {
-          "n": 7,
-          "wins": 3,
-          "pnl": 193.41,
-          "r_sum": 2.0
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 3,
-          "wins": 2,
-          "pnl": 296.85,
-          "r_sum": 2.98
-        },
-        "NewYork": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -103.44,
-          "r_sum": -0.98
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2967,
-        "G5": 102
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-04-11 08:00:00+00:00",
-          "r": 1.983,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-04-12 08:00:00+00:00",
-          "r": 1.999,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-04-12 16:00:00+00:00",
-          "r": -0.998,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-15 16:00:00+00:00",
-          "r": 2.008,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-16 08:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-04-16 16:00:00+00:00",
-          "r": -1.002,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-04-17 16:00:00+00:00",
-          "r": -0.992,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_lnny",
-      "elapsed_sec": 205.6
+      "config": "baseline",
+      "elapsed_sec": 212.6
     }
   },
   "USDCHF": {
     "baseline": {
       "symbol": "USDCHF",
       "points": 3087,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -0.991,
-      "total_pnl_usd": -294.42,
-      "max_drawdown_pct": 2.94,
-      "equity_end": 9705.58,
+      "signals": 31,
+      "trades": 31,
+      "wins": 9,
+      "losses": 22,
+      "win_rate_pct": 29.0,
+      "profit_factor": 0.64,
+      "expectancy_R": -0.179,
+      "total_pnl_usd": -614.76,
+      "max_drawdown_pct": 7.42,
+      "equity_end": 9385.24,
       "by_regime": {
         "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -294.41,
-          "r_sum": -2.97
-        }
-      },
-      "by_session": {
-        "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -99.16,
-          "r_sum": -0.99
-        },
-        "NewYork": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -98.88,
-          "r_sum": -1.0
-        },
-        "Asia": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -96.37,
-          "r_sum": -0.98
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3011,
-        "G5": 57
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-03-28 08:00:00+00:00",
-          "r": -0.992,
-          "regime": "strong_trend",
-          "session": "London"
-        },
-        {
-          "entry_time": "2024-05-22 16:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-08-07 00:00:00+00:00",
-          "r": -0.983,
-          "regime": "strong_trend",
-          "session": "Asia"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 214.5
-    },
-    "sess_ny": {
-      "symbol": "USDCHF",
-      "points": 3087,
-      "signals": 9,
-      "trades": 9,
-      "wins": 3,
-      "losses": 6,
-      "win_rate_pct": 33.3,
-      "profit_factor": 0.97,
-      "expectancy_R": -0.007,
-      "total_pnl_usd": -15.41,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9984.59,
-      "by_regime": {
-        "strong_trend": {
-          "n": 9,
-          "wins": 3,
-          "pnl": -15.41,
-          "r_sum": -0.07
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 9,
-          "wins": 3,
-          "pnl": -15.41,
-          "r_sum": -0.07
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 2995,
-        "S-FLT": 28,
-        "G5": 7
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2024-05-22 16:00:00+00:00",
-          "r": -1.006,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-12-16 16:00:00+00:00",
-          "r": 1.996,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-12-31 16:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-01-02 16:00:00+00:00",
-          "r": -1.007,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2025-01-07 16:00:00+00:00",
-          "r": 2.0,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2026-09-14 16:00:00+00:00",
-          "r": 1.961,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2026-09-17 16:00:00+00:00",
-          "r": -1.004,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2026-09-28 16:00:00+00:00",
-          "r": -0.999,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2026-09-29 16:00:00+00:00",
-          "r": -1.008,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 206.4
-    },
-    "sess_lnny": {
-      "symbol": "USDCHF",
-      "points": 3087,
-      "signals": 13,
-      "trades": 13,
-      "wins": 5,
-      "losses": 8,
-      "win_rate_pct": 38.5,
-      "profit_factor": 1.2,
-      "expectancy_R": 0.132,
-      "total_pnl_usd": 159.78,
-      "max_drawdown_pct": 2.0,
-      "equity_end": 10159.78,
-      "by_regime": {
-        "strong_trend": {
-          "n": 13,
-          "wins": 5,
-          "pnl": 159.78,
-          "r_sum": 1.7
+          "n": 31,
+          "wins": 9,
+          "pnl": -614.77,
+          "r_sum": -5.53
         }
       },
       "by_session": {
         "London": {
           "n": 5,
           "wins": 2,
-          "pnl": 78.37,
-          "r_sum": 0.82
+          "pnl": 123.53,
+          "r_sum": 0.85
         },
         "NewYork": {
-          "n": 8,
+          "n": 9,
+          "wins": 4,
+          "pnl": 16.31,
+          "r_sum": 1.83
+        },
+        "Asia": {
+          "n": 17,
           "wins": 3,
-          "pnl": 81.41,
-          "r_sum": 0.88
+          "pnl": -754.61,
+          "r_sum": -8.21
         }
       },
       "top_wait_reasons": {
-        "G1": 2992,
-        "S-FLT": 19
+        "G1": 2988
       },
       "trades_detail": [
         {
           "entry_time": "2024-03-28 08:00:00+00:00",
-          "r": -0.992,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2024-05-22 16:00:00+00:00",
-          "r": -0.999,
+          "r": -0.045,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-05-24 16:00:00+00:00",
+          "r": 0.277,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-08-07 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-08-28 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
           "entry_time": "2024-12-16 16:00:00+00:00",
-          "r": 1.969,
+          "r": 1.983,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-12-31 16:00:00+00:00",
-          "r": -1.009,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2025-01-02 08:00:00+00:00",
-          "r": 1.922,
+          "r": 1.938,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2025-01-02 16:00:00+00:00",
-          "r": -0.998,
+          "r": -0.511,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2025-01-07 16:00:00+00:00",
-          "r": 1.982,
+          "r": 1.996,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2025-04-07 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-07-01 00:00:00+00:00",
+          "r": 1.95,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-07-02 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-07-03 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-09-16 00:00:00+00:00",
+          "r": 1.819,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-09-24 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-11-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-24 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-25 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-12-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-27 00:00:00+00:00",
+          "r": 2.022,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-28 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-05-04 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
           "entry_time": "2026-09-14 08:00:00+00:00",
-          "r": -1.007,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2026-09-14 16:00:00+00:00",
-          "r": 1.964,
+          "r": 1.118,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2026-09-17 16:00:00+00:00",
-          "r": -1.005,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2026-09-28 08:00:00+00:00",
-          "r": 1.899,
+          "r": 1.911,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2026-09-29 08:00:00+00:00",
-          "r": -0.997,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2026-09-30 16:00:00+00:00",
-          "r": -1.011,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         }
       ],
-      "config": "sess_lnny",
-      "elapsed_sec": 201.2
+      "config": "baseline",
+      "elapsed_sec": 214.2
     }
   },
   "USDJPY": {
     "baseline": {
       "symbol": "USDJPY",
       "points": 3630,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -0.986,
-      "total_pnl_usd": -292.94,
-      "max_drawdown_pct": 2.93,
-      "equity_end": 9707.06,
+      "signals": 59,
+      "trades": 59,
+      "wins": 20,
+      "losses": 39,
+      "win_rate_pct": 33.9,
+      "profit_factor": 0.76,
+      "expectancy_R": -0.091,
+      "total_pnl_usd": -681.66,
+      "max_drawdown_pct": 11.5,
+      "equity_end": 9318.34,
       "by_regime": {
         "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -292.94,
-          "r_sum": -2.96
+          "n": 59,
+          "wins": 20,
+          "pnl": -681.62,
+          "r_sum": -5.38
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -195.11,
-          "r_sum": -1.97
+          "n": 20,
+          "wins": 10,
+          "pnl": 540.79,
+          "r_sum": 6.92
         },
         "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -97.83,
-          "r_sum": -0.99
+          "n": 27,
+          "wins": 6,
+          "pnl": -1040.08,
+          "r_sum": -12.14
+        },
+        "Asia": {
+          "n": 12,
+          "wins": 4,
+          "pnl": -182.33,
+          "r_sum": -0.16
         }
       },
       "top_wait_reasons": {
-        "G1": 3486,
-        "G5": 130
+        "G1": 3413
       },
       "trades_detail": [
         {
           "entry_time": "2023-07-21 16:00:00+00:00",
-          "r": -0.985,
+          "r": -0.215,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2023-07-24 08:00:00+00:00",
-          "r": -0.988,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2023-07-24 16:00:00+00:00",
-          "r": -0.986,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 252.2
-    },
-    "sess_ny": {
-      "symbol": "USDJPY",
-      "points": 3630,
-      "signals": 15,
-      "trades": 15,
-      "wins": 8,
-      "losses": 7,
-      "win_rate_pct": 53.3,
-      "profit_factor": 2.34,
-      "expectancy_R": 0.657,
-      "total_pnl_usd": 1012.66,
-      "max_drawdown_pct": 2.99,
-      "equity_end": 11012.66,
-      "by_regime": {
-        "strong_trend": {
-          "n": 15,
-          "wins": 8,
-          "pnl": 1012.66,
-          "r_sum": 9.84
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 15,
-          "wins": 8,
-          "pnl": 1012.66,
-          "r_sum": 9.84
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3390,
-        "G5": 62,
-        "S-FLT": 19
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-21 16:00:00+00:00",
-          "r": -0.985,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-07-24 16:00:00+00:00",
-          "r": -1.018,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-10 16:00:00+00:00",
-          "r": 2.155,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-14 16:00:00+00:00",
-          "r": 2.102,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-16 16:00:00+00:00",
-          "r": 2.072,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-17 16:00:00+00:00",
-          "r": -1.01,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-18 16:00:00+00:00",
-          "r": 2.125,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-08-28 16:00:00+00:00",
-          "r": 2.066,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-09-01 16:00:00+00:00",
-          "r": 2.133,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-10-05 16:00:00+00:00",
-          "r": 2.107,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-02-14 16:00:00+00:00",
-          "r": -0.996,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-19 16:00:00+00:00",
-          "r": 2.122,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-21 16:00:00+00:00",
-          "r": -1.005,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2024-03-22 16:00:00+00:00",
           "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2024-11-13 16:00:00+00:00",
-          "r": -1.011,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 251.8
-    },
-    "sess_lnny": {
-      "symbol": "USDJPY",
-      "points": 3630,
-      "signals": 3,
-      "trades": 3,
-      "wins": 0,
-      "losses": 3,
-      "win_rate_pct": 0.0,
-      "profit_factor": 0.0,
-      "expectancy_R": -0.986,
-      "total_pnl_usd": -292.94,
-      "max_drawdown_pct": 2.93,
-      "equity_end": 9707.06,
-      "by_regime": {
-        "strong_trend": {
-          "n": 3,
-          "wins": 0,
-          "pnl": -292.94,
-          "r_sum": -2.96
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -195.11,
-          "r_sum": -1.97
-        },
-        "London": {
-          "n": 1,
-          "wins": 0,
-          "pnl": -97.83,
-          "r_sum": -0.99
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3486,
-        "G5": 130
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-07-21 16:00:00+00:00",
-          "r": -0.985,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        },
-        {
-          "entry_time": "2023-07-24 08:00:00+00:00",
-          "r": -0.988,
+          "entry_time": "2023-08-10 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2023-07-24 16:00:00+00:00",
-          "r": -0.986,
+          "entry_time": "2023-08-10 16:00:00+00:00",
+          "r": 0.927,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-14 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-08-14 08:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-08-14 16:00:00+00:00",
+          "r": 2.097,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-16 16:00:00+00:00",
+          "r": 2.077,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-08-17 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-08-18 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-08-18 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-08-28 00:00:00+00:00",
+          "r": 2.091,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-09-01 16:00:00+00:00",
+          "r": -0.075,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-09-29 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2023-09-29 08:00:00+00:00",
+          "r": 1.291,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-10-05 16:00:00+00:00",
+          "r": 2.111,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2023-10-09 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2023-11-14 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-02-14 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-19 16:00:00+00:00",
+          "r": 2.118,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-03-21 08:00:00+00:00",
+          "r": 0.03,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-03-25 08:00:00+00:00",
+          "r": 2.09,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-26 08:00:00+00:00",
+          "r": 1.257,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-06-28 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-11-13 16:00:00+00:00",
+          "r": -0.547,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-12-16 00:00:00+00:00",
+          "r": 2.105,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-17 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-12-23 00:00:00+00:00",
+          "r": 1.415,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-12-27 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-12-27 16:00:00+00:00",
+          "r": 0.663,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-08 00:00:00+00:00",
+          "r": 1.58,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-10 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-10 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-10-13 00:00:00+00:00",
+          "r": -0.338,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2025-10-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-10-24 16:00:00+00:00",
+          "r": 1.036,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-20 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-21 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-11-21 16:00:00+00:00",
+          "r": 0.115,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-11-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-02 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-05 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-01-12 08:00:00+00:00",
+          "r": 2.105,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-13 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-01-14 16:00:00+00:00",
+          "r": -0.643,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-02-05 16:00:00+00:00",
+          "r": 2.109,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-03-05 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-03-09 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-03-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-03-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-03-13 16:00:00+00:00",
+          "r": -0.212,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2026-06-22 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-06-22 16:00:00+00:00",
+          "r": 0.343,
           "regime": "strong_trend",
           "session": "NewYork"
         }
       ],
-      "config": "sess_lnny",
-      "elapsed_sec": 253.6
+      "config": "baseline",
+      "elapsed_sec": 256.6
     }
   },
   "XAUUSD": {
     "baseline": {
       "symbol": "XAUUSD",
       "points": 3630,
-      "signals": 4,
-      "trades": 4,
-      "wins": 1,
-      "losses": 3,
-      "win_rate_pct": 25.0,
-      "profit_factor": 0.72,
-      "expectancy_R": -0.205,
-      "total_pnl_usd": -85.38,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9914.62,
+      "signals": 58,
+      "trades": 58,
+      "wins": 26,
+      "losses": 32,
+      "win_rate_pct": 44.8,
+      "profit_factor": 1.31,
+      "expectancy_R": 0.175,
+      "total_pnl_usd": 906.17,
+      "max_drawdown_pct": 6.82,
+      "equity_end": 10906.17,
       "by_regime": {
         "strong_trend": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -85.38,
-          "r_sum": -0.81
+          "n": 58,
+          "wins": 26,
+          "pnl": 906.2,
+          "r_sum": 10.15
         }
       },
       "by_session": {
         "NewYork": {
-          "n": 2,
-          "wins": 1,
-          "pnl": 118.24,
-          "r_sum": 1.19
+          "n": 26,
+          "wins": 15,
+          "pnl": 1148.46,
+          "r_sum": 10.06
         },
         "London": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -203.62,
-          "r_sum": -2.0
+          "n": 26,
+          "wins": 9,
+          "pnl": -102.35,
+          "r_sum": 0.42
+        },
+        "Asia": {
+          "n": 6,
+          "wins": 2,
+          "pnl": -139.91,
+          "r_sum": -0.33
         }
       },
       "top_wait_reasons": {
-        "G1": 3517,
-        "G5": 94
+        "G1": 3451
       },
       "trades_detail": [
         {
           "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": 2.187,
+          "r": 0.132,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2023-12-04 08:00:00+00:00",
-          "r": -1.001,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2023-12-26 08:00:00+00:00",
-          "r": -1.001,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
           "entry_time": "2023-12-28 16:00:00+00:00",
-          "r": -1.003,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "baseline",
-      "elapsed_sec": 289.6
-    },
-    "sess_ny": {
-      "symbol": "XAUUSD",
-      "points": 3630,
-      "signals": 12,
-      "trades": 12,
-      "wins": 6,
-      "losses": 6,
-      "win_rate_pct": 50.0,
-      "profit_factor": 2.09,
-      "expectancy_R": 0.575,
-      "total_pnl_usd": 696.54,
-      "max_drawdown_pct": 2.96,
-      "equity_end": 10696.54,
-      "by_regime": {
-        "strong_trend": {
-          "n": 12,
-          "wins": 6,
-          "pnl": 696.53,
-          "r_sum": 6.89
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 12,
-          "wins": 6,
-          "pnl": 696.53,
-          "r_sum": 6.89
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3480,
-        "G5": 67,
-        "S-FLT": 7
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": 2.187,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2023-12-28 16:00:00+00:00",
-          "r": -0.998,
+          "entry_time": "2024-03-06 08:00:00+00:00",
+          "r": 2.083,
           "regime": "strong_trend",
-          "session": "NewYork"
+          "session": "London"
         },
         {
           "entry_time": "2024-03-06 16:00:00+00:00",
-          "r": 2.159,
+          "r": 2.147,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-03-08 16:00:00+00:00",
-          "r": -1.001,
+          "r": 0.4,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-03-12 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
           "entry_time": "2024-03-27 16:00:00+00:00",
-          "r": 2.106,
+          "r": 2.115,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-04-01 16:00:00+00:00",
-          "r": 2.142,
+          "r": 2.141,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-04-02 16:00:00+00:00",
-          "r": 2.149,
+          "r": 2.14,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-03 08:00:00+00:00",
+          "r": 2.128,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-04-04 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
         },
         {
           "entry_time": "2024-04-04 16:00:00+00:00",
-          "r": -0.997,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-04-05 08:00:00+00:00",
+          "r": 2.148,
+          "regime": "strong_trend",
+          "session": "London"
         },
         {
           "entry_time": "2024-04-05 16:00:00+00:00",
-          "r": 2.144,
+          "r": -0.492,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
+          "entry_time": "2024-04-08 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2024-05-20 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
           "entry_time": "2024-05-20 16:00:00+00:00",
-          "r": -0.996,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-05-21 16:00:00+00:00",
-          "r": -1.006,
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
           "entry_time": "2024-07-16 16:00:00+00:00",
-          "r": -0.989,
-          "regime": "strong_trend",
-          "session": "NewYork"
-        }
-      ],
-      "config": "sess_ny",
-      "elapsed_sec": 293.7
-    },
-    "sess_lnny": {
-      "symbol": "XAUUSD",
-      "points": 3630,
-      "signals": 4,
-      "trades": 4,
-      "wins": 1,
-      "losses": 3,
-      "win_rate_pct": 25.0,
-      "profit_factor": 0.72,
-      "expectancy_R": -0.205,
-      "total_pnl_usd": -85.38,
-      "max_drawdown_pct": 2.98,
-      "equity_end": 9914.62,
-      "by_regime": {
-        "strong_trend": {
-          "n": 4,
-          "wins": 1,
-          "pnl": -85.38,
-          "r_sum": -0.81
-        }
-      },
-      "by_session": {
-        "NewYork": {
-          "n": 2,
-          "wins": 1,
-          "pnl": 118.24,
-          "r_sum": 1.19
-        },
-        "London": {
-          "n": 2,
-          "wins": 0,
-          "pnl": -203.62,
-          "r_sum": -2.0
-        }
-      },
-      "top_wait_reasons": {
-        "G1": 3517,
-        "G5": 94
-      },
-      "trades_detail": [
-        {
-          "entry_time": "2023-11-28 16:00:00+00:00",
-          "r": 2.187,
+          "r": 0.006,
           "regime": "strong_trend",
           "session": "NewYork"
         },
         {
-          "entry_time": "2023-12-04 08:00:00+00:00",
-          "r": -1.001,
+          "entry_time": "2024-08-02 08:00:00+00:00",
+          "r": -1.0,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2023-12-26 08:00:00+00:00",
-          "r": -1.001,
+          "entry_time": "2024-09-16 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-24 00:00:00+00:00",
+          "r": 2.092,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2024-09-25 16:00:00+00:00",
+          "r": 2.121,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-09-26 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-18 08:00:00+00:00",
+          "r": 2.114,
           "regime": "strong_trend",
           "session": "London"
         },
         {
-          "entry_time": "2023-12-28 16:00:00+00:00",
-          "r": -1.003,
+          "entry_time": "2024-10-21 16:00:00+00:00",
+          "r": 2.126,
           "regime": "strong_trend",
           "session": "NewYork"
+        },
+        {
+          "entry_time": "2024-10-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-09 16:00:00+00:00",
+          "r": 2.116,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-01-13 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-17 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-01-23 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-04 08:00:00+00:00",
+          "r": 2.13,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-06 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-06 16:00:00+00:00",
+          "r": 0.706,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-02-10 08:00:00+00:00",
+          "r": 2.158,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-11 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-02-11 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-03-18 16:00:00+00:00",
+          "r": 0.742,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-03-31 16:00:00+00:00",
+          "r": 0.913,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-04-22 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-01 08:00:00+00:00",
+          "r": 2.151,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-02 16:00:00+00:00",
+          "r": 0.566,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-04 16:00:00+00:00",
+          "r": 2.161,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-08 08:00:00+00:00",
+          "r": 2.172,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-09-09 16:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "NewYork"
+        },
+        {
+          "entry_time": "2025-09-10 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-24 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2025-12-26 08:00:00+00:00",
+          "r": 0.344,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-01-26 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-07-14 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-07-14 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
+        },
+        {
+          "entry_time": "2026-10-01 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-06 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-23 00:00:00+00:00",
+          "r": 1.584,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-26 00:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "Asia"
+        },
+        {
+          "entry_time": "2026-10-26 08:00:00+00:00",
+          "r": -1.0,
+          "regime": "strong_trend",
+          "session": "London"
         }
       ],
-      "config": "sess_lnny",
-      "elapsed_sec": 290.2
+      "config": "baseline",
+      "elapsed_sec": 288.8
     }
   }
 }

@@ -122,6 +122,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     acct = AccountState(equity=equity, consecutive_losses=0)
     times = pd.date_range(t0, t1, freq=step, tz="UTC")
     res.n_points = len(times)
+    # سقف نگهداری پوزیشن: بدون آن، معامله‌ای که SL/TP2‌اش هرگز نخورد برای همیشه باز
+    # می‌ماند و با R-SYM کل نماد را بلاک می‌کند (باگ مسیر-وابسته؛ خروج با کلوز M15)
+    max_hold = pd.Timedelta(hours=float((cfg or {}).get("max_hold_hours", 48)))
 
     pos = None
     # ایندکس‌های عددی برای پیمایش سریع M15 (بدون lookup رشته‌ای)
@@ -136,11 +139,19 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         # ۱) مدیریت معامله باز روی کندل‌های M15 از آخرین ایندکس تا now
         if pos is not None:
             outcome = _advance_position(pos, df, t_arr, now, spec)
+            timed_out = False
+            if outcome is None and now - pos["entry_time"] >= max_hold:
+                jx = int(df["time"].searchsorted(now, side="right")) - 1
+                if jx >= 0 and t_arr[jx] == now:      # خروج زمانی با کلوز M15 همین نقطه
+                    outcome = (float(df["close"].iloc[jx]), now, jx, False)
+                    timed_out = True
             if outcome is not None:
                 exit_px, exit_time, last_idx, was_loss = outcome
                 d = 1 if pos["direction"] == BUY else -1
                 pips = (exit_px - pos["entry"]) / spec.pip * d
                 pnl = pips * pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+                if timed_out:
+                    was_loss = pnl <= 0
                 r = pnl / pos["risk_usd"] if pos["risk_usd"] > 0 else 0.0
                 entry_idx = int(df["time"].searchsorted(pos["entry_time"]))
                 res.trades.append(BTTrade(symbol, pos["direction"], pos["entry_time"],
@@ -179,9 +190,12 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         sl, tp2 = float(sig.cand["sl"]), float(sig.cand["tp2"])
         if not (0 < abs(entry - sl) and abs(tp2 - entry) > 0):
             continue
-        risk_usd = equity * RISK_RULES["risk_per_trade_pct"] / 100.0
+        risk_usd_full = equity * RISK_RULES["risk_per_trade_pct"] / 100.0
         pips = abs(entry - sl) / spec.pip
-        lots = round(risk_usd / max(1e-9, pips * pip_value_usd(symbol, float(row["close"]))), 2)
+        # احترام به size_factor گیت ریسک (نیم‌حجم پس از دنبالهٔ ضرر) + ریسک واقعی معامله
+        sf = float(getattr(sig, "size_factor", 1.0))
+        lots = round(risk_usd_full / max(1e-9, pips * pip_value_usd(symbol, float(row["close"]))) * sf, 2)
+        risk_usd = lots * pips * pip_value_usd(symbol, float(row["close"]))
         pos = {"direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
                "last_idx": j, "regime": sig.market_regime, "session": sig.session,

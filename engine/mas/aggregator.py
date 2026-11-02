@@ -165,9 +165,13 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
         return _finish_wait(sig, "G4: نسبت ریسک/ریوارد کمتر از 1:2", reports, warnings, missing)
     sig.cand = cand
 
-    # G5: Risk Agent
+    # G5: Risk Agent — پس از دنبالهٔ ضرر، طبق قانون «توقف تا بازبینی» حجم نصف می‌شود
+    # (دریچهٔ size_factor در R-ADDTOLOSS؛ بدون آن ۳ ضرر متوالی → بن‌بست ابدی مسیر)
+    acct_eff = acct or AccountState()
+    sf = 0.5 if acct_eff.consecutive_losses >= 2 else 1.0
     verdict = evaluate_risk(symbol, direction, cand["entry"], cand["sl"], cand["tp2"],
-                            float(df["close"].iloc[-1]), acct or AccountState())
+                            float(df["close"].iloc[-1]), acct_eff, size_factor=sf)
+    sig.size_factor = sf
     sig.gate_results.append(GateResult("G5", verdict.approved,
                                        "تأیید ریسک" if verdict.approved else "; ".join(verdict.rejection_reasons)))
     sig.risk_approved = verdict.approved
