@@ -1,0 +1,422 @@
+{
+  "cut": "2025-07-01",
+  "symbols": [
+    "AUDUSD",
+    "EURJPY",
+    "EURUSD",
+    "GBPJPY",
+    "GBPUSD",
+    "NZDUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY",
+    "XAUUSD"
+  ],
+  "pooled": {
+    "baseline": {
+      "train": {
+        "n": 291,
+        "er": -0.029,
+        "wr": 35.1
+      },
+      "test": {
+        "n": 261,
+        "er": -0.049,
+        "wr": 36.0
+      },
+      "d_test_vs_base": 0.0
+    },
+    "sess_ny": {
+      "train": {
+        "n": 134,
+        "er": -0.065,
+        "wr": 36.6
+      },
+      "test": {
+        "n": 127,
+        "er": -0.074,
+        "wr": 37.0
+      },
+      "d_test_vs_base": -0.025
+    },
+    "sess_lnny": {
+      "train": {
+        "n": 223,
+        "er": 0.072,
+        "wr": 39.9
+      },
+      "test": {
+        "n": 202,
+        "er": -0.01,
+        "wr": 37.6
+      },
+      "d_test_vs_base": 0.039
+    },
+    "w1_bias": {
+      "train": {
+        "n": 291,
+        "er": -0.029,
+        "wr": 35.1
+      },
+      "test": {
+        "n": 261,
+        "er": -0.049,
+        "wr": 36.0
+      },
+      "d_test_vs_base": 0.0
+    },
+    "slatr15": {
+      "train": {
+        "n": 325,
+        "er": -0.053,
+        "wr": 34.5
+      },
+      "test": {
+        "n": 309,
+        "er": -0.091,
+        "wr": 35.0
+      },
+      "d_test_vs_base": -0.042
+    },
+    "slatr20": {
+      "train": {
+        "n": 278,
+        "er": -0.037,
+        "wr": 36.3
+      },
+      "test": {
+        "n": 256,
+        "er": -0.05,
+        "wr": 37.1
+      },
+      "d_test_vs_base": -0.001
+    }
+  },
+  "per_symbol_test": {
+    "sess_ny": {
+      "symbols_improved": 4,
+      "rows": {
+        "EURJPY": {
+          "base_n": 38,
+          "base_er": 0.0,
+          "cfg_n": 23,
+          "cfg_er": 0.08
+        },
+        "AUDUSD": {
+          "base_n": 33,
+          "base_er": 0.05,
+          "cfg_n": 19,
+          "cfg_er": -0.39
+        },
+        "GBPJPY": {
+          "base_n": 37,
+          "base_er": -0.16,
+          "cfg_n": 21,
+          "cfg_er": -0.18
+        },
+        "EURUSD": {
+          "base_n": 27,
+          "base_er": 0.28,
+          "cfg_n": 12,
+          "cfg_er": 0.1
+        },
+        "NZDUSD": {
+          "base_n": 35,
+          "base_er": -0.03,
+          "cfg_n": 10,
+          "cfg_er": -0.23
+        },
+        "GBPUSD": {
+          "base_n": 15,
+          "base_er": -0.12,
+          "cfg_n": 7,
+          "cfg_er": 0.27
+        },
+        "USDCAD": {
+          "base_n": 15,
+          "base_er": 0.24,
+          "cfg_n": 10,
+          "cfg_er": 0.08
+        },
+        "USDCHF": {
+          "base_n": 20,
+          "base_er": -0.31,
+          "cfg_n": 5,
+          "cfg_er": -0.58
+        },
+        "USDJPY": {
+          "base_n": 25,
+          "base_er": -0.4,
+          "cfg_n": 14,
+          "cfg_er": -0.15
+        },
+        "XAUUSD": {
+          "base_n": 16,
+          "base_er": -0.06,
+          "cfg_n": 6,
+          "cfg_er": 0.56
+        }
+      }
+    },
+    "sess_lnny": {
+      "symbols_improved": 5,
+      "rows": {
+        "EURJPY": {
+          "base_n": 38,
+          "base_er": 0.0,
+          "cfg_n": 32,
+          "cfg_er": 0.0
+        },
+        "AUDUSD": {
+          "base_n": 33,
+          "base_er": 0.05,
+          "cfg_n": 30,
+          "cfg_er": -0.02
+        },
+        "GBPJPY": {
+          "base_n": 37,
+          "base_er": -0.16,
+          "cfg_n": 31,
+          "cfg_er": 0.08
+        },
+        "EURUSD": {
+          "base_n": 27,
+          "base_er": 0.28,
+          "cfg_n": 23,
+          "cfg_er": 0.11
+        },
+        "NZDUSD": {
+          "base_n": 35,
+          "base_er": -0.03,
+          "cfg_n": 19,
+          "cfg_er": -0.17
+        },
+        "GBPUSD": {
+          "base_n": 15,
+          "base_er": -0.12,
+          "cfg_n": 12,
+          "cfg_er": 0.1
+        },
+        "USDCAD": {
+          "base_n": 15,
+          "base_er": 0.24,
+          "cfg_n": 15,
+          "cfg_er": 0.07
+        },
+        "USDCHF": {
+          "base_n": 20,
+          "base_er": -0.31,
+          "cfg_n": 6,
+          "cfg_er": -0.16
+        },
+        "USDJPY": {
+          "base_n": 25,
+          "base_er": -0.4,
+          "cfg_n": 22,
+          "cfg_er": -0.32
+        },
+        "XAUUSD": {
+          "base_n": 16,
+          "base_er": -0.06,
+          "cfg_n": 12,
+          "cfg_er": 0.19
+        }
+      }
+    },
+    "w1_bias": {
+      "symbols_improved": 0,
+      "rows": {
+        "EURJPY": {
+          "base_n": 38,
+          "base_er": 0.0,
+          "cfg_n": 38,
+          "cfg_er": 0.0
+        },
+        "AUDUSD": {
+          "base_n": 33,
+          "base_er": 0.05,
+          "cfg_n": 33,
+          "cfg_er": 0.05
+        },
+        "GBPJPY": {
+          "base_n": 37,
+          "base_er": -0.16,
+          "cfg_n": 37,
+          "cfg_er": -0.16
+        },
+        "EURUSD": {
+          "base_n": 27,
+          "base_er": 0.28,
+          "cfg_n": 27,
+          "cfg_er": 0.28
+        },
+        "NZDUSD": {
+          "base_n": 35,
+          "base_er": -0.03,
+          "cfg_n": 35,
+          "cfg_er": -0.03
+        },
+        "GBPUSD": {
+          "base_n": 15,
+          "base_er": -0.12,
+          "cfg_n": 15,
+          "cfg_er": -0.12
+        },
+        "USDCAD": {
+          "base_n": 15,
+          "base_er": 0.24,
+          "cfg_n": 15,
+          "cfg_er": 0.24
+        },
+        "USDCHF": {
+          "base_n": 20,
+          "base_er": -0.31,
+          "cfg_n": 20,
+          "cfg_er": -0.31
+        },
+        "USDJPY": {
+          "base_n": 25,
+          "base_er": -0.4,
+          "cfg_n": 25,
+          "cfg_er": -0.4
+        },
+        "XAUUSD": {
+          "base_n": 16,
+          "base_er": -0.06,
+          "cfg_n": 16,
+          "cfg_er": -0.06
+        }
+      }
+    },
+    "slatr15": {
+      "symbols_improved": 1,
+      "rows": {
+        "EURJPY": {
+          "base_n": 38,
+          "base_er": 0.0,
+          "cfg_n": 39,
+          "cfg_er": -0.07
+        },
+        "AUDUSD": {
+          "base_n": 33,
+          "base_er": 0.05,
+          "cfg_n": 40,
+          "cfg_er": 0.02
+        },
+        "GBPJPY": {
+          "base_n": 37,
+          "base_er": -0.16,
+          "cfg_n": 44,
+          "cfg_er": -0.16
+        },
+        "EURUSD": {
+          "base_n": 27,
+          "base_er": 0.28,
+          "cfg_n": 37,
+          "cfg_er": 0.19
+        },
+        "NZDUSD": {
+          "base_n": 35,
+          "base_er": -0.03,
+          "cfg_n": 43,
+          "cfg_er": -0.13
+        },
+        "GBPUSD": {
+          "base_n": 15,
+          "base_er": -0.12,
+          "cfg_n": 15,
+          "cfg_er": -0.14
+        },
+        "USDCAD": {
+          "base_n": 15,
+          "base_er": 0.24,
+          "cfg_n": 23,
+          "cfg_er": -0.14
+        },
+        "USDCHF": {
+          "base_n": 20,
+          "base_er": -0.31,
+          "cfg_n": 22,
+          "cfg_er": -0.4
+        },
+        "USDJPY": {
+          "base_n": 25,
+          "base_er": -0.4,
+          "cfg_n": 27,
+          "cfg_er": -0.4
+        },
+        "XAUUSD": {
+          "base_n": 16,
+          "base_er": -0.06,
+          "cfg_n": 19,
+          "cfg_er": 0.25
+        }
+      }
+    },
+    "slatr20": {
+      "symbols_improved": 7,
+      "rows": {
+        "EURJPY": {
+          "base_n": 38,
+          "base_er": 0.0,
+          "cfg_n": 35,
+          "cfg_er": 0.03
+        },
+        "AUDUSD": {
+          "base_n": 33,
+          "base_er": 0.05,
+          "cfg_n": 33,
+          "cfg_er": 0.08
+        },
+        "GBPJPY": {
+          "base_n": 37,
+          "base_er": -0.16,
+          "cfg_n": 36,
+          "cfg_er": -0.17
+        },
+        "EURUSD": {
+          "base_n": 27,
+          "base_er": 0.28,
+          "cfg_n": 26,
+          "cfg_er": 0.27
+        },
+        "NZDUSD": {
+          "base_n": 35,
+          "base_er": -0.03,
+          "cfg_n": 35,
+          "cfg_er": -0.23
+        },
+        "GBPUSD": {
+          "base_n": 15,
+          "base_er": -0.12,
+          "cfg_n": 14,
+          "cfg_er": 0.09
+        },
+        "USDCAD": {
+          "base_n": 15,
+          "base_er": 0.24,
+          "cfg_n": 15,
+          "cfg_er": 0.25
+        },
+        "USDCHF": {
+          "base_n": 20,
+          "base_er": -0.31,
+          "cfg_n": 20,
+          "cfg_er": -0.17
+        },
+        "USDJPY": {
+          "base_n": 25,
+          "base_er": -0.4,
+          "cfg_n": 26,
+          "cfg_er": -0.39
+        },
+        "XAUUSD": {
+          "base_n": 16,
+          "base_er": -0.06,
+          "cfg_n": 16,
+          "cfg_er": -0.04
+        }
+      }
+    }
+  }
+}

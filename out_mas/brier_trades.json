@@ -5,7 +5,7 @@
     "score":67.4621037093,
     "confidence":40.3,
     "win":false,
-    "r":-1.004
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -13,15 +13,15 @@
     "score":66.6922191695,
     "confidence":39.8,
     "win":true,
-    "r":2.111
+    "r":1.906
   },
   {
     "symbol":"GBPUSD",
-    "entry_time":"2023-07-13 08:00:00+00:00",
-    "score":68.8183046094,
-    "confidence":40.9,
-    "win":false,
-    "r":-0.995
+    "entry_time":"2023-07-12 16:00:00+00:00",
+    "score":68.0476310013,
+    "confidence":40.5,
+    "win":true,
+    "r":2.096
   },
   {
     "symbol":"EURUSD",
@@ -29,15 +29,47 @@
     "score":66.2222222222,
     "confidence":41.2,
     "win":true,
-    "r":2.073
+    "r":0.959
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-13 16:00:00+00:00",
+    "score":71.0111111111,
+    "confidence":50.5,
+    "win":false,
+    "r":-0.596
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-17 00:00:00+00:00",
+    "score":68.1555555556,
+    "confidence":39.2,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"EURUSD",
-    "entry_time":"2023-07-18 16:00:00+00:00",
+    "entry_time":"2023-07-17 08:00:00+00:00",
     "score":66.1777777778,
-    "confidence":41.4,
+    "confidence":42.2,
     "win":false,
-    "r":-1.008
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2023-07-17 16:00:00+00:00",
+    "score":66.1777777778,
+    "confidence":41.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2023-07-17 16:00:00+00:00",
+    "score":68.7332866647,
+    "confidence":40.9,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"USDJPY",
@@ -45,7 +77,7 @@
     "score":65.6566745542,
     "confidence":28.0,
     "win":false,
-    "r":-0.985
+    "r":-0.215
   },
   {
     "symbol":"USDJPY",
@@ -53,7 +85,7 @@
     "score":65.9908303696,
     "confidence":28.1,
     "win":false,
-    "r":-0.988
+    "r":-1.0
   },
   {
     "symbol":"USDJPY",
@@ -61,7 +93,143 @@
     "score":65.4256973967,
     "confidence":27.9,
     "win":false,
-    "r":-0.986
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-10 08:00:00+00:00",
+    "score":68.0126521151,
+    "confidence":39.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-10 16:00:00+00:00",
+    "score":68.5246554579,
+    "confidence":39.7,
+    "win":true,
+    "r":0.927
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-14 00:00:00+00:00",
+    "score":69.0583149833,
+    "confidence":38.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-14 08:00:00+00:00",
+    "score":72.1828480902,
+    "confidence":50.2,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-14 16:00:00+00:00",
+    "score":72.5666666667,
+    "confidence":50.6,
+    "win":true,
+    "r":2.097
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-16 16:00:00+00:00",
+    "score":69.1294675476,
+    "confidence":44.5,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-17 00:00:00+00:00",
+    "score":68.1222222222,
+    "confidence":35.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-17 16:00:00+00:00",
+    "score":68.5195276236,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-18 00:00:00+00:00",
+    "score":66.8892254526,
+    "confidence":34.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-18 08:00:00+00:00",
+    "score":68.2774263044,
+    "confidence":40.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-08-28 00:00:00+00:00",
+    "score":65.3590122863,
+    "confidence":33.9,
+    "win":true,
+    "r":2.091
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-09-01 16:00:00+00:00",
+    "score":67.3333333333,
+    "confidence":37.3,
+    "win":false,
+    "r":-0.075
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-09-29 00:00:00+00:00",
+    "score":65.6267933324,
+    "confidence":34.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-09-29 08:00:00+00:00",
+    "score":65.9290481482,
+    "confidence":31.6,
+    "win":true,
+    "r":1.291
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-10-05 16:00:00+00:00",
+    "score":65.62,
+    "confidence":36.8,
+    "win":true,
+    "r":2.111
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-10-09 08:00:00+00:00",
+    "score":66.729230009,
+    "confidence":44.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2023-11-14 08:00:00+00:00",
+    "score":66.4340463647,
+    "confidence":51.6,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"XAUUSD",
@@ -69,7 +237,7 @@
     "score":65.1839232818,
     "confidence":42.8,
     "win":true,
-    "r":2.187
+    "r":0.132
   },
   {
     "symbol":"GBPUSD",
@@ -77,7 +245,7 @@
     "score":65.2498313374,
     "confidence":45.1,
     "win":false,
-    "r":-0.977
+    "r":-1.0
   },
   {
     "symbol":"XAUUSD",
@@ -85,7 +253,7 @@
     "score":66.07,
     "confidence":43.8,
     "win":false,
-    "r":-1.001
+    "r":-1.0
   },
   {
     "symbol":"XAUUSD",
@@ -93,7 +261,7 @@
     "score":65.2291039419,
     "confidence":42.7,
     "win":false,
-    "r":-1.001
+    "r":-1.0
   },
   {
     "symbol":"XAUUSD",
@@ -101,7 +269,215 @@
     "score":65.5833906926,
     "confidence":43.0,
     "win":false,
-    "r":-1.003
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-01-18 08:00:00+00:00",
+    "score":69.6860238133,
+    "confidence":38.9,
+    "win":true,
+    "r":2.021
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-01-18 16:00:00+00:00",
+    "score":68.6171117078,
+    "confidence":38.7,
+    "win":true,
+    "r":2.083
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-01-19 08:00:00+00:00",
+    "score":70.4713901642,
+    "confidence":39.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-01-19 08:00:00+00:00",
+    "score":68.9110083523,
+    "confidence":38.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-01-19 16:00:00+00:00",
+    "score":70.0988367872,
+    "confidence":39.1,
+    "win":true,
+    "r":0.701
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-01-19 16:00:00+00:00",
+    "score":68.5645020699,
+    "confidence":38.5,
+    "win":true,
+    "r":0.305
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-01-22 00:00:00+00:00",
+    "score":66.9878248464,
+    "confidence":33.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-01-22 00:00:00+00:00",
+    "score":65.527061752,
+    "confidence":32.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-01-26 08:00:00+00:00",
+    "score":65.2333333333,
+    "confidence":40.0,
+    "win":true,
+    "r":2.09
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-12 00:00:00+00:00",
+    "score":66.3294967802,
+    "confidence":33.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-12 16:00:00+00:00",
+    "score":66.4871672164,
+    "confidence":41.9,
+    "win":true,
+    "r":0.414
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-02-14 08:00:00+00:00",
+    "score":65.4392917794,
+    "confidence":42.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-02-21 16:00:00+00:00",
+    "score":67.4594092698,
+    "confidence":37.6,
+    "win":true,
+    "r":2.102
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-02-22 08:00:00+00:00",
+    "score":67.4120056338,
+    "confidence":40.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-02-22 16:00:00+00:00",
+    "score":68.9567450643,
+    "confidence":38.4,
+    "win":false,
+    "r":-0.251
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-02-22 16:00:00+00:00",
+    "score":67.1338358558,
+    "confidence":40.0,
+    "win":false,
+    "r":-0.006
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-22 16:00:00+00:00",
+    "score":69.6622476835,
+    "confidence":46.4,
+    "win":true,
+    "r":0.783
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-26 00:00:00+00:00",
+    "score":66.060791863,
+    "confidence":32.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-26 08:00:00+00:00",
+    "score":66.8702653502,
+    "confidence":40.9,
+    "win":true,
+    "r":1.971
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-26 16:00:00+00:00",
+    "score":68.9162507007,
+    "confidence":37.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-02-27 08:00:00+00:00",
+    "score":68.4892966456,
+    "confidence":37.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-02-29 00:00:00+00:00",
+    "score":34.0690503257,
+    "confidence":36.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-01 08:00:00+00:00",
+    "score":67.3222222222,
+    "confidence":37.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-01 16:00:00+00:00",
+    "score":67.3222222222,
+    "confidence":37.1,
+    "win":true,
+    "r":0.155
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-03-06 08:00:00+00:00",
+    "score":65.55,
+    "confidence":46.8,
+    "win":true,
+    "r":2.083
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-03-06 16:00:00+00:00",
+    "score":65.55,
+    "confidence":47.0,
+    "win":true,
+    "r":2.147
   },
   {
     "symbol":"GBPUSD",
@@ -109,7 +485,7 @@
     "score":65.1691177922,
     "confidence":44.1,
     "win":true,
-    "r":2.167
+    "r":2.12
   },
   {
     "symbol":"GBPUSD",
@@ -117,7 +493,39 @@
     "score":66.78,
     "confidence":45.3,
     "win":false,
-    "r":-0.992
+    "r":-0.276
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-03-08 16:00:00+00:00",
+    "score":65.55,
+    "confidence":47.3,
+    "win":true,
+    "r":0.4
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-03-11 08:00:00+00:00",
+    "score":66.76,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-03-12 00:00:00+00:00",
+    "score":65.8899839598,
+    "confidence":35.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-03-12 08:00:00+00:00",
+    "score":65.99,
+    "confidence":45.6,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -128,12 +536,532 @@
     "r":-1.0
   },
   {
+    "symbol":"USDJPY",
+    "entry_time":"2024-03-19 16:00:00+00:00",
+    "score":65.7778156684,
+    "confidence":42.7,
+    "win":true,
+    "r":2.118
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-20 00:00:00+00:00",
+    "score":65.8146683017,
+    "confidence":32.5,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-03-20 08:00:00+00:00",
+    "score":68.2619732023,
+    "confidence":38.2,
+    "win":true,
+    "r":2.073
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-21 00:00:00+00:00",
+    "score":67.9524294127,
+    "confidence":33.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-03-21 00:00:00+00:00",
+    "score":66.3738448313,
+    "confidence":33.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-03-21 08:00:00+00:00",
+    "score":66.2352502625,
+    "confidence":43.0,
+    "win":true,
+    "r":0.03
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-03-21 08:00:00+00:00",
+    "score":67.5066730564,
+    "confidence":42.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-03-21 16:00:00+00:00",
+    "score":70.9871855985,
+    "confidence":47.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-21 16:00:00+00:00",
+    "score":68.2252899058,
+    "confidence":36.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-03-22 08:00:00+00:00",
+    "score":66.2020355751,
+    "confidence":30.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-22 08:00:00+00:00",
+    "score":67.1048015055,
+    "confidence":30.6,
+    "win":false,
+    "r":-0.073
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-03-25 08:00:00+00:00",
+    "score":69.9084780219,
+    "confidence":40.1,
+    "win":true,
+    "r":2.009
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-03-25 08:00:00+00:00",
+    "score":65.6959883199,
+    "confidence":51.0,
+    "win":true,
+    "r":2.09
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-03-27 16:00:00+00:00",
+    "score":66.4038956707,
+    "confidence":48.5,
+    "win":true,
+    "r":2.115
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-03-28 08:00:00+00:00",
+    "score":66.87,
+    "confidence":43.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-01 16:00:00+00:00",
+    "score":65.69,
+    "confidence":45.4,
+    "win":true,
+    "r":2.141
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-02 16:00:00+00:00",
+    "score":67.49,
+    "confidence":53.2,
+    "win":true,
+    "r":2.14
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-03 08:00:00+00:00",
+    "score":65.99,
+    "confidence":43.7,
+    "win":true,
+    "r":2.128
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-04 08:00:00+00:00",
+    "score":66.01,
+    "confidence":43.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-04 16:00:00+00:00",
+    "score":66.01,
+    "confidence":43.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-05 08:00:00+00:00",
+    "score":65.2733411885,
+    "confidence":42.9,
+    "win":true,
+    "r":2.148
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-05 16:00:00+00:00",
+    "score":65.3560356489,
+    "confidence":43.0,
+    "win":false,
+    "r":-0.492
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-04-08 08:00:00+00:00",
+    "score":65.0411623007,
+    "confidence":42.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-11 08:00:00+00:00",
+    "score":66.7239348427,
+    "confidence":54.3,
+    "win":true,
+    "r":1.995
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-12 08:00:00+00:00",
+    "score":66.12,
+    "confidence":45.6,
+    "win":true,
+    "r":1.995
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-12 16:00:00+00:00",
+    "score":66.12,
+    "confidence":46.0,
+    "win":false,
+    "r":-0.195
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-15 00:00:00+00:00",
+    "score":32.9817880419,
+    "confidence":36.6,
+    "win":true,
+    "r":2.013
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-15 08:00:00+00:00",
+    "score":66.27,
+    "confidence":46.3,
+    "win":true,
+    "r":2.004
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-16 00:00:00+00:00",
+    "score":32.7600385793,
+    "confidence":36.7,
+    "win":true,
+    "r":2.008
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-16 08:00:00+00:00",
+    "score":65.78,
+    "confidence":44.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-16 16:00:00+00:00",
+    "score":65.78,
+    "confidence":44.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-16 16:00:00+00:00",
+    "score":32.948323825,
+    "confidence":46.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-17 08:00:00+00:00",
+    "score":34.1120471426,
+    "confidence":43.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-04-17 16:00:00+00:00",
+    "score":65.69,
+    "confidence":44.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-18 00:00:00+00:00",
+    "score":31.9117683452,
+    "confidence":37.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-19 00:00:00+00:00",
+    "score":34.1898527399,
+    "confidence":40.2,
+    "win":true,
+    "r":1.99
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-04-19 00:00:00+00:00",
+    "score":34.1945453094,
+    "confidence":34.3,
+    "win":true,
+    "r":1.878
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-19 08:00:00+00:00",
+    "score":34.5902727536,
+    "confidence":42.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-04-22 00:00:00+00:00",
+    "score":34.2209220867,
+    "confidence":34.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-04-25 08:00:00+00:00",
+    "score":65.8664226918,
+    "confidence":40.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-04-26 08:00:00+00:00",
+    "score":69.1953722293,
+    "confidence":46.0,
+    "win":true,
+    "r":0.939
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-04-26 08:00:00+00:00",
+    "score":66.0339930788,
+    "confidence":51.3,
+    "win":true,
+    "r":1.257
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-04-26 08:00:00+00:00",
+    "score":69.7322755336,
+    "confidence":46.0,
+    "win":true,
+    "r":1.108
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-04-29 00:00:00+00:00",
+    "score":65.0564764448,
+    "confidence":31.5,
+    "win":true,
+    "r":2.136
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-04-29 00:00:00+00:00",
+    "score":65.476823684,
+    "confidence":31.4,
+    "win":true,
+    "r":2.125
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-04-29 08:00:00+00:00",
+    "score":66.8987059639,
+    "confidence":42.5,
+    "win":true,
+    "r":0.984
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-04-29 08:00:00+00:00",
+    "score":69.6265310199,
+    "confidence":45.6,
+    "win":true,
+    "r":1.042
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-05-14 16:00:00+00:00",
+    "score":65.8238968262,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-05-15 08:00:00+00:00",
+    "score":67.6281695154,
+    "confidence":38.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-05-20 08:00:00+00:00",
+    "score":65.7655845315,
+    "confidence":43.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-05-20 16:00:00+00:00",
+    "score":65.3958856462,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-05-21 16:00:00+00:00",
+    "score":65.9557420507,
+    "confidence":51.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-05-22 16:00:00+00:00",
+    "score":65.129518629,
+    "confidence":42.1,
+    "win":false,
+    "r":-0.045
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-23 16:00:00+00:00",
+    "score":68.1152195655,
+    "confidence":37.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-24 00:00:00+00:00",
+    "score":65.2160454499,
+    "confidence":31.7,
+    "win":true,
+    "r":2.019
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-24 16:00:00+00:00",
+    "score":68.3873080504,
+    "confidence":37.6,
+    "win":false,
+    "r":-0.343
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-05-24 16:00:00+00:00",
+    "score":65.1161888962,
+    "confidence":42.1,
+    "win":true,
+    "r":0.277
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-27 00:00:00+00:00",
+    "score":67.5303063246,
+    "confidence":35.2,
+    "win":true,
+    "r":1.978
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-28 08:00:00+00:00",
+    "score":67.7164061312,
+    "confidence":41.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-29 08:00:00+00:00",
+    "score":67.6676699414,
+    "confidence":41.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-29 16:00:00+00:00",
+    "score":68.7237109561,
+    "confidence":37.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-05-30 08:00:00+00:00",
+    "score":66.7338670962,
+    "confidence":29.7,
+    "win":true,
+    "r":1.553
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-06-04 08:00:00+00:00",
+    "score":65.0548852458,
+    "confidence":31.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-06-11 08:00:00+00:00",
+    "score":65.0925051884,
+    "confidence":42.9,
+    "win":true,
+    "r":1.888
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-06-11 16:00:00+00:00",
+    "score":65.3639733557,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
     "symbol":"EURUSD",
     "entry_time":"2024-06-24 00:00:00+00:00",
     "score":33.8900963775,
     "confidence":39.5,
     "win":false,
-    "r":-0.995
+    "r":-1.0
   },
   {
     "symbol":"EURUSD",
@@ -141,7 +1069,119 @@
     "score":32.136749512,
     "confidence":36.2,
     "win":false,
-    "r":-1.002
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-06-27 08:00:00+00:00",
+    "score":34.8566982956,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-06-28 08:00:00+00:00",
+    "score":66.2305536728,
+    "confidence":51.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-07-01 16:00:00+00:00",
+    "score":67.4186348414,
+    "confidence":39.5,
+    "win":true,
+    "r":2.096
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-07-03 16:00:00+00:00",
+    "score":66.6940470452,
+    "confidence":42.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-07-04 00:00:00+00:00",
+    "score":67.3920542749,
+    "confidence":35.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-07-04 08:00:00+00:00",
+    "score":71.6613142717,
+    "confidence":50.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-07-04 16:00:00+00:00",
+    "score":68.3554040267,
+    "confidence":39.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-07-05 08:00:00+00:00",
+    "score":66.9287220109,
+    "confidence":44.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-07-05 08:00:00+00:00",
+    "score":68.4330042712,
+    "confidence":39.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-07-05 16:00:00+00:00",
+    "score":66.7344376482,
+    "confidence":44.5,
+    "win":true,
+    "r":0.106
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-07-08 08:00:00+00:00",
+    "score":66.0620002896,
+    "confidence":44.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-07-11 00:00:00+00:00",
+    "score":65.3380567336,
+    "confidence":33.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-07-11 16:00:00+00:00",
+    "score":66.6421980222,
+    "confidence":31.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-07-12 08:00:00+00:00",
+    "score":65.7935808282,
+    "confidence":43.7,
+    "win":false,
+    "r":-0.347
   },
   {
     "symbol":"GBPUSD",
@@ -149,7 +1189,7 @@
     "score":65.43,
     "confidence":42.4,
     "win":true,
-    "r":2.057
+    "r":2.078
   },
   {
     "symbol":"GBPUSD",
@@ -157,7 +1197,23 @@
     "score":67.53,
     "confidence":46.4,
     "win":false,
-    "r":-0.997
+    "r":-0.786
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-15 08:00:00+00:00",
+    "score":65.35,
+    "confidence":42.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-07-16 00:00:00+00:00",
+    "score":65.65,
+    "confidence":39.1,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -165,7 +1221,15 @@
     "score":68.15,
     "confidence":44.4,
     "win":false,
-    "r":-1.007
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-07-16 16:00:00+00:00",
+    "score":65.0951397507,
+    "confidence":42.7,
+    "win":true,
+    "r":0.006
   },
   {
     "symbol":"GBPUSD",
@@ -173,7 +1237,103 @@
     "score":66.65,
     "confidence":47.4,
     "win":true,
-    "r":2.036
+    "r":2.027
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-22 16:00:00+00:00",
+    "score":65.1431676372,
+    "confidence":43.1,
+    "win":true,
+    "r":1.939
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-24 08:00:00+00:00",
+    "score":65.66,
+    "confidence":43.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-24 16:00:00+00:00",
+    "score":67.16,
+    "confidence":53.4,
+    "win":true,
+    "r":1.942
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-07-25 00:00:00+00:00",
+    "score":32.3039751517,
+    "confidence":35.5,
+    "win":true,
+    "r":1.856
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-25 08:00:00+00:00",
+    "score":65.65,
+    "confidence":44.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-25 16:00:00+00:00",
+    "score":65.65,
+    "confidence":44.2,
+    "win":true,
+    "r":0.644
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-07-26 00:00:00+00:00",
+    "score":32.3777777778,
+    "confidence":36.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-07-29 08:00:00+00:00",
+    "score":65.2120529962,
+    "confidence":43.2,
+    "win":true,
+    "r":0.391
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-07-30 00:00:00+00:00",
+    "score":32.4666666667,
+    "confidence":35.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-07-31 00:00:00+00:00",
+    "score":32.0111419194,
+    "confidence":35.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-08-02 08:00:00+00:00",
+    "score":67.892354747,
+    "confidence":47.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-08-07 00:00:00+00:00",
+    "score":34.91,
+    "confidence":41.6,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -181,7 +1341,7 @@
     "score":66.6059686744,
     "confidence":44.4,
     "win":false,
-    "r":-1.011
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -189,7 +1349,7 @@
     "score":65.4390242425,
     "confidence":48.0,
     "win":true,
-    "r":2.014
+    "r":2.001
   },
   {
     "symbol":"GBPUSD",
@@ -197,15 +1357,111 @@
     "score":67.2748839359,
     "confidence":44.9,
     "win":true,
-    "r":2.096
+    "r":2.123
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-08-22 00:00:00+00:00",
+    "score":65.7934952404,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
     "entry_time":"2024-08-23 16:00:00+00:00",
     "score":67.78,
     "confidence":46.1,
+    "win":true,
+    "r":0.256
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-26 00:00:00+00:00",
+    "score":65.27,
+    "confidence":40.8,
     "win":false,
-    "r":-1.023
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-08-27 08:00:00+00:00",
+    "score":65.7725833763,
+    "confidence":43.9,
+    "win":true,
+    "r":1.981
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-08-28 00:00:00+00:00",
+    "score":33.43,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-28 08:00:00+00:00",
+    "score":68.29,
+    "confidence":44.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2024-08-28 16:00:00+00:00",
+    "score":66.19,
+    "confidence":40.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-08-29 08:00:00+00:00",
+    "score":67.2241618608,
+    "confidence":40.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-08-29 08:00:00+00:00",
+    "score":67.7410838095,
+    "confidence":54.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-08-29 16:00:00+00:00",
+    "score":66.8211519447,
+    "confidence":40.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-08-29 16:00:00+00:00",
+    "score":66.25252257,
+    "confidence":44.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-09-06 00:00:00+00:00",
+    "score":32.6442728957,
+    "confidence":40.7,
+    "win":true,
+    "r":2.123
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-09-09 00:00:00+00:00",
+    "score":33.7888888889,
+    "confidence":35.7,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -213,7 +1469,23 @@
     "score":66.0101975167,
     "confidence":41.7,
     "win":false,
-    "r":-1.004
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-09-16 16:00:00+00:00",
+    "score":65.7343140333,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-09-17 00:00:00+00:00",
+    "score":33.8214166158,
+    "confidence":28.9,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -221,7 +1493,15 @@
     "score":65.278178894,
     "confidence":43.5,
     "win":true,
-    "r":2.162
+    "r":2.119
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-09-19 08:00:00+00:00",
+    "score":66.9230911878,
+    "confidence":39.9,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -229,7 +1509,15 @@
     "score":66.1611719728,
     "confidence":44.1,
     "win":true,
-    "r":2.115
+    "r":1.256
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-09-20 08:00:00+00:00",
+    "score":66.300931631,
+    "confidence":53.3,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -237,7 +1525,15 @@
     "score":66.0746234114,
     "confidence":44.1,
     "win":true,
-    "r":2.096
+    "r":2.098
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-09-24 00:00:00+00:00",
+    "score":65.37,
+    "confidence":41.9,
+    "win":true,
+    "r":2.092
   },
   {
     "symbol":"GBPUSD",
@@ -245,7 +1541,599 @@
     "score":66.6914367278,
     "confidence":42.3,
     "win":false,
-    "r":-1.003
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-09-25 16:00:00+00:00",
+    "score":66.33,
+    "confidence":45.2,
+    "win":true,
+    "r":2.121
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-09-26 16:00:00+00:00",
+    "score":65.6286311823,
+    "confidence":41.6,
+    "win":true,
+    "r":0.973
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-09-26 16:00:00+00:00",
+    "score":66.32,
+    "confidence":45.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-09-30 08:00:00+00:00",
+    "score":66.8997548588,
+    "confidence":42.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-09-30 08:00:00+00:00",
+    "score":66.8980217544,
+    "confidence":40.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-10-01 00:00:00+00:00",
+    "score":65.2056093072,
+    "confidence":36.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-10-01 16:00:00+00:00",
+    "score":65.027370387,
+    "confidence":33.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-10-02 00:00:00+00:00",
+    "score":65.5546575875,
+    "confidence":33.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-15 08:00:00+00:00",
+    "score":65.92,
+    "confidence":44.8,
+    "win":true,
+    "r":1.913
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-15 16:00:00+00:00",
+    "score":65.92,
+    "confidence":44.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-10-18 08:00:00+00:00",
+    "score":66.2603865948,
+    "confidence":52.1,
+    "win":true,
+    "r":2.114
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-10-21 16:00:00+00:00",
+    "score":65.93,
+    "confidence":43.8,
+    "win":true,
+    "r":2.126
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2024-10-22 16:00:00+00:00",
+    "score":66.06,
+    "confidence":43.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-23 08:00:00+00:00",
+    "score":66.9877868765,
+    "confidence":46.7,
+    "win":true,
+    "r":1.854
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-10-23 16:00:00+00:00",
+    "score":68.2323294943,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-25 08:00:00+00:00",
+    "score":66.2458614296,
+    "confidence":52.0,
+    "win":true,
+    "r":1.871
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-25 16:00:00+00:00",
+    "score":65.1342025445,
+    "confidence":42.8,
+    "win":true,
+    "r":0.13
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-28 08:00:00+00:00",
+    "score":65.7492606215,
+    "confidence":43.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-10-28 16:00:00+00:00",
+    "score":68.0041145934,
+    "confidence":37.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-30 08:00:00+00:00",
+    "score":66.09,
+    "confidence":43.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-31 08:00:00+00:00",
+    "score":65.538492361,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-10-31 16:00:00+00:00",
+    "score":65.6052389341,
+    "confidence":29.1,
+    "win":true,
+    "r":2.127
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-10-31 16:00:00+00:00",
+    "score":65.0987739388,
+    "confidence":42.8,
+    "win":false,
+    "r":-0.364
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-11-13 08:00:00+00:00",
+    "score":66.0302706678,
+    "confidence":43.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-11-13 16:00:00+00:00",
+    "score":66.0349980215,
+    "confidence":43.5,
+    "win":false,
+    "r":-0.547
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-14 00:00:00+00:00",
+    "score":29.7570159924,
+    "confidence":37.6,
+    "win":true,
+    "r":2.099
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-14 16:00:00+00:00",
+    "score":32.01,
+    "confidence":43.5,
+    "win":true,
+    "r":0.937
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-11-15 00:00:00+00:00",
+    "score":32.6477041229,
+    "confidence":35.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-11-18 00:00:00+00:00",
+    "score":32.2222222222,
+    "confidence":35.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-11-19 00:00:00+00:00",
+    "score":33.7590324759,
+    "confidence":29.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-21 16:00:00+00:00",
+    "score":33.5075141277,
+    "confidence":42.4,
+    "win":true,
+    "r":2.141
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-22 16:00:00+00:00",
+    "score":32.0470530851,
+    "confidence":43.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-25 00:00:00+00:00",
+    "score":29.7230048764,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2024-11-27 00:00:00+00:00",
+    "score":32.7,
+    "confidence":33.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-11-28 00:00:00+00:00",
+    "score":34.8338269948,
+    "confidence":32.5,
+    "win":true,
+    "r":2.125
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-12-03 00:00:00+00:00",
+    "score":33.5555555556,
+    "confidence":35.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2024-12-04 00:00:00+00:00",
+    "score":33.5555555556,
+    "confidence":35.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-12 00:00:00+00:00",
+    "score":34.5417773371,
+    "confidence":34.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-13 00:00:00+00:00",
+    "score":34.6031602957,
+    "confidence":34.0,
+    "win":false,
+    "r":0.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-16 00:00:00+00:00",
+    "score":65.7701196314,
+    "confidence":38.4,
+    "win":true,
+    "r":2.105
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-16 00:00:00+00:00",
+    "score":34.8695712819,
+    "confidence":33.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-12-16 16:00:00+00:00",
+    "score":66.551745843,
+    "confidence":53.2,
+    "win":true,
+    "r":1.983
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-17 00:00:00+00:00",
+    "score":67.5498670149,
+    "confidence":42.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-17 08:00:00+00:00",
+    "score":69.9780414079,
+    "confidence":54.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-12-18 08:00:00+00:00",
+    "score":65.69,
+    "confidence":49.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-12-19 08:00:00+00:00",
+    "score":66.35,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-12-19 16:00:00+00:00",
+    "score":66.35,
+    "confidence":43.6,
+    "win":true,
+    "r":2.054
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-20 00:00:00+00:00",
+    "score":34.1111111111,
+    "confidence":32.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-12-20 00:00:00+00:00",
+    "score":33.5396914751,
+    "confidence":38.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2024-12-20 08:00:00+00:00",
+    "score":66.0320479181,
+    "confidence":43.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-20 08:00:00+00:00",
+    "score":34.5555555556,
+    "confidence":41.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-23 00:00:00+00:00",
+    "score":65.8023204536,
+    "confidence":38.9,
+    "win":true,
+    "r":1.415
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-27 00:00:00+00:00",
+    "score":33.4980440308,
+    "confidence":34.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-27 08:00:00+00:00",
+    "score":67.6653934658,
+    "confidence":44.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-12-27 16:00:00+00:00",
+    "score":69.9759384899,
+    "confidence":46.1,
+    "win":true,
+    "r":0.204
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2024-12-27 16:00:00+00:00",
+    "score":67.4483037302,
+    "confidence":44.0,
+    "win":true,
+    "r":0.663
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-12-30 00:00:00+00:00",
+    "score":65.6852763467,
+    "confidence":31.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2024-12-30 00:00:00+00:00",
+    "score":34.6671143762,
+    "confidence":33.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2024-12-30 00:00:00+00:00",
+    "score":34.8538166507,
+    "confidence":37.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-12-30 16:00:00+00:00",
+    "score":66.1806623365,
+    "confidence":34.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2024-12-31 08:00:00+00:00",
+    "score":66.4263332633,
+    "confidence":29.5,
+    "win":true,
+    "r":2.071
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2024-12-31 16:00:00+00:00",
+    "score":65.0424889857,
+    "confidence":42.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-01-02 00:00:00+00:00",
+    "score":32.5514311949,
+    "confidence":44.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-01-02 08:00:00+00:00",
+    "score":66.5409233651,
+    "confidence":51.6,
+    "win":true,
+    "r":1.938
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-01-02 16:00:00+00:00",
+    "score":65.5468199968,
+    "confidence":42.5,
+    "win":false,
+    "r":-0.511
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-01-03 00:00:00+00:00",
+    "score":30.0265029416,
+    "confidence":42.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-01-03 00:00:00+00:00",
+    "score":34.7414695662,
+    "confidence":38.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-01-06 00:00:00+00:00",
+    "score":31.2164039806,
+    "confidence":36.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-01-06 16:00:00+00:00",
+    "score":34.451022002,
+    "confidence":37.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-01-07 16:00:00+00:00",
+    "score":67.0786342313,
+    "confidence":39.4,
+    "win":true,
+    "r":1.996
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-01-08 00:00:00+00:00",
+    "score":29.1661913724,
+    "confidence":33.7,
+    "win":true,
+    "r":2.09
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-01-09 16:00:00+00:00",
+    "score":65.2799084908,
+    "confidence":53.9,
+    "win":true,
+    "r":2.116
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-01-13 00:00:00+00:00",
+    "score":33.6170525995,
+    "confidence":34.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-01-13 00:00:00+00:00",
+    "score":34.3080954104,
+    "confidence":38.4,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -253,7 +2141,15 @@
     "score":34.3,
     "confidence":43.2,
     "win":true,
-    "r":2.113
+    "r":2.099
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-01-13 08:00:00+00:00",
+    "score":65.1105246301,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -261,7 +2157,15 @@
     "score":32.42,
     "confidence":40.1,
     "win":false,
-    "r":-1.01
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-01-17 08:00:00+00:00",
+    "score":65.4216172389,
+    "confidence":53.7,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -269,7 +2173,239 @@
     "score":34.5850408756,
     "confidence":38.1,
     "win":false,
-    "r":-1.01
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-01-23 08:00:00+00:00",
+    "score":65.2864497748,
+    "confidence":43.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-01-30 08:00:00+00:00",
+    "score":33.9939714807,
+    "confidence":44.9,
+    "win":true,
+    "r":2.111
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-01-31 00:00:00+00:00",
+    "score":34.5287715621,
+    "confidence":38.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-01-31 16:00:00+00:00",
+    "score":32.9138604376,
+    "confidence":45.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-03 00:00:00+00:00",
+    "score":34.690691187,
+    "confidence":34.6,
+    "win":false,
+    "r":-0.405
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-02-03 08:00:00+00:00",
+    "score":34.8466064326,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-04 08:00:00+00:00",
+    "score":65.1952148551,
+    "confidence":51.3,
+    "win":true,
+    "r":2.13
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-06 00:00:00+00:00",
+    "score":34.8377707416,
+    "confidence":34.3,
+    "win":true,
+    "r":2.118
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-06 08:00:00+00:00",
+    "score":65.8665259924,
+    "confidence":43.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-06 16:00:00+00:00",
+    "score":65.2524695433,
+    "confidence":42.9,
+    "win":true,
+    "r":0.706
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-07 00:00:00+00:00",
+    "score":33.687085296,
+    "confidence":34.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-10 00:00:00+00:00",
+    "score":33.5,
+    "confidence":35.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-02-10 00:00:00+00:00",
+    "score":34.7416394527,
+    "confidence":34.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-10 08:00:00+00:00",
+    "score":65.6223270199,
+    "confidence":43.1,
+    "win":true,
+    "r":2.158
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-02-11 00:00:00+00:00",
+    "score":34.7313636194,
+    "confidence":34.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-11 00:00:00+00:00",
+    "score":33.5,
+    "confidence":35.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-02-11 08:00:00+00:00",
+    "score":34.6111111111,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-11 08:00:00+00:00",
+    "score":65.67,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-02-11 16:00:00+00:00",
+    "score":65.67,
+    "confidence":45.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2025-02-28 16:00:00+00:00",
+    "score":67.782870889,
+    "confidence":54.8,
+    "win":true,
+    "r":0.654
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-03-03 00:00:00+00:00",
+    "score":33.2140750944,
+    "confidence":35.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-03-03 00:00:00+00:00",
+    "score":34.2866694683,
+    "confidence":39.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2025-03-03 08:00:00+00:00",
+    "score":67.047774258,
+    "confidence":54.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-03-04 00:00:00+00:00",
+    "score":34.2558982252,
+    "confidence":34.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2025-03-12 08:00:00+00:00",
+    "score":67.3804285001,
+    "confidence":48.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-03-18 16:00:00+00:00",
+    "score":65.32,
+    "confidence":45.4,
+    "win":true,
+    "r":0.742
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-03-31 16:00:00+00:00",
+    "score":65.22,
+    "confidence":45.3,
+    "win":true,
+    "r":0.913
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-04-07 00:00:00+00:00",
+    "score":34.12,
+    "confidence":38.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-04-08 00:00:00+00:00",
+    "score":34.1216360514,
+    "confidence":34.5,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -277,7 +2413,31 @@
     "score":66.6843240926,
     "confidence":44.6,
     "win":true,
-    "r":2.08
+    "r":1.114
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-16 08:00:00+00:00",
+    "score":67.59,
+    "confidence":45.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-16 16:00:00+00:00",
+    "score":69.09,
+    "confidence":55.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-04-17 08:00:00+00:00",
+    "score":66.9334984571,
+    "confidence":44.8,
+    "win":true,
+    "r":1.977
   },
   {
     "symbol":"GBPUSD",
@@ -285,7 +2445,7 @@
     "score":67.2234236143,
     "confidence":45.1,
     "win":false,
-    "r":-1.008
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -293,15 +2453,63 @@
     "score":67.47,
     "confidence":45.7,
     "win":false,
-    "r":-1.013
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-04-22 16:00:00+00:00",
+    "score":65.04,
+    "confidence":55.5,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
     "entry_time":"2025-04-24 08:00:00+00:00",
     "score":65.2520572839,
     "confidence":37.8,
+    "win":false,
+    "r":-0.054
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-12 16:00:00+00:00",
+    "score":67.3505689105,
+    "confidence":38.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-13 08:00:00+00:00",
+    "score":66.0844592822,
+    "confidence":42.2,
     "win":true,
-    "r":2.108
+    "r":2.088
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-13 16:00:00+00:00",
+    "score":68.202756314,
+    "confidence":39.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-14 08:00:00+00:00",
+    "score":66.3528106837,
+    "confidence":42.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-14 16:00:00+00:00",
+    "score":67.2508635083,
+    "confidence":32.9,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -309,7 +2517,7 @@
     "score":65.6977717758,
     "confidence":44.1,
     "win":false,
-    "r":-0.988
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -317,7 +2525,7 @@
     "score":65.4390022064,
     "confidence":44.0,
     "win":true,
-    "r":2.101
+    "r":2.085
   },
   {
     "symbol":"GBPUSD",
@@ -325,7 +2533,15 @@
     "score":66.2259019491,
     "confidence":44.5,
     "win":true,
-    "r":2.077
+    "r":0.833
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2025-05-26 00:00:00+00:00",
+    "score":33.23,
+    "confidence":45.9,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -333,7 +2549,7 @@
     "score":65.0360852969,
     "confidence":41.2,
     "win":false,
-    "r":-1.004
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -341,7 +2557,23 @@
     "score":65.1809582942,
     "confidence":41.3,
     "win":false,
-    "r":-1.003
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-05-29 00:00:00+00:00",
+    "score":65.9565358786,
+    "confidence":31.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-05-29 08:00:00+00:00",
+    "score":67.5018871194,
+    "confidence":37.2,
+    "win":false,
+    "r":-1.0
   },
   {
     "symbol":"GBPUSD",
@@ -349,6 +2581,2286 @@
     "score":67.9662028233,
     "confidence":48.1,
     "win":false,
-    "r":-0.989
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-06-06 08:00:00+00:00",
+    "score":65.7323979562,
+    "confidence":39.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-06 16:00:00+00:00",
+    "score":67.0366968987,
+    "confidence":39.0,
+    "win":false,
+    "r":-0.499
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-09 08:00:00+00:00",
+    "score":67.6777448857,
+    "confidence":39.1,
+    "win":true,
+    "r":2.066
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-10 08:00:00+00:00",
+    "score":67.6456693907,
+    "confidence":39.0,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-10 16:00:00+00:00",
+    "score":67.6495933735,
+    "confidence":39.0,
+    "win":true,
+    "r":2.079
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-11 16:00:00+00:00",
+    "score":68.4912488622,
+    "confidence":39.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-12 08:00:00+00:00",
+    "score":66.8785714001,
+    "confidence":42.7,
+    "win":true,
+    "r":2.106
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-12 16:00:00+00:00",
+    "score":68.9586795708,
+    "confidence":39.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-13 08:00:00+00:00",
+    "score":67.9981179069,
+    "confidence":38.9,
+    "win":true,
+    "r":1.697
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-16 08:00:00+00:00",
+    "score":67.4594995252,
+    "confidence":38.3,
+    "win":false,
+    "r":-0.194
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-18 08:00:00+00:00",
+    "score":67.4932511078,
+    "confidence":38.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-20 16:00:00+00:00",
+    "score":67.3310157068,
+    "confidence":37.9,
+    "win":true,
+    "r":0.043
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-23 08:00:00+00:00",
+    "score":68.4153034285,
+    "confidence":38.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-23 08:00:00+00:00",
+    "score":67.953973604,
+    "confidence":37.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-23 16:00:00+00:00",
+    "score":68.3035337437,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-23 16:00:00+00:00",
+    "score":68.6518109942,
+    "confidence":38.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-06-24 08:00:00+00:00",
+    "score":65.4877790809,
+    "confidence":34.8,
+    "win":true,
+    "r":2.104
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-24 08:00:00+00:00",
+    "score":66.7063347311,
+    "confidence":41.0,
+    "win":true,
+    "r":2.053
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-25 16:00:00+00:00",
+    "score":70.5402232875,
+    "confidence":46.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-06-26 08:00:00+00:00",
+    "score":65.9431515718,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-26 08:00:00+00:00",
+    "score":68.7314782388,
+    "confidence":37.6,
+    "win":true,
+    "r":2.04
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-27 08:00:00+00:00",
+    "score":66.7655479284,
+    "confidence":40.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-06-30 08:00:00+00:00",
+    "score":66.0581968177,
+    "confidence":54.8,
+    "win":true,
+    "r":2.111
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-06-30 08:00:00+00:00",
+    "score":65.6265614653,
+    "confidence":29.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-07-01 00:00:00+00:00",
+    "score":34.88,
+    "confidence":40.8,
+    "win":true,
+    "r":1.95
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-07-02 00:00:00+00:00",
+    "score":34.88,
+    "confidence":40.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-07-03 00:00:00+00:00",
+    "score":34.89,
+    "confidence":40.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-07-04 16:00:00+00:00",
+    "score":65.4898462217,
+    "confidence":38.0,
+    "win":true,
+    "r":0.22
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-07-08 08:00:00+00:00",
+    "score":65.8345004007,
+    "confidence":42.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-07-10 00:00:00+00:00",
+    "score":65.2737786552,
+    "confidence":33.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-07-10 08:00:00+00:00",
+    "score":66.0233541868,
+    "confidence":42.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-07-15 16:00:00+00:00",
+    "score":67.1334031482,
+    "confidence":38.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-08-12 08:00:00+00:00",
+    "score":68.2255796514,
+    "confidence":38.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-08-13 08:00:00+00:00",
+    "score":67.3088284613,
+    "confidence":38.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-08-13 16:00:00+00:00",
+    "score":67.11998172,
+    "confidence":38.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-08-14 08:00:00+00:00",
+    "score":66.4310731577,
+    "confidence":30.8,
+    "win":true,
+    "r":2.04
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-01 08:00:00+00:00",
+    "score":65.4056754485,
+    "confidence":54.1,
+    "win":true,
+    "r":2.151
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-09-02 08:00:00+00:00",
+    "score":66.9505858913,
+    "confidence":39.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-09-02 16:00:00+00:00",
+    "score":67.5324666042,
+    "confidence":39.7,
+    "win":true,
+    "r":0.924
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-02 16:00:00+00:00",
+    "score":65.31,
+    "confidence":45.8,
+    "win":true,
+    "r":0.566
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-04 16:00:00+00:00",
+    "score":65.35,
+    "confidence":45.9,
+    "win":true,
+    "r":2.161
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-08 08:00:00+00:00",
+    "score":65.4,
+    "confidence":45.4,
+    "win":true,
+    "r":2.172
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-09-08 16:00:00+00:00",
+    "score":67.1607796698,
+    "confidence":38.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-09-09 08:00:00+00:00",
+    "score":66.0468485644,
+    "confidence":53.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-09 16:00:00+00:00",
+    "score":65.66,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-09-10 08:00:00+00:00",
+    "score":65.68,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-09-11 16:00:00+00:00",
+    "score":65.3405218035,
+    "confidence":44.6,
+    "win":false,
+    "r":-0.243
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-09-16 00:00:00+00:00",
+    "score":33.0905014604,
+    "confidence":48.5,
+    "win":true,
+    "r":1.819
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-09-16 08:00:00+00:00",
+    "score":66.8008697928,
+    "confidence":53.4,
+    "win":true,
+    "r":1.959
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-09-17 08:00:00+00:00",
+    "score":65.5237639154,
+    "confidence":44.9,
+    "win":true,
+    "r":2.06
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-09-18 08:00:00+00:00",
+    "score":65.7436652437,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2025-09-18 08:00:00+00:00",
+    "score":65.013477938,
+    "confidence":38.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-09-24 00:00:00+00:00",
+    "score":34.8596740475,
+    "confidence":41.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-09-29 00:00:00+00:00",
+    "score":32.0888888889,
+    "confidence":35.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-09-30 00:00:00+00:00",
+    "score":32.2502417911,
+    "confidence":35.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-08 00:00:00+00:00",
+    "score":66.9302538397,
+    "confidence":39.5,
+    "win":true,
+    "r":1.58
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-10-09 00:00:00+00:00",
+    "score":66.3888888889,
+    "confidence":36.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-10-09 16:00:00+00:00",
+    "score":68.5,
+    "confidence":37.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-10-10 00:00:00+00:00",
+    "score":33.0922995128,
+    "confidence":39.7,
+    "win":true,
+    "r":1.036
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-10 00:00:00+00:00",
+    "score":68.57,
+    "confidence":43.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-10 08:00:00+00:00",
+    "score":69.57,
+    "confidence":45.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-10-10 08:00:00+00:00",
+    "score":69.7118322775,
+    "confidence":34.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-10-10 16:00:00+00:00",
+    "score":70.8428977975,
+    "confidence":42.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-10 16:00:00+00:00",
+    "score":67.206331357,
+    "confidence":41.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-10-13 00:00:00+00:00",
+    "score":65.6386261895,
+    "confidence":27.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-13 00:00:00+00:00",
+    "score":65.9241124355,
+    "confidence":33.0,
+    "win":false,
+    "r":-0.338
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-10-13 00:00:00+00:00",
+    "score":34.2443364804,
+    "confidence":33.8,
+    "win":true,
+    "r":0.737
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-10-13 08:00:00+00:00",
+    "score":67.6551798844,
+    "confidence":33.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-10-15 00:00:00+00:00",
+    "score":33.9552305924,
+    "confidence":34.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-24 08:00:00+00:00",
+    "score":67.6366949923,
+    "confidence":43.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-10-24 16:00:00+00:00",
+    "score":67.3431633076,
+    "confidence":43.5,
+    "win":true,
+    "r":1.036
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-10-27 08:00:00+00:00",
+    "score":69.5483530906,
+    "confidence":46.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-10-28 16:00:00+00:00",
+    "score":70.0637317068,
+    "confidence":34.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-04 00:00:00+00:00",
+    "score":34.2790025312,
+    "confidence":34.2,
+    "win":true,
+    "r":1.926
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-05 00:00:00+00:00",
+    "score":32.2455161812,
+    "confidence":35.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-05 08:00:00+00:00",
+    "score":34.6888888889,
+    "confidence":41.2,
+    "win":true,
+    "r":1.9
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-06 16:00:00+00:00",
+    "score":34.8,
+    "confidence":41.7,
+    "win":true,
+    "r":0.044
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-10 00:00:00+00:00",
+    "score":33.6444444444,
+    "confidence":40.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-10 08:00:00+00:00",
+    "score":33.0888888889,
+    "confidence":45.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-10 16:00:00+00:00",
+    "score":68.0504069923,
+    "confidence":38.7,
+    "win":true,
+    "r":1.121
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-12 08:00:00+00:00",
+    "score":67.182272505,
+    "confidence":38.7,
+    "win":true,
+    "r":2.077
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-14 00:00:00+00:00",
+    "score":66.8222222222,
+    "confidence":34.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-14 16:00:00+00:00",
+    "score":69.0391947773,
+    "confidence":39.7,
+    "win":false,
+    "r":-0.198
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-17 00:00:00+00:00",
+    "score":65.2034162908,
+    "confidence":33.1,
+    "win":true,
+    "r":2.081
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-11-17 00:00:00+00:00",
+    "score":34.44,
+    "confidence":38.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-19 16:00:00+00:00",
+    "score":66.7278608389,
+    "confidence":37.8,
+    "win":true,
+    "r":2.087
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-19 16:00:00+00:00",
+    "score":67.9546673264,
+    "confidence":37.8,
+    "win":true,
+    "r":2.056
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-20 08:00:00+00:00",
+    "score":69.4792428785,
+    "confidence":47.3,
+    "win":true,
+    "r":2.104
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-20 08:00:00+00:00",
+    "score":68.8665268253,
+    "confidence":38.3,
+    "win":true,
+    "r":2.062
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-11-20 08:00:00+00:00",
+    "score":67.7299864898,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-20 16:00:00+00:00",
+    "score":68.2994371128,
+    "confidence":38.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-20 16:00:00+00:00",
+    "score":69.5816366241,
+    "confidence":38.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-21 00:00:00+00:00",
+    "score":68.9653849517,
+    "confidence":36.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2025-11-21 00:00:00+00:00",
+    "score":34.9605562042,
+    "confidence":33.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-11-21 08:00:00+00:00",
+    "score":66.2042156576,
+    "confidence":40.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-21 08:00:00+00:00",
+    "score":65.8019739899,
+    "confidence":35.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-21 08:00:00+00:00",
+    "score":67.4069051359,
+    "confidence":35.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-11-21 16:00:00+00:00",
+    "score":65.3130340388,
+    "confidence":30.4,
+    "win":true,
+    "r":0.347
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-21 16:00:00+00:00",
+    "score":70.6471552839,
+    "confidence":41.1,
+    "win":true,
+    "r":0.309
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-11-21 16:00:00+00:00",
+    "score":65.6543399395,
+    "confidence":40.6,
+    "win":true,
+    "r":0.115
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-11-24 00:00:00+00:00",
+    "score":65.5438930106,
+    "confidence":26.9,
+    "win":true,
+    "r":0.776
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-11-24 08:00:00+00:00",
+    "score":65.4826818971,
+    "confidence":40.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2025-11-24 16:00:00+00:00",
+    "score":67.9199163744,
+    "confidence":48.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-04 08:00:00+00:00",
+    "score":65.8782587414,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-05 00:00:00+00:00",
+    "score":65.08,
+    "confidence":43.3,
+    "win":true,
+    "r":1.919
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-05 08:00:00+00:00",
+    "score":66.08,
+    "confidence":45.8,
+    "win":true,
+    "r":0.374
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-08 08:00:00+00:00",
+    "score":66.04,
+    "confidence":46.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-09 00:00:00+00:00",
+    "score":65.54,
+    "confidence":39.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-09 08:00:00+00:00",
+    "score":69.0889285995,
+    "confidence":54.7,
+    "win":true,
+    "r":1.989
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-12-10 16:00:00+00:00",
+    "score":66.6184396607,
+    "confidence":38.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-12-11 00:00:00+00:00",
+    "score":66.6609411767,
+    "confidence":36.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-11 08:00:00+00:00",
+    "score":66.0827248485,
+    "confidence":43.9,
+    "win":false,
+    "r":-0.019
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-12-16 08:00:00+00:00",
+    "score":65.3095269985,
+    "confidence":44.7,
+    "win":true,
+    "r":2.027
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2025-12-16 16:00:00+00:00",
+    "score":65.7749116168,
+    "confidence":45.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-12-17 00:00:00+00:00",
+    "score":34.5585194816,
+    "confidence":42.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-12-19 16:00:00+00:00",
+    "score":66.3464241661,
+    "confidence":41.3,
+    "win":true,
+    "r":0.449
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2025-12-22 08:00:00+00:00",
+    "score":66.9177801115,
+    "confidence":44.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2025-12-22 08:00:00+00:00",
+    "score":66.8123465126,
+    "confidence":37.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-12-22 08:00:00+00:00",
+    "score":66.8015561491,
+    "confidence":35.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2025-12-23 08:00:00+00:00",
+    "score":68.896648264,
+    "confidence":38.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-12-24 00:00:00+00:00",
+    "score":34.7602782089,
+    "confidence":37.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-12-24 08:00:00+00:00",
+    "score":66.2634536025,
+    "confidence":54.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-24 16:00:00+00:00",
+    "score":67.63,
+    "confidence":47.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-12-25 00:00:00+00:00",
+    "score":34.3641459978,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2025-12-26 00:00:00+00:00",
+    "score":34.4595508716,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-26 00:00:00+00:00",
+    "score":66.64,
+    "confidence":38.4,
+    "win":true,
+    "r":0.453
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2025-12-26 08:00:00+00:00",
+    "score":65.5660285975,
+    "confidence":54.3,
+    "win":true,
+    "r":0.344
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-29 00:00:00+00:00",
+    "score":66.67,
+    "confidence":38.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2025-12-29 16:00:00+00:00",
+    "score":68.4696518506,
+    "confidence":37.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-01-02 08:00:00+00:00",
+    "score":69.0304897403,
+    "confidence":48.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-01-05 00:00:00+00:00",
+    "score":66.7023397205,
+    "confidence":42.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-01-12 08:00:00+00:00",
+    "score":66.9202850509,
+    "confidence":43.9,
+    "win":true,
+    "r":2.105
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-01-13 16:00:00+00:00",
+    "score":66.4212491526,
+    "confidence":44.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-01-14 08:00:00+00:00",
+    "score":69.5753299838,
+    "confidence":39.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-01-14 16:00:00+00:00",
+    "score":65.3390164901,
+    "confidence":49.8,
+    "win":false,
+    "r":-0.643
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-21 16:00:00+00:00",
+    "score":66.2383547411,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-22 00:00:00+00:00",
+    "score":65.7386876777,
+    "confidence":39.7,
+    "win":true,
+    "r":1.986
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-22 08:00:00+00:00",
+    "score":67.6342130694,
+    "confidence":42.6,
+    "win":true,
+    "r":2.004
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-23 08:00:00+00:00",
+    "score":68.89,
+    "confidence":43.9,
+    "win":true,
+    "r":1.968
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-23 16:00:00+00:00",
+    "score":67.39,
+    "confidence":47.5,
+    "win":true,
+    "r":2.032
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-26 00:00:00+00:00",
+    "score":67.92,
+    "confidence":42.4,
+    "win":true,
+    "r":2.048
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-01-26 00:00:00+00:00",
+    "score":34.75,
+    "confidence":46.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-01-26 08:00:00+00:00",
+    "score":65.33,
+    "confidence":45.7,
+    "win":true,
+    "r":2.112
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-01-26 08:00:00+00:00",
+    "score":65.0880139195,
+    "confidence":45.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-01-27 00:00:00+00:00",
+    "score":65.03,
+    "confidence":43.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-01-27 00:00:00+00:00",
+    "score":32.78,
+    "confidence":44.7,
+    "win":true,
+    "r":2.022
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-01-27 08:00:00+00:00",
+    "score":65.5315545118,
+    "confidence":45.2,
+    "win":true,
+    "r":2.064
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-01-27 16:00:00+00:00",
+    "score":66.03,
+    "confidence":46.4,
+    "win":true,
+    "r":2.151
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-01-27 16:00:00+00:00",
+    "score":65.55,
+    "confidence":45.6,
+    "win":true,
+    "r":2.108
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-27 16:00:00+00:00",
+    "score":69.12,
+    "confidence":45.5,
+    "win":true,
+    "r":2.103
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-01-28 00:00:00+00:00",
+    "score":34.28,
+    "confidence":39.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-01-28 08:00:00+00:00",
+    "score":66.02,
+    "confidence":46.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-01-28 08:00:00+00:00",
+    "score":65.52,
+    "confidence":46.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-01-28 16:00:00+00:00",
+    "score":65.52,
+    "confidence":46.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-01-29 00:00:00+00:00",
+    "score":34.28,
+    "confidence":39.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-29 00:00:00+00:00",
+    "score":66.62,
+    "confidence":40.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-01-29 08:00:00+00:00",
+    "score":67.53,
+    "confidence":56.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-01-29 16:00:00+00:00",
+    "score":69.12,
+    "confidence":45.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-02-02 08:00:00+00:00",
+    "score":66.6753596724,
+    "confidence":34.5,
+    "win":true,
+    "r":1.034
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-02-03 16:00:00+00:00",
+    "score":65.9,
+    "confidence":46.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-02-05 16:00:00+00:00",
+    "score":65.1261503319,
+    "confidence":31.8,
+    "win":true,
+    "r":2.109
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-02-26 08:00:00+00:00",
+    "score":65.0073000207,
+    "confidence":25.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-02-26 16:00:00+00:00",
+    "score":67.0281370518,
+    "confidence":37.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-02-27 08:00:00+00:00",
+    "score":66.3719795158,
+    "confidence":37.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-03-05 08:00:00+00:00",
+    "score":66.5711203316,
+    "confidence":37.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-03-09 08:00:00+00:00",
+    "score":66.8241492236,
+    "confidence":43.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-03-09 16:00:00+00:00",
+    "score":66.7592818536,
+    "confidence":43.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-03-12 00:00:00+00:00",
+    "score":65.3630439792,
+    "confidence":33.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-03-12 16:00:00+00:00",
+    "score":69.7852679742,
+    "confidence":47.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-03-13 08:00:00+00:00",
+    "score":66.475025282,
+    "confidence":44.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-03-13 08:00:00+00:00",
+    "score":65.4883218354,
+    "confidence":30.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-03-13 16:00:00+00:00",
+    "score":66.2635944215,
+    "confidence":43.9,
+    "win":false,
+    "r":-0.212
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-08 08:00:00+00:00",
+    "score":68.1311701924,
+    "confidence":48.0,
+    "win":true,
+    "r":2.082
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-09 08:00:00+00:00",
+    "score":68.6853010219,
+    "confidence":39.2,
+    "win":true,
+    "r":1.98
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-09 16:00:00+00:00",
+    "score":69.2681653301,
+    "confidence":39.6,
+    "win":true,
+    "r":2.002
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-09 16:00:00+00:00",
+    "score":68.1452247901,
+    "confidence":39.9,
+    "win":true,
+    "r":2.06
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-04-10 08:00:00+00:00",
+    "score":67.7513693824,
+    "confidence":42.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-10 16:00:00+00:00",
+    "score":70.6040518475,
+    "confidence":40.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-10 16:00:00+00:00",
+    "score":69.0333333333,
+    "confidence":40.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-13 00:00:00+00:00",
+    "score":66.2555555556,
+    "confidence":34.8,
+    "win":true,
+    "r":2.107
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-13 00:00:00+00:00",
+    "score":67.6408786661,
+    "confidence":34.3,
+    "win":true,
+    "r":2.049
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-13 16:00:00+00:00",
+    "score":70.3227310591,
+    "confidence":39.9,
+    "win":true,
+    "r":1.445
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-14 00:00:00+00:00",
+    "score":66.2555555556,
+    "confidence":34.7,
+    "win":true,
+    "r":0.401
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-15 16:00:00+00:00",
+    "score":69.0333333333,
+    "confidence":43.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-16 00:00:00+00:00",
+    "score":66.2555555556,
+    "confidence":35.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-16 00:00:00+00:00",
+    "score":65.9051108644,
+    "confidence":34.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-04-16 08:00:00+00:00",
+    "score":70.4280347007,
+    "confidence":39.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-04-16 08:00:00+00:00",
+    "score":67.9033637035,
+    "confidence":39.1,
+    "win":true,
+    "r":2.047
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-04-17 08:00:00+00:00",
+    "score":67.0430344266,
+    "confidence":41.9,
+    "win":true,
+    "r":1.976
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-04-17 16:00:00+00:00",
+    "score":67.4088953224,
+    "confidence":42.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-05-04 00:00:00+00:00",
+    "score":34.6948453209,
+    "confidence":45.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-05-07 16:00:00+00:00",
+    "score":65.8822018804,
+    "confidence":39.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-05-07 16:00:00+00:00",
+    "score":66.5801615612,
+    "confidence":41.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-05-29 08:00:00+00:00",
+    "score":66.1688841507,
+    "confidence":39.7,
+    "win":true,
+    "r":1.906
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-05-29 16:00:00+00:00",
+    "score":66.8474782704,
+    "confidence":40.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-01 08:00:00+00:00",
+    "score":68.352822993,
+    "confidence":49.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-02 08:00:00+00:00",
+    "score":65.2622702491,
+    "confidence":33.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-19 00:00:00+00:00",
+    "score":34.5965777546,
+    "confidence":33.8,
+    "win":true,
+    "r":1.922
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-06-19 08:00:00+00:00",
+    "score":66.7850074908,
+    "confidence":45.0,
+    "win":true,
+    "r":1.411
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-22 00:00:00+00:00",
+    "score":33.2074517674,
+    "confidence":34.7,
+    "win":true,
+    "r":1.865
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-06-22 08:00:00+00:00",
+    "score":65.6041387084,
+    "confidence":42.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-06-22 08:00:00+00:00",
+    "score":67.08,
+    "confidence":45.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDJPY",
+    "entry_time":"2026-06-22 16:00:00+00:00",
+    "score":65.0798982561,
+    "confidence":42.4,
+    "win":true,
+    "r":0.343
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-06-22 16:00:00+00:00",
+    "score":67.08,
+    "confidence":45.3,
+    "win":true,
+    "r":2.006
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-06-23 00:00:00+00:00",
+    "score":31.3340951524,
+    "confidence":39.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-23 00:00:00+00:00",
+    "score":32.5841037049,
+    "confidence":35.0,
+    "win":true,
+    "r":1.871
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-06-23 08:00:00+00:00",
+    "score":33.5715986571,
+    "confidence":44.9,
+    "win":true,
+    "r":2.106
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-23 16:00:00+00:00",
+    "score":34.5333333333,
+    "confidence":41.3,
+    "win":true,
+    "r":1.905
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-06-24 08:00:00+00:00",
+    "score":33.08,
+    "confidence":45.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-06-24 08:00:00+00:00",
+    "score":66.7629684958,
+    "confidence":45.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-24 08:00:00+00:00",
+    "score":34.7,
+    "confidence":41.9,
+    "win":false,
+    "r":-0.479
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-06-25 00:00:00+00:00",
+    "score":33.2475429409,
+    "confidence":37.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-06-25 08:00:00+00:00",
+    "score":34.4784398503,
+    "confidence":46.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-06-25 16:00:00+00:00",
+    "score":31.59,
+    "confidence":49.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-29 00:00:00+00:00",
+    "score":31.9777777778,
+    "confidence":36.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-06-29 08:00:00+00:00",
+    "score":34.7555555556,
+    "confidence":41.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-06-30 16:00:00+00:00",
+    "score":68.2199168668,
+    "confidence":37.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-07-02 08:00:00+00:00",
+    "score":66.0214089167,
+    "confidence":36.5,
+    "win":true,
+    "r":0.617
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-07-06 00:00:00+00:00",
+    "score":34.95,
+    "confidence":30.3,
+    "win":true,
+    "r":2.002
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-07-14 00:00:00+00:00",
+    "score":33.900657012,
+    "confidence":41.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-07-14 08:00:00+00:00",
+    "score":34.9576704552,
+    "confidence":44.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-07-15 16:00:00+00:00",
+    "score":67.8944847061,
+    "confidence":38.2,
+    "win":false,
+    "r":-0.336
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-07-17 08:00:00+00:00",
+    "score":65.9889177256,
+    "confidence":38.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-07-17 16:00:00+00:00",
+    "score":68.1009236327,
+    "confidence":32.7,
+    "win":false,
+    "r":-0.05
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-07-29 00:00:00+00:00",
+    "score":34.8197342338,
+    "confidence":36.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-08-12 16:00:00+00:00",
+    "score":65.0222469782,
+    "confidence":44.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-08-17 08:00:00+00:00",
+    "score":67.2468264149,
+    "confidence":44.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-08-18 08:00:00+00:00",
+    "score":67.3359774682,
+    "confidence":44.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-08-18 16:00:00+00:00",
+    "score":65.4181059771,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-08-19 16:00:00+00:00",
+    "score":65.62,
+    "confidence":45.4,
+    "win":true,
+    "r":2.052
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-08-21 08:00:00+00:00",
+    "score":67.7576020982,
+    "confidence":49.1,
+    "win":true,
+    "r":0.908
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-08-21 16:00:00+00:00",
+    "score":65.48,
+    "confidence":46.7,
+    "win":true,
+    "r":0.49
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-08-24 08:00:00+00:00",
+    "score":66.9345422764,
+    "confidence":40.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-08-24 08:00:00+00:00",
+    "score":65.55,
+    "confidence":46.1,
+    "win":true,
+    "r":0.206
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-08-24 08:00:00+00:00",
+    "score":67.739275902,
+    "confidence":44.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-08-24 16:00:00+00:00",
+    "score":67.4061719173,
+    "confidence":44.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"AUDUSD",
+    "entry_time":"2026-08-27 08:00:00+00:00",
+    "score":65.6977958147,
+    "confidence":43.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-14 08:00:00+00:00",
+    "score":65.7464400521,
+    "confidence":43.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-14 16:00:00+00:00",
+    "score":65.6611308425,
+    "confidence":43.9,
+    "win":true,
+    "r":1.118
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-09-17 00:00:00+00:00",
+    "score":31.8333333333,
+    "confidence":36.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-09-17 08:00:00+00:00",
+    "score":34.6111111111,
+    "confidence":41.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-17 16:00:00+00:00",
+    "score":65.3600917497,
+    "confidence":43.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-09-17 16:00:00+00:00",
+    "score":34.6111111111,
+    "confidence":41.4,
+    "win":true,
+    "r":0.54
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-09-22 16:00:00+00:00",
+    "score":34.7056083739,
+    "confidence":44.0,
+    "win":true,
+    "r":2.116
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-23 00:00:00+00:00",
+    "score":66.41,
+    "confidence":40.7,
+    "win":true,
+    "r":1.91
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-23 16:00:00+00:00",
+    "score":66.81,
+    "confidence":43.0,
+    "win":true,
+    "r":1.953
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-24 16:00:00+00:00",
+    "score":67.47,
+    "confidence":50.5,
+    "win":true,
+    "r":1.129
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-09-24 16:00:00+00:00",
+    "score":32.7,
+    "confidence":45.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-09-25 08:00:00+00:00",
+    "score":34.9970146988,
+    "confidence":41.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-09-28 00:00:00+00:00",
+    "score":32.7050054897,
+    "confidence":34.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-28 00:00:00+00:00",
+    "score":66.52,
+    "confidence":41.6,
+    "win":true,
+    "r":1.455
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-28 08:00:00+00:00",
+    "score":66.0371674868,
+    "confidence":42.6,
+    "win":true,
+    "r":1.911
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-29 08:00:00+00:00",
+    "score":66.7825368762,
+    "confidence":44.7,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-09-30 00:00:00+00:00",
+    "score":33.6948062436,
+    "confidence":32.3,
+    "win":true,
+    "r":2.083
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-30 00:00:00+00:00",
+    "score":65.92,
+    "confidence":41.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-30 08:00:00+00:00",
+    "score":66.92,
+    "confidence":50.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCHF",
+    "entry_time":"2026-09-30 16:00:00+00:00",
+    "score":65.3445118026,
+    "confidence":48.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-09-30 16:00:00+00:00",
+    "score":68.42,
+    "confidence":47.0,
+    "win":true,
+    "r":0.704
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-10-01 00:00:00+00:00",
+    "score":34.6257891888,
+    "confidence":41.9,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-01 00:00:00+00:00",
+    "score":31.7776782356,
+    "confidence":38.5,
+    "win":true,
+    "r":2.046
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-01 08:00:00+00:00",
+    "score":34.2784572942,
+    "confidence":44.1,
+    "win":true,
+    "r":2.118
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-01 16:00:00+00:00",
+    "score":33.6788513309,
+    "confidence":44.5,
+    "win":false,
+    "r":-0.192
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-10-02 08:00:00+00:00",
+    "score":34.3343282447,
+    "confidence":43.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-10-02 16:00:00+00:00",
+    "score":68.41,
+    "confidence":46.1,
+    "win":true,
+    "r":0.006
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-10-05 00:00:00+00:00",
+    "score":33.8057744701,
+    "confidence":33.9,
+    "win":true,
+    "r":1.917
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-10-05 00:00:00+00:00",
+    "score":32.6781537585,
+    "confidence":32.4,
+    "win":true,
+    "r":2.111
+  },
+  {
+    "symbol":"USDCAD",
+    "entry_time":"2026-10-05 08:00:00+00:00",
+    "score":68.43,
+    "confidence":45.5,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-05 16:00:00+00:00",
+    "score":32.8081176529,
+    "confidence":45.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-10-06 00:00:00+00:00",
+    "score":33.4128400857,
+    "confidence":34.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-10-06 00:00:00+00:00",
+    "score":33.0037978227,
+    "confidence":38.4,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-10-06 00:00:00+00:00",
+    "score":30.9222222222,
+    "confidence":38.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-06 08:00:00+00:00",
+    "score":32.9700892931,
+    "confidence":43.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-07 00:00:00+00:00",
+    "score":31.737067855,
+    "confidence":31.2,
+    "win":true,
+    "r":2.063
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-07 08:00:00+00:00",
+    "score":34.0199332436,
+    "confidence":42.3,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-10-09 00:00:00+00:00",
+    "score":34.7850980603,
+    "confidence":30.8,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-10-23 00:00:00+00:00",
+    "score":34.1492699428,
+    "confidence":41.6,
+    "win":true,
+    "r":1.584
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-10-26 00:00:00+00:00",
+    "score":34.25,
+    "confidence":39.6,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPJPY",
+    "entry_time":"2026-10-26 00:00:00+00:00",
+    "score":30.6023380742,
+    "confidence":30.5,
+    "win":false,
+    "r":-0.309
+  },
+  {
+    "symbol":"EURJPY",
+    "entry_time":"2026-10-26 00:00:00+00:00",
+    "score":29.5625,
+    "confidence":31.1,
+    "win":true,
+    "r":0.866
+  },
+  {
+    "symbol":"XAUUSD",
+    "entry_time":"2026-10-26 08:00:00+00:00",
+    "score":33.1759728272,
+    "confidence":45.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-28 00:00:00+00:00",
+    "score":30.5874819634,
+    "confidence":42.2,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-28 16:00:00+00:00",
+    "score":34.1174505278,
+    "confidence":42.1,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"GBPUSD",
+    "entry_time":"2026-10-29 00:00:00+00:00",
+    "score":33.4465300266,
+    "confidence":42.0,
+    "win":false,
+    "r":-1.0
+  },
+  {
+    "symbol":"EURUSD",
+    "entry_time":"2026-10-29 00:00:00+00:00",
+    "score":30.7765922547,
+    "confidence":42.1,
+    "win":true,
+    "r":2.056
+  },
+  {
+    "symbol":"NZDUSD",
+    "entry_time":"2026-10-29 08:00:00+00:00",
+    "score":32.0349077867,
+    "confidence":47.8,
+    "win":false,
+    "r":-1.0
   }
 ]
