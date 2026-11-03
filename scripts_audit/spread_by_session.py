@@ -37,7 +37,7 @@ def main():
         mid = (df["ask"] + df["bid"]) / 2
         spread = df["ask"] - df["bid"]
         rel_bp = (spread / mid) * 1e4
-        hour = pd.to_datetime(df["time_utc"], utc=True).dt.hour
+        hour = pd.to_datetime(df["time_utc"], utc=True, format="mixed").dt.hour
         sess = hour.map(session_of_hour)
         entry = {"n_ticks": int(len(df)),
                  "rel_spread_median_bp": float(rel_bp.median()),
