@@ -143,6 +143,7 @@ def _directional_composite(
     technical_weight: float = WEIGHT_TECHNICAL,
     fundamental_weight: float = WEIGHT_FUNDAMENTAL,
     news_weight: float = WEIGHT_NEWS,
+    news_safe: bool = True,
 ) -> tuple[float, float, str | None]:
     """Combine directional evidence without confusing quality with direction.
 
@@ -180,6 +181,8 @@ def _directional_composite(
     # when |technical_score| reaches min_score.
     threshold = float(min_score) * float(technical_weight) / active_weight
     direction = tech_direction if side * final_score >= threshold else None
+    if not news_safe:
+        return 0.0, round(threshold, 4), None
     return round(final_score, 4), round(threshold, 4), direction
 
 
@@ -261,8 +264,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     mem = calculate_memory_score(symbol)
 
     if not news_safe:
-        news_score = 0.0
-        logger.info("%s: خبر ایمن نیست، news_score صفر شد", symbol)
+        logger.info("%s: خبر ایمن نیست، صدور سیگنال مسدود شد", symbol)
 
     profile = get_symbol_profile(symbol)
     final_score, final_min, direction = _directional_composite(
@@ -271,6 +273,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
         fundamental_score=fund["score"],
         news_score=news_score,
         min_score=profile["min_score"],
+        news_safe=news_safe,
     )
 
     if direction and (tech["sl"] is None or tech["tp"] is None):
