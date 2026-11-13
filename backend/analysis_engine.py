@@ -256,11 +256,11 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
 
 
 async def full_analysis(data_dict, symbol, news_safe=True,
-                         news_reason="", news_sentiment=0.0):
+                         news_reason="", news_sentiment=0.0, now=None):
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
-    tech = analyze_technical_topdown(data_dict, symbol=symbol)
+    tech = analyze_technical_topdown(data_dict, symbol=symbol, now=now)
 
     if tech.get("blocked"):
         return {
