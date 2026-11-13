@@ -1,5 +1,5 @@
 """
-استراتژی Top-Down SMC روی هسته‌ی خالص — نسخه 5.1 (کیفیت‌محور)
+استراتژی Top-Down SMC روی هسته‌ی خالص — نسخه 5.1.1 (کیفیت‌محور — آستانه‌های نرم‌تر)
 
 هدف معماری:
 - افزایش چگالی کیفیت سیگنال (نه تعداد)
@@ -7,12 +7,12 @@
 - حفظ قابلیت بک‌تست بدون lookahead
 - Decision غنی‌تر برای تحلیل بعدی و مدیریت حجم
 
-تغییرات کلیدی v5.1:
+تغییرات کلیدی v5.1 / v5.1.1:
 1. Displacement به‌صورت امتیاز کیفیت (۰–۱) نه باینری
 2. کیفیت ترکیبی (Quality Density) برای سخت‌گیری روی سیگنال‌های ضعیف
-3. گیت چندلایه: حضور + حداقل کیفیت
+3. گیت چندلایه: حضور + حداقل کیفیت (v5.1.1: 0.42)
 4. بونوس ساختاری فقط وقتی CHOCH تازه + Displacement قوی هم‌زمان باشند
-5. وزن‌ها و آستانه‌ها قابل تنظیم از EngineConfig
+5. آستانه‌های گرید کمی نرم‌تر شدند تا تعداد سیگنال قابل استفاده افزایش یابد
 """
 from __future__ import annotations
 
@@ -261,17 +261,17 @@ def analyze(data: dict, cfg: EngineConfig, now: pd.Timestamp) -> Decision:
         dec.quality = 0.0
 
     abs_score = abs(score)
-    if abs_score >= 1.15 and power_points >= 7.8 and dec.quality >= 0.72:
+    if abs_score >= 1.15 and power_points >= 7.8 and dec.quality >= 0.68:
         dec.grade = "A++"
-    elif abs_score >= 0.95 and power_points >= 5.8 and dec.quality >= 0.62:
+    elif abs_score >= 0.95 and power_points >= 5.8 and dec.quality >= 0.55:
         dec.grade = "A+"
-    elif abs_score >= 0.78 and dec.quality >= 0.50:
+    elif abs_score >= 0.78 and dec.quality >= 0.45:
         dec.grade = "A"
     else:
         dec.grade = "B"
 
     structural_gate = near_ob or (sweep_ok and choch_ok) or (sweep_ok and disp_q >= 0.50)
-    quality_gate = dec.quality >= 0.48
+    quality_gate = dec.quality >= 0.42
     if score < cfg.min_score or not structural_gate or not quality_gate:
         dec.blocked = "score/gate/quality"
         return dec
