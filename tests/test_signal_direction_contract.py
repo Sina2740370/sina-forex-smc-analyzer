@@ -194,3 +194,20 @@ def test_topdown_cleaning_uses_one_normalized_asof_timestamp(monkeypatch):
 
     assert len(seen) == 2
     assert all(value == snapshot.tz_localize("UTC") for value in seen)
+
+
+
+def test_invalid_candle_timestamp_fails_closed():
+    import pandas as pd
+    from backend.analysis_engine import _drop_forming
+
+    df = pd.DataFrame({
+        "time": [pd.NaT],
+        "open": [1.0],
+        "high": [1.1],
+        "low": [0.9],
+        "close": [1.0],
+    })
+
+    filtered = _drop_forming(df, 15, now=pd.Timestamp("2024-01-01T10:15:00Z"))
+    assert filtered.empty
