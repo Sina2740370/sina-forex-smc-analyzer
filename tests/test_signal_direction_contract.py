@@ -211,3 +211,20 @@ def test_invalid_candle_timestamp_fails_closed():
 
     filtered = _drop_forming(df, 15, now=pd.Timestamp("2024-01-01T10:15:00Z"))
     assert filtered.empty
+
+
+
+def test_full_analysis_forwards_historical_snapshot_to_technical_engine(monkeypatch):
+    ae = _stub_analysis_dependencies(monkeypatch, technical_direction="SELL", memory_score=0.0)
+    seen = {}
+    original = ae.analyze_technical_topdown
+
+    def capture_snapshot(*args, **kwargs):
+        seen.update(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(ae, "analyze_technical_topdown", capture_snapshot)
+    snapshot = __import__("pandas").Timestamp("2024-01-02T12:30:00Z")
+    asyncio.run(ae.full_analysis({}, "EURUSD=X", now=snapshot))
+
+    assert seen["now"] == snapshot
