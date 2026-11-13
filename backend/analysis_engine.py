@@ -75,7 +75,12 @@ def get_premium_discount(df, lookback=60):
             "high": sh, "low": sl, "eq": eq}
 
 
-def _drop_forming(df, minutes):
+def _drop_forming(df, minutes, now=None):
+    """Drop the last candle unless its full interval ended by the snapshot.
+
+    The optional now argument is the analysis as-of timestamp. Naive values
+    are interpreted as UTC, matching the repository's candle convention.
+    """
     if df is None or len(df) == 0:
         return df
     if "time" not in df.columns:
@@ -84,11 +89,21 @@ def _drop_forming(df, minutes):
         last_time = pd.Timestamp(df["time"].iloc[-1])
         if last_time.tzinfo is None:
             last_time = last_time.tz_localize("UTC")
-        now = datetime.now(timezone.utc)
-        if (now - last_time).total_seconds() < minutes * 60:
+        else:
+            last_time = last_time.tz_convert("UTC")
+
+        asof = pd.Timestamp(now if now is not None else datetime.now(timezone.utc))
+        if asof.tzinfo is None:
+            asof = asof.tz_localize("UTC")
+        else:
+            asof = asof.tz_convert("UTC")
+
+        candle_close = last_time + pd.Timedelta(minutes=int(minutes))
+        if candle_close > asof:
             return df.iloc[:-1].copy()
-    except Exception:
-        pass
+    except (TypeError, ValueError, OverflowError):
+        logger.exception("_drop_forming: invalid candle or snapshot timestamp")
+        return df.iloc[:-1].copy()
     return df
 
 
@@ -192,12 +207,18 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
 
     profile = get_symbol_profile(symbol) if symbol else {"min_score": MIN_SIGNAL_SCORE, "sl_atr_mult": SL_ATR_MULTIPLIER}
 
+    now_dt = pd.Timestamp(now if now is not None else datetime.now(timezone.utc))
+    if now_dt.tzinfo is None:
+        now_dt = now_dt.tz_localize("UTC")
+    else:
+        now_dt = now_dt.tz_convert("UTC")
+
     m_map = {"1wk": 10080, "1d": 1440, "4h": 240, "1h": 60, "15m": 15, "5m": 5, "1m": 1}
     cleaned_data = {}
     for tf, df in data_dict.items():
         if df is not None:
             df_m = pd.DataFrame(df)
-            cleaned_data[tf] = _drop_forming(df_m, m_map.get(tf, 15))
+            cleaned_data[tf] = _drop_forming(df_m, m_map.get(tf, 15), now=now_dt)
 
     df_15m = cleaned_data.get("15m")
     price = float(df_15m["close"].iloc[-1]) if (df_15m is not None and len(df_15m) > 0) else None
@@ -207,10 +228,6 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
     pd_zone = get_premium_discount(df_4h, lookback=60) if (df_4h is not None and len(df_4h) >= 20) else {"zone": "-"}
 
     cfg = EngineConfig(min_score=profile["min_score"], sl_atr1h_mult=profile["sl_atr_mult"])
-    now_dt = pd.Timestamp(now or datetime.now(timezone.utc))
-    if now_dt.tzinfo is None:
-        now_dt = now_dt.tz_localize("UTC")
-
     dec = smc_analyze(cleaned_data, cfg, now_dt)
 
     blocked = dec.blocked is not None or dec.direction is None
