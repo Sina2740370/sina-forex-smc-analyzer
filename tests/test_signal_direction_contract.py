@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 os.environ.setdefault("FRED_API_KEY", "test")
@@ -75,3 +76,54 @@ def test_unsafe_news_remains_a_hard_signal_veto():
     final_score, _threshold, direction = result
     assert final_score == 0.0
     assert direction is None
+
+
+
+def _stub_analysis_dependencies(monkeypatch, technical_direction="SELL", memory_score=0.9):
+    from backend import analysis_engine as ae
+    from backend import fundamental_analyzer as fa
+    from backend import market_memory as mm
+
+    monkeypatch.setattr(ae, "analyze_technical_topdown", lambda *a, **k: {
+        "blocked": False,
+        "score": 1.0,
+        "direction": technical_direction,
+        "sl": 1.09,
+        "tp": 1.12,
+        "price": 1.10,
+        "grade": "A",
+        "power": 6.0,
+        "quality": 0.7,
+        "trend": "weekly+daily BEARISH",
+        "zone": "PREMIUM",
+        "atr": 0.002,
+        "reasons": ["controlled test signal"],
+        "features": {},
+    })
+
+    async def fake_fundamental(_symbol):
+        return {"score": 0.0, "reasons": []}
+
+    monkeypatch.setattr(fa, "calculate_fundamental_score", fake_fundamental)
+    monkeypatch.setattr(mm, "calculate_memory_score", lambda _symbol: {
+        "score": memory_score, "reasons": ["historical strategy performance"],
+    })
+    return ae
+
+
+
+def test_full_analysis_sell_integration_and_memory_neutrality(monkeypatch):
+    ae = _stub_analysis_dependencies(monkeypatch, technical_direction="SELL", memory_score=0.9)
+    result = asyncio.run(ae.full_analysis({}, "EURUSD=X"))
+
+    assert result["direction"] == "SELL"
+    assert result["score"] < 0
+    assert result["memory_score"] == 0.9
+
+
+def test_full_analysis_unsafe_news_blocks_otherwise_valid_signal(monkeypatch):
+    ae = _stub_analysis_dependencies(monkeypatch, technical_direction="BUY", memory_score=0.0)
+    result = asyncio.run(ae.full_analysis({}, "EURUSD=X", news_safe=False))
+
+    assert result["direction"] is None
+    assert result["score"] == 0.0
