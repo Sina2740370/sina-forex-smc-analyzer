@@ -98,6 +98,9 @@ def _drop_forming(df, minutes, now=None):
         else:
             asof = asof.tz_convert("UTC")
 
+        if pd.isna(last_time) or pd.isna(asof):
+            raise ValueError("candle and snapshot timestamps must be valid")
+
         candle_close = last_time + pd.Timedelta(minutes=int(minutes))
         if candle_close > asof:
             return df.iloc[:-1].copy()
