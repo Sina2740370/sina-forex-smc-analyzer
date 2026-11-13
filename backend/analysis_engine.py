@@ -11,7 +11,7 @@ import numpy as np
 from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
-    WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
+    WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS,
     get_symbol_profile, SPREAD, PIP_SIZE,
 )
 
@@ -134,6 +134,55 @@ def classify_setup_grade(tech_score: float, final_score: float, confluence_reaso
     return "B"
 
 
+def _directional_composite(
+    tech_score: float,
+    tech_direction: str,
+    fundamental_score: float,
+    news_score: float,
+    min_score: float,
+    technical_weight: float = WEIGHT_TECHNICAL,
+    fundamental_weight: float = WEIGHT_FUNDAMENTAL,
+    news_weight: float = WEIGHT_NEWS,
+) -> tuple[float, float, str | None]:
+    """Combine directional evidence without confusing quality with direction.
+
+    The SMC engine's score measures setup strength; its explicit direction
+    carries the BUY/SELL side. Fundamental and news scores are signed for the
+    instrument. Market-memory performance is intentionally excluded because
+    it is a strategy-quality signal, not bullish/bearish market evidence.
+    """
+    weights = (technical_weight, fundamental_weight, news_weight)
+    values = (tech_score, fundamental_score, news_score, min_score)
+    if (
+        tech_direction not in ("BUY", "SELL")
+        or any(not np.isfinite(float(value)) for value in values + weights)
+        or any(float(weight) < 0 for weight in weights)
+        or technical_weight <= 0
+        or min_score < 0
+    ):
+        return 0.0, 0.0, None
+
+    active_weight = float(sum(weights))
+    if active_weight <= 0:
+        return 0.0, 0.0, None
+
+    side = 1.0 if tech_direction == "BUY" else -1.0
+    signed_technical = side * abs(float(tech_score))
+    weighted_score = (
+        signed_technical * float(technical_weight)
+        + float(fundamental_score) * float(fundamental_weight)
+        + float(news_score) * float(news_weight)
+    )
+    final_score = weighted_score / active_weight
+
+    # Preserve the SMC engine's calibrated minimum in technical-score units:
+    # with neutral external evidence, the composite threshold is met exactly
+    # when |technical_score| reaches min_score.
+    threshold = float(min_score) * float(technical_weight) / active_weight
+    direction = tech_direction if side * final_score >= threshold else None
+    return round(final_score, 4), round(threshold, 4), direction
+
+
 def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = None):
     from engine.strategy.smc_topdown import analyze as smc_analyze
     from engine.core.config import EngineConfig
@@ -211,30 +260,19 @@ async def full_analysis(data_dict, symbol, news_safe=True,
     news_score = news_sentiment
     mem = calculate_memory_score(symbol)
 
-    final_score = (
-        tech["score"] * WEIGHT_TECHNICAL +
-        fund["score"] * WEIGHT_FUNDAMENTAL +
-        news_score * WEIGHT_NEWS +
-        mem["score"] * WEIGHT_MEMORY
-    )
-
     if not news_safe:
-        final_score = 0.0
-        logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
+        news_score = 0.0
+        logger.info("%s: خبر ایمن نیست، news_score صفر شد", symbol)
 
     profile = get_symbol_profile(symbol)
-    final_min = MIN_SIGNAL_SCORE + (profile["min_score"] - MIN_SIGNAL_SCORE) * WEIGHT_TECHNICAL
+    final_score, final_min, direction = _directional_composite(
+        tech_score=tech["score"],
+        tech_direction=tech["direction"],
+        fundamental_score=fund["score"],
+        news_score=news_score,
+        min_score=profile["min_score"],
+    )
 
-    direction = None
-    if final_score >= final_min:
-        direction = "BUY"
-    elif final_score <= -final_min:
-        direction = "SELL"
-
-    if tech["score"] > 0 and direction == "SELL":
-        direction = None
-    if tech["score"] < 0 and direction == "BUY":
-        direction = None
     if direction and (tech["sl"] is None or tech["tp"] is None):
         direction = None
 
