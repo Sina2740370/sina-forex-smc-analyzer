@@ -28,6 +28,16 @@ def test_directional_composite_preserves_buy_and_sell_symmetry():
     assert buy_threshold == sell_threshold
 
 
+def test_configured_smc_minimum_is_preserved_after_weight_normalization():
+    final_score, threshold, direction = _directional_composite(
+        tech_score=0.72, tech_direction="SELL",
+        fundamental_score=0.0, news_score=0.0, min_score=0.72,
+    )
+
+    assert abs(final_score) == threshold
+    assert direction == "SELL"
+
+
 def test_opposing_fundamental_evidence_can_veto_but_not_reverse_structure():
     result = _directional_composite(
         tech_score=1.0, tech_direction="SELL",
