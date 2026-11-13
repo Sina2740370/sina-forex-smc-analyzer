@@ -75,7 +75,7 @@ def get_premium_discount(df, lookback=60):
             "high": sh, "low": sl, "eq": eq}
 
 
-def _drop_forming(df, minutes, now=None):
+def _drop_forming(df, minutes, now=None, timeframe=None):
     """Drop the last candle unless its full interval ended by the snapshot.
 
     The optional now argument is the analysis as-of timestamp. Naive values
@@ -101,7 +101,15 @@ def _drop_forming(df, minutes, now=None):
         if pd.isna(last_time) or pd.isna(asof):
             raise ValueError("candle and snapshot timestamps must be valid")
 
-        candle_close = last_time + pd.Timedelta(minutes=int(minutes))
+        if timeframe in ("1d", "1wk"):
+            # FX daily/weekly bars are anchored to 17:00 New York. Calendar
+            # offsets preserve that wall-clock boundary across DST transitions.
+            ny_open = last_time.tz_convert("America/New_York")
+            offset = pd.DateOffset(days=1) if timeframe == "1d" else pd.DateOffset(weeks=1)
+            candle_close = (ny_open + offset).tz_convert("UTC")
+        else:
+            candle_close = last_time + pd.Timedelta(minutes=int(minutes))
+
         if candle_close > asof:
             return df.iloc[:-1].copy()
     except (TypeError, ValueError, OverflowError):
@@ -221,7 +229,9 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
     for tf, df in data_dict.items():
         if df is not None:
             df_m = pd.DataFrame(df)
-            cleaned_data[tf] = _drop_forming(df_m, m_map.get(tf, 15), now=now_dt)
+            cleaned_data[tf] = _drop_forming(
+                df_m, m_map.get(tf, 15), now=now_dt, timeframe=tf
+            )
 
     df_15m = cleaned_data.get("15m")
     price = float(df_15m["close"].iloc[-1]) if (df_15m is not None and len(df_15m) > 0) else None
