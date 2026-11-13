@@ -170,7 +170,7 @@ def test_topdown_cleaning_uses_one_normalized_asof_timestamp(monkeypatch):
 
     seen = []
 
-    def capture_snapshot(frame, minutes, now=None):
+    def capture_snapshot(frame, minutes, now=None, timeframe=None):
         seen.append(now)
         return frame
 
@@ -228,3 +228,33 @@ def test_full_analysis_forwards_historical_snapshot_to_technical_engine(monkeypa
     asyncio.run(ae.full_analysis({}, "EURUSD=X", now=snapshot))
 
     assert seen["now"] == snapshot
+
+
+
+def test_daily_and_weekly_candle_closes_respect_new_york_dst():
+    import pandas as pd
+    from backend.analysis_engine import _drop_forming
+
+    daily_spring = pd.DataFrame({"time": [pd.Timestamp("2025-03-08T22:00:00Z")]})
+    assert _drop_forming(
+        daily_spring, 1440, now=pd.Timestamp("2025-03-09T20:59:00Z"), timeframe="1d"
+    ).empty
+    assert len(_drop_forming(
+        daily_spring, 1440, now=pd.Timestamp("2025-03-09T21:00:00Z"), timeframe="1d"
+    )) == 1
+
+    daily_fall = pd.DataFrame({"time": [pd.Timestamp("2025-11-01T21:00:00Z")]})
+    assert _drop_forming(
+        daily_fall, 1440, now=pd.Timestamp("2025-11-02T21:30:00Z"), timeframe="1d"
+    ).empty
+    assert len(_drop_forming(
+        daily_fall, 1440, now=pd.Timestamp("2025-11-02T22:00:00Z"), timeframe="1d"
+    )) == 1
+
+    weekly_spring = pd.DataFrame({"time": [pd.Timestamp("2025-03-02T22:00:00Z")]})
+    assert _drop_forming(
+        weekly_spring, 10080, now=pd.Timestamp("2025-03-09T20:59:00Z"), timeframe="1wk"
+    ).empty
+    assert len(_drop_forming(
+        weekly_spring, 10080, now=pd.Timestamp("2025-03-09T21:00:00Z"), timeframe="1wk"
+    )) == 1
