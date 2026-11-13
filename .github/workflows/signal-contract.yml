@@ -1,0 +1,27 @@
+name: Signal contract tests
+
+on:
+  push:
+    branches:
+      - "fix/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  signal-contract:
+    runs-on: ubuntu-latest
+    env:
+      FRED_API_KEY: test
+      TELEGRAM_BOT_TOKEN: test
+      TELEGRAM_CHAT_ID: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pytest -q tests/test_signal_direction_contract.py
