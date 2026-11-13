@@ -17,12 +17,14 @@ def test_directional_composite_preserves_buy_and_sell_symmetry():
         fundamental_score=0.0, news_score=0.0, min_score=0.72,
     )
 
-    assert buy["direction"] == "BUY"
-    assert sell["direction"] == "SELL"
-    assert buy["final_score"] > 0
-    assert sell["final_score"] < 0
-    assert abs(buy["final_score"]) == abs(sell["final_score"])
-    assert buy["threshold"] == sell["threshold"]
+    buy_score, buy_threshold, buy_direction = buy
+    sell_score, sell_threshold, sell_direction = sell
+    assert buy_direction == "BUY"
+    assert sell_direction == "SELL"
+    assert buy_score > 0
+    assert sell_score < 0
+    assert abs(buy_score) == abs(sell_score)
+    assert buy_threshold == sell_threshold
 
 
 def test_opposing_fundamental_evidence_can_veto_but_not_reverse_structure():
@@ -31,8 +33,9 @@ def test_opposing_fundamental_evidence_can_veto_but_not_reverse_structure():
         fundamental_score=1.0, news_score=0.0, min_score=0.72,
     )
 
-    assert result["direction"] is None
-    assert result["final_score"] < 0
+    final_score, _threshold, direction = result
+    assert direction is None
+    assert final_score < 0
 
 
 def test_memory_is_not_a_directional_input():
@@ -42,7 +45,8 @@ def test_memory_is_not_a_directional_input():
         tech_score=1.0, tech_direction="SELL",
         fundamental_score=0.0, news_score=0.0, min_score=0.72,
     )
-    assert result["direction"] == "SELL"
+    _final_score, _threshold, direction = result
+    assert direction == "SELL"
 
 
 def test_invalid_direction_and_invalid_weights_fail_closed():
@@ -56,5 +60,5 @@ def test_invalid_direction_and_invalid_weights_fail_closed():
         technical_weight=0.0, fundamental_weight=0.0, news_weight=0.0,
     )
 
-    assert invalid_direction["direction"] is None
-    assert invalid_weights["direction"] is None
+    assert invalid_direction[2] is None
+    assert invalid_weights[2] is None
