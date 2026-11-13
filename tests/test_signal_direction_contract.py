@@ -62,3 +62,16 @@ def test_invalid_direction_and_invalid_weights_fail_closed():
 
     assert invalid_direction[2] is None
     assert invalid_weights[2] is None
+
+
+
+def test_unsafe_news_remains_a_hard_signal_veto():
+    result = _directional_composite(
+        tech_score=1.5, tech_direction="BUY",
+        fundamental_score=0.0, news_score=0.0, min_score=0.72,
+        news_safe=False,
+    )
+
+    final_score, _threshold, direction = result
+    assert final_score == 0.0
+    assert direction is None
