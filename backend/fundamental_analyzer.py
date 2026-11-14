@@ -173,11 +173,41 @@ def analyze_us_unemployment(data: dict) -> tuple[float, str]:
 #  تحلیلگر اصلی
 # ============================================================
 
-async def calculate_fundamental_score(symbol: str) -> dict:
+def _is_historical_as_of(as_of, wall_clock=None) -> bool:
+    """True when an explicit snapshot predates the live data horizon.
+
+    Current FRED observations lack verified public-release timestamps and
+    point-in-time vintages in this module; never use them in historical replay.
     """
-    محاسبه امتیاز فاندامنتال برای یه جفت‌ارز
-    Returns: {score: -1..+1, reasons: [...]}
-    """
+    if as_of is None:
+        return False
+    try:
+        snapshot = as_of if isinstance(as_of, datetime) else datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+        if snapshot.tzinfo is None:
+            snapshot = snapshot.replace(tzinfo=timezone.utc)
+        else:
+            snapshot = snapshot.astimezone(timezone.utc)
+        current = wall_clock or datetime.now(timezone.utc)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=timezone.utc)
+        else:
+            current = current.astimezone(timezone.utc)
+        return snapshot < current - timedelta(minutes=1)
+    except (TypeError, ValueError, OverflowError):
+        return True
+
+
+async def calculate_fundamental_score(symbol: str, as_of=None) -> dict:
+    """Calculate fundamentals; historical mode fails closed without PIT data."""
+    if _is_historical_as_of(as_of):
+        return {
+            "score": 0.0,
+            "reasons": ["Historical fundamentals disabled: FRED release-time/vintage is not verified"],
+            "usd_strength": 0.0,
+            "available": False,
+            "point_in_time": False,
+        }
+
     try:
         data = await fetch_all_fundamental_data()
 
