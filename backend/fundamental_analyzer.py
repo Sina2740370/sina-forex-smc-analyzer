@@ -7,7 +7,7 @@
 """
 import os
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import httpx
 
 from .config import FRED_API_KEY
@@ -173,28 +173,14 @@ def analyze_us_unemployment(data: dict) -> tuple[float, str]:
 #  تحلیلگر اصلی
 # ============================================================
 
-def _is_historical_as_of(as_of, wall_clock=None) -> bool:
-    """True when an explicit snapshot predates the live data horizon.
+def _is_historical_as_of(as_of) -> bool:
+    """Any explicit snapshot is a replay boundary.
 
-    Current FRED observations lack verified public-release timestamps and
-    point-in-time vintages in this module; never use them in historical replay.
+    Live callers omit as_of. Treating explicit timestamps within a one-minute
+    wall-clock tolerance as live makes replay behavior nondeterministic and can
+    expose current FRED observations to a historical snapshot.
     """
-    if as_of is None:
-        return False
-    try:
-        snapshot = as_of if isinstance(as_of, datetime) else datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
-        if snapshot.tzinfo is None:
-            snapshot = snapshot.replace(tzinfo=timezone.utc)
-        else:
-            snapshot = snapshot.astimezone(timezone.utc)
-        current = wall_clock or datetime.now(timezone.utc)
-        if current.tzinfo is None:
-            current = current.replace(tzinfo=timezone.utc)
-        else:
-            current = current.astimezone(timezone.utc)
-        return snapshot < current - timedelta(minutes=1)
-    except (TypeError, ValueError, OverflowError):
-        return True
+    return as_of is not None
 
 
 async def calculate_fundamental_score(symbol: str, as_of=None) -> dict:
