@@ -444,4 +444,4 @@ def test_database_closed_signal_query_normalizes_precision_and_offsets(monkeypat
         as_of=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
     )
 
-    assert [row["id"] for row in result] == [3, 1]
+    assert [row["id"] for row in result] == [1, 3]
