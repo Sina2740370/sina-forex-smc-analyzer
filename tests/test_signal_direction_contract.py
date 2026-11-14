@@ -115,7 +115,7 @@ def _stub_analysis_dependencies(monkeypatch, technical_direction="SELL", memory_
         return {"score": 0.0, "reasons": []}
 
     monkeypatch.setattr(fa, "calculate_fundamental_score", fake_fundamental)
-    monkeypatch.setattr(mm, "calculate_memory_score", lambda _symbol: {
+    monkeypatch.setattr(mm, "calculate_memory_score", lambda _symbol, as_of=None: {
         "score": memory_score, "reasons": ["historical strategy performance"],
     })
     return ae
@@ -340,3 +340,19 @@ def test_market_memory_fails_closed_for_invalid_snapshot(monkeypatch):
     result = mm.calculate_memory_score("EURUSD=X", as_of="not-a-timestamp")
     assert result["score"] == 0.0
     assert result["enabled"] is False
+
+
+def test_full_analysis_forwards_snapshot_to_market_memory(monkeypatch):
+    ae = _stub_analysis_dependencies(monkeypatch)
+    from backend import market_memory as mm
+
+    seen = {}
+    def fake_memory(_symbol, as_of=None):
+        seen["as_of"] = as_of
+        return {"score": 0.0, "reasons": [], "enabled": False}
+
+    monkeypatch.setattr(mm, "calculate_memory_score", fake_memory)
+    snapshot = __import__("pandas").Timestamp("2024-02-03T10:15:00Z")
+    asyncio.run(ae.full_analysis({}, "EURUSD=X", now=snapshot))
+
+    assert seen["as_of"] == snapshot
