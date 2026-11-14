@@ -290,3 +290,53 @@ def test_live_fundamental_path_remains_enabled_without_explicit_asof(monkeypatch
     result = asyncio.run(fa.calculate_fundamental_score("EURUSD=X"))
 
     assert result["score"] == 0.0
+
+
+def test_market_memory_excludes_outcomes_not_closed_at_snapshot(monkeypatch):
+    from datetime import datetime, timezone
+    from backend import config
+    from backend import market_memory as mm
+
+    monkeypatch.setattr(config, "MEMORY_ENABLED", True)
+    snapshot = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
+    rows = []
+    for i in range(10):
+        rows.append({
+            "symbol": "EURUSD=X", "status": "WIN", "pnl_pips": 12.0,
+            "created_at": f"2024-01-01T09:{i:02d}:00+00:00",
+            "closed_at": f"2024-01-01T09:{i:02d}:30+00:00",
+        })
+    for i in range(10):
+        rows.append({
+            "symbol": "EURUSD=X", "status": "LOSS", "pnl_pips": -12.0,
+            "created_at": f"2024-01-01T09:{i:02d}:00+00:00",
+            "closed_at": f"2024-01-02T09:{i:02d}:30+00:00",
+        })
+
+    seen = {}
+    def fake_get_closed_signals(as_of=None, limit=1000):
+        seen["as_of"] = as_of
+        seen["limit"] = limit
+        return rows
+
+    monkeypatch.setattr(mm, "get_closed_signals", fake_get_closed_signals, raising=False)
+    result = mm.calculate_memory_score("EURUSD=X", as_of=snapshot)
+
+    assert seen["as_of"] == snapshot
+    assert result["score"] == 0.7
+    assert result["enabled"] is True
+
+
+def test_market_memory_fails_closed_for_invalid_snapshot(monkeypatch):
+    from backend import config
+    from backend import market_memory as mm
+
+    monkeypatch.setattr(config, "MEMORY_ENABLED", True)
+    monkeypatch.setattr(mm, "get_closed_signals", lambda **_kwargs: [
+        {"symbol": "EURUSD=X", "status": "WIN", "created_at": "2024-01-01T00:00:00Z",
+         "closed_at": "2024-01-01T01:00:00Z", "pnl_pips": 1.0},
+    ], raising=False)
+
+    result = mm.calculate_memory_score("EURUSD=X", as_of="not-a-timestamp")
+    assert result["score"] == 0.0
+    assert result["enabled"] is False
