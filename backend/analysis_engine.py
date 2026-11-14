@@ -291,7 +291,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
 
     fund = await calculate_fundamental_score(symbol, as_of=now)
     news_score = news_sentiment
-    mem = calculate_memory_score(symbol)
+    mem = calculate_memory_score(symbol, as_of=now)
 
     if not news_safe:
         logger.info("%s: خبر ایمن نیست، صدور سیگنال مسدود شد", symbol)
