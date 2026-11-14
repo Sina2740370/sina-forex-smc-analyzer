@@ -299,6 +299,41 @@ def get_all_signals(limit: int = 200):
         return _process_rows(cur)
 
 
+def get_closed_signals(as_of=None, limit: int = 1000):
+    """معاملات WIN/LOSS که نتیجه‌شان حداکثر تا زمان snapshot معلوم شده است.
+
+    closed_at در مسیر نوشتن دیتابیس به UTC ISO-8601 ذخیره می‌شود؛ بنابراین
+    مقایسه‌ی رشته‌ای cutoff در این query با قالب canonical UTC سازگار است.
+    """
+    if as_of is None:
+        cutoff_dt = datetime.now(timezone.utc)
+    elif isinstance(as_of, datetime):
+        cutoff_dt = as_of
+    else:
+        cutoff_dt = datetime.fromisoformat(str(as_of).strip().replace("Z", "+00:00"))
+
+    if cutoff_dt.tzinfo is None:
+        cutoff_dt = cutoff_dt.replace(tzinfo=timezone.utc)
+    else:
+        cutoff_dt = cutoff_dt.astimezone(timezone.utc)
+
+    limit = int(limit)
+    if limit < 1:
+        raise ValueError("limit must be positive")
+
+    cutoff = cutoff_dt.isoformat()
+    with get_conn() as conn:
+        cur = _execute(conn, """
+            SELECT * FROM signals
+            WHERE status IN ('WIN', 'LOSS')
+              AND closed_at IS NOT NULL
+              AND closed_at <= ?
+            ORDER BY closed_at DESC
+            LIMIT ?
+        """, (cutoff, limit))
+        return _process_rows(cur)
+
+
 def get_signals_by_ids(ids: list):
     """واکشی هدفمند سیگنال‌ها با id (برای نوتیف بسته‌شدن؛ قبلاً فقط
     ۵۰ رکورد آخر جست‌وجو می‌شد و اعلان WIN/LOSS می‌توانست گم شود)."""
