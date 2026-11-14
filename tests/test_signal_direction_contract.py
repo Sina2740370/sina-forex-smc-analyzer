@@ -356,3 +356,38 @@ def test_full_analysis_forwards_snapshot_to_market_memory(monkeypatch):
     asyncio.run(ae.full_analysis({}, "EURUSD=X", now=snapshot))
 
     assert seen["as_of"] == snapshot
+
+
+def test_database_closed_signal_query_excludes_post_snapshot_outcomes(monkeypatch):
+    import sqlite3
+    from contextlib import contextmanager
+    from datetime import datetime, timezone
+    from backend import database as db
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE signals (
+            id INTEGER PRIMARY KEY, symbol TEXT, status TEXT,
+            created_at TEXT, closed_at TEXT, pnl_pips REAL
+        )
+    """)
+    conn.executemany(
+        "INSERT INTO signals (id, symbol, status, created_at, closed_at, pnl_pips) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            (1, "EURUSD=X", "WIN", "2024-01-01T09:00:00+00:00", "2024-01-01T09:30:00+00:00", 10.0),
+            (2, "EURUSD=X", "LOSS", "2024-01-01T09:10:00+00:00", "2024-01-02T09:30:00+00:00", -10.0),
+            (3, "EURUSD=X", "OPEN", "2024-01-01T09:20:00+00:00", None, 0.0),
+        ],
+    )
+
+    @contextmanager
+    def fake_get_conn():
+        yield conn
+
+    monkeypatch.setattr(db, "get_conn", fake_get_conn)
+    result = db.get_closed_signals(
+        as_of=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
+    )
+
+    assert [row["id"] for row in result] == [1]
