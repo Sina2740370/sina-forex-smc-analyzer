@@ -1,4 +1,4 @@
-name: Signal contract tests
+name: Full Python test suite
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  signal-contract:
+  python-tests:
     runs-on: ubuntu-latest
     env:
       FRED_API_KEY: test
@@ -24,4 +24,4 @@ jobs:
           cache-dependency-path: requirements.txt
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt pytest
-      - run: python -m pytest -q tests/test_signal_direction_contract.py
+      - run: python -m pytest -q
