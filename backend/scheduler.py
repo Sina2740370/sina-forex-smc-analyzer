@@ -126,7 +126,7 @@ async def _scan_market_locked():
             logger.info(f"⏸ نماد غیرفعال (DISABLED_SYMBOLS): {name}")
             continue
         try:
-            result = await _scan_symbol(symbol, name, news)
+            result = await _scan_symbol(symbol, name, news, now=start_time)
             if result is None:
                 continue
 
@@ -271,13 +271,13 @@ async def check_open_signals_and_notify():
                 logger.error(f"خطا در نوتیف بسته شدن: {e}")
 
 
-async def _scan_symbol(symbol, name, news):
+async def _scan_symbol(symbol, name, news, now=None):
     data = await asyncio.to_thread(fetch_topdown, symbol)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None
 
-    safe, news_reason = is_news_safe(news, symbol, buffer_min=30)
+    safe, news_reason = is_news_safe(news, symbol, buffer_min=30, now=now)
 
     result = await full_analysis(
         data, symbol,
