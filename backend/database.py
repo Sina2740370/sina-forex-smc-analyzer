@@ -299,6 +299,62 @@ def get_all_signals(limit: int = 200):
         return _process_rows(cur)
 
 
+def _parse_signal_timestamp_utc(value):
+    """Parse stored ISO timestamps as UTC without relying on string ordering."""
+    if value is None:
+        raise ValueError("timestamp is missing")
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def get_closed_signals(as_of=None, limit: int = 1000):
+    """Return only completed outcomes knowable at the requested UTC snapshot.
+
+    Timestamps are parsed and compared as datetimes in Python. Lexicographic
+    ISO-string comparisons are unsafe when stored values vary in fractional
+    precision or UTC offsets.
+    """
+    try:
+        cutoff_dt = (
+            datetime.now(timezone.utc)
+            if as_of is None
+            else _parse_signal_timestamp_utc(as_of)
+        )
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("invalid as_of timestamp") from exc
+
+    limit = int(limit)
+    if limit < 1:
+        raise ValueError("limit must be positive")
+
+    with get_conn() as conn:
+        cur = _execute(conn, """
+            SELECT * FROM signals
+            WHERE status IN ('WIN', 'LOSS')
+              AND closed_at IS NOT NULL
+        """)
+        rows = _process_rows(cur)
+
+    eligible = []
+    for row in rows:
+        try:
+            created_at = _parse_signal_timestamp_utc(row.get("created_at"))
+            closed_at = _parse_signal_timestamp_utc(row.get("closed_at"))
+            if created_at <= cutoff_dt and created_at <= closed_at <= cutoff_dt:
+                eligible.append((closed_at, row))
+        except (TypeError, ValueError, OverflowError):
+            # Missing or malformed timestamps cannot prove historical availability.
+            continue
+
+    eligible.sort(key=lambda item: item[0], reverse=True)
+    return [row for _, row in eligible[:limit]]
+
+
 def get_signals_by_ids(ids: list):
     """واکشی هدفمند سیگنال‌ها با id (برای نوتیف بسته‌شدن؛ قبلاً فقط
     ۵۰ رکورد آخر جست‌وجو می‌شد و اعلان WIN/LOSS می‌توانست گم شود)."""

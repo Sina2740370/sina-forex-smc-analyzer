@@ -11,7 +11,7 @@ import numpy as np
 from .config import (
     MIN_CANDLES, MIN_SIGNAL_SCORE, RISK_REWARD,
     SL_ATR_MULTIPLIER, SL_OB_BUFFER,
-    WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS, WEIGHT_MEMORY,
+    WEIGHT_TECHNICAL, WEIGHT_FUNDAMENTAL, WEIGHT_NEWS,
     get_symbol_profile, SPREAD, PIP_SIZE,
 )
 
@@ -75,7 +75,12 @@ def get_premium_discount(df, lookback=60):
             "high": sh, "low": sl, "eq": eq}
 
 
-def _drop_forming(df, minutes):
+def _drop_forming(df, minutes, now=None, timeframe=None):
+    """Drop the last candle unless its full interval ended by the snapshot.
+
+    The optional now argument is the analysis as-of timestamp. Naive values
+    are interpreted as UTC, matching the repository's candle convention.
+    """
     if df is None or len(df) == 0:
         return df
     if "time" not in df.columns:
@@ -84,11 +89,32 @@ def _drop_forming(df, minutes):
         last_time = pd.Timestamp(df["time"].iloc[-1])
         if last_time.tzinfo is None:
             last_time = last_time.tz_localize("UTC")
-        now = datetime.now(timezone.utc)
-        if (now - last_time).total_seconds() < minutes * 60:
+        else:
+            last_time = last_time.tz_convert("UTC")
+
+        asof = pd.Timestamp(now if now is not None else datetime.now(timezone.utc))
+        if asof.tzinfo is None:
+            asof = asof.tz_localize("UTC")
+        else:
+            asof = asof.tz_convert("UTC")
+
+        if pd.isna(last_time) or pd.isna(asof):
+            raise ValueError("candle and snapshot timestamps must be valid")
+
+        if timeframe in ("1d", "1wk"):
+            # FX daily/weekly bars are anchored to 17:00 New York. Calendar
+            # offsets preserve that wall-clock boundary across DST transitions.
+            ny_open = last_time.tz_convert("America/New_York")
+            offset = pd.DateOffset(days=1) if timeframe == "1d" else pd.DateOffset(weeks=1)
+            candle_close = (ny_open + offset).tz_convert("UTC")
+        else:
+            candle_close = last_time + pd.Timedelta(minutes=int(minutes))
+
+        if candle_close > asof:
             return df.iloc[:-1].copy()
-    except Exception:
-        pass
+    except (TypeError, ValueError, OverflowError):
+        logger.exception("_drop_forming: invalid candle or snapshot timestamp")
+        return df.iloc[:-1].copy()
     return df
 
 
@@ -134,18 +160,78 @@ def classify_setup_grade(tech_score: float, final_score: float, confluence_reaso
     return "B"
 
 
+def _directional_composite(
+    tech_score: float,
+    tech_direction: str,
+    fundamental_score: float,
+    news_score: float,
+    min_score: float,
+    technical_weight: float = WEIGHT_TECHNICAL,
+    fundamental_weight: float = WEIGHT_FUNDAMENTAL,
+    news_weight: float = WEIGHT_NEWS,
+    news_safe: bool = True,
+) -> tuple[float, float, str | None]:
+    """Combine directional evidence without confusing quality with direction.
+
+    The SMC engine's score measures setup strength; its explicit direction
+    carries the BUY/SELL side. Fundamental and news scores are signed for the
+    instrument. Market-memory performance is intentionally excluded because
+    it is a strategy-quality signal, not bullish/bearish market evidence.
+    """
+    weights = (technical_weight, fundamental_weight, news_weight)
+    values = (tech_score, fundamental_score, news_score, min_score)
+    if (
+        tech_direction not in ("BUY", "SELL")
+        or any(not np.isfinite(float(value)) for value in values + weights)
+        or any(float(weight) < 0 for weight in weights)
+        or technical_weight <= 0
+        or min_score < 0
+    ):
+        return 0.0, 0.0, None
+
+    active_weight = float(sum(weights))
+    if active_weight <= 0:
+        return 0.0, 0.0, None
+
+    side = 1.0 if tech_direction == "BUY" else -1.0
+    signed_technical = side * abs(float(tech_score))
+    weighted_score = (
+        signed_technical * float(technical_weight)
+        + float(fundamental_score) * float(fundamental_weight)
+        + float(news_score) * float(news_weight)
+    )
+    final_score = weighted_score / active_weight
+
+    # Preserve the SMC engine's calibrated minimum in technical-score units:
+    # with neutral external evidence, the composite threshold is met exactly
+    # when |technical_score| reaches min_score.
+    threshold = float(min_score) * float(technical_weight) / active_weight
+    direction = tech_direction if side * final_score >= threshold else None
+    if not news_safe:
+        return 0.0, round(threshold, 4), None
+    return round(final_score, 4), round(threshold, 4), direction
+
+
 def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = None):
     from engine.strategy.smc_topdown import analyze as smc_analyze
     from engine.core.config import EngineConfig
 
     profile = get_symbol_profile(symbol) if symbol else {"min_score": MIN_SIGNAL_SCORE, "sl_atr_mult": SL_ATR_MULTIPLIER}
 
+    now_dt = pd.Timestamp(now if now is not None else datetime.now(timezone.utc))
+    if now_dt.tzinfo is None:
+        now_dt = now_dt.tz_localize("UTC")
+    else:
+        now_dt = now_dt.tz_convert("UTC")
+
     m_map = {"1wk": 10080, "1d": 1440, "4h": 240, "1h": 60, "15m": 15, "5m": 5, "1m": 1}
     cleaned_data = {}
     for tf, df in data_dict.items():
         if df is not None:
             df_m = pd.DataFrame(df)
-            cleaned_data[tf] = _drop_forming(df_m, m_map.get(tf, 15))
+            cleaned_data[tf] = _drop_forming(
+                df_m, m_map.get(tf, 15), now=now_dt, timeframe=tf
+            )
 
     df_15m = cleaned_data.get("15m")
     price = float(df_15m["close"].iloc[-1]) if (df_15m is not None and len(df_15m) > 0) else None
@@ -155,10 +241,6 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
     pd_zone = get_premium_discount(df_4h, lookback=60) if (df_4h is not None and len(df_4h) >= 20) else {"zone": "-"}
 
     cfg = EngineConfig(min_score=profile["min_score"], sl_atr1h_mult=profile["sl_atr_mult"])
-    now_dt = pd.Timestamp(now or datetime.now(timezone.utc))
-    if now_dt.tzinfo is None:
-        now_dt = now_dt.tz_localize("UTC")
-
     dec = smc_analyze(cleaned_data, cfg, now_dt)
 
     blocked = dec.blocked is not None or dec.direction is None
@@ -184,11 +266,11 @@ def analyze_technical_topdown(data_dict, symbol: str = None, now: datetime = Non
 
 
 async def full_analysis(data_dict, symbol, news_safe=True,
-                         news_reason="", news_sentiment=0.0):
+                         news_reason="", news_sentiment=0.0, now=None):
     from .fundamental_analyzer import calculate_fundamental_score
     from .market_memory import calculate_memory_score
 
-    tech = analyze_technical_topdown(data_dict, symbol=symbol)
+    tech = analyze_technical_topdown(data_dict, symbol=symbol, now=now)
 
     if tech.get("blocked"):
         return {
@@ -207,34 +289,23 @@ async def full_analysis(data_dict, symbol, news_safe=True,
             "summary": tech.get("reasons", ["در انتظار"])[0] if tech.get("reasons") else "در انتظار",
         }
 
-    fund = await calculate_fundamental_score(symbol)
+    fund = await calculate_fundamental_score(symbol, as_of=now)
     news_score = news_sentiment
-    mem = calculate_memory_score(symbol)
-
-    final_score = (
-        tech["score"] * WEIGHT_TECHNICAL +
-        fund["score"] * WEIGHT_FUNDAMENTAL +
-        news_score * WEIGHT_NEWS +
-        mem["score"] * WEIGHT_MEMORY
-    )
+    mem = calculate_memory_score(symbol, as_of=now)
 
     if not news_safe:
-        final_score = 0.0
-        logger.info("%s: خبر ایمن نیست، final_score صفر شد", symbol)
+        logger.info("%s: خبر ایمن نیست، صدور سیگنال مسدود شد", symbol)
 
     profile = get_symbol_profile(symbol)
-    final_min = MIN_SIGNAL_SCORE + (profile["min_score"] - MIN_SIGNAL_SCORE) * WEIGHT_TECHNICAL
+    final_score, final_min, direction = _directional_composite(
+        tech_score=tech["score"],
+        tech_direction=tech["direction"],
+        fundamental_score=fund["score"],
+        news_score=news_score,
+        min_score=profile["min_score"],
+        news_safe=news_safe,
+    )
 
-    direction = None
-    if final_score >= final_min:
-        direction = "BUY"
-    elif final_score <= -final_min:
-        direction = "SELL"
-
-    if tech["score"] > 0 and direction == "SELL":
-        direction = None
-    if tech["score"] < 0 and direction == "BUY":
-        direction = None
     if direction and (tech["sl"] is None or tech["tp"] is None):
         direction = None
 

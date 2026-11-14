@@ -105,17 +105,31 @@ async def fetch_news(force: bool = False) -> list:
 
 def upcoming_high_impact(news: list,
                           within_minutes: int = 30,
-                          after_minutes: int = None) -> list:
+                          after_minutes: int = None,
+                          now=None) -> list:
     """
     اخبار High Impact که در بازه‌ی مشخصی (قبل/بعد) هستن
     """
     if not news:
         return []
 
-    now = datetime.now(timezone.utc)
+    if now is None:
+        snapshot = datetime.now(timezone.utc)
+    else:
+        try:
+            snapshot = now if isinstance(now, datetime) else datetime.fromisoformat(
+                str(now).strip().replace("Z", "+00:00")
+            )
+            if snapshot.tzinfo is None:
+                snapshot = snapshot.replace(tzinfo=timezone.utc)
+            else:
+                snapshot = snapshot.astimezone(timezone.utc)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("invalid news snapshot timestamp") from exc
+
     after = within_minutes if after_minutes is None else after_minutes
-    start = now - timedelta(minutes=after)
-    end = now + timedelta(minutes=within_minutes)
+    start = snapshot - timedelta(minutes=after)
+    end = snapshot + timedelta(minutes=within_minutes)
     result = []
 
     for item in news:
@@ -148,7 +162,7 @@ def upcoming_high_impact(news: list,
 
 
 def is_news_safe(news: list, symbol: str,
-                  buffer_min: int = 30) -> tuple[bool, str]:
+                  buffer_min: int = 30, now=None) -> tuple[bool, str]:
     """
     آیا معامله روی این نماد امن هست؟
 
@@ -172,9 +186,13 @@ def is_news_safe(news: list, symbol: str,
     if not currencies:
         return True, ""
 
-    events = upcoming_high_impact(
-        news, within_minutes=buffer_min, after_minutes=buffer_min * 2
-    )
+    try:
+        events = upcoming_high_impact(
+            news, within_minutes=buffer_min, after_minutes=buffer_min * 2,
+            now=now,
+        )
+    except ValueError:
+        return False, "زمان مرجع اخبار نامعتبر است؛ تحلیل برای ایمنی مسدود شد"
 
     for ev in events:
         ev_currency = ev.get("currency", "")

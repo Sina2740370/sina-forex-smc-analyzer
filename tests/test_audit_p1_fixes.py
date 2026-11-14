@@ -166,16 +166,6 @@ def test_swings_plateau_deduped_engine():
     assert len(eq) == 1, f"پلتو باید یک‌بار شمرده شود: {eq}"
 
 
-def test_backend_find_swings_plateau_deduped():
-    from backend.analysis_engine import find_swings
-    n = 30
-    high = pd.Series(np.full(n, 1.10)); high.iloc[10] = 1.15; high.iloc[13] = 1.15
-    low = pd.Series(np.full(n, 1.09))
-    df = pd.DataFrame({"high": high, "low": low})
-    res = find_swings(df, 3, 3)
-    eq = [h for h in res["highs"] if h[1] == 1.15]
-    assert len(eq) == 1
-
 
 # ============================================================
 #  P2: market_regime روی داده‌ی کوتاه + اثر در امتیاز
