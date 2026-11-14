@@ -289,7 +289,7 @@ async def full_analysis(data_dict, symbol, news_safe=True,
             "summary": tech.get("reasons", ["در انتظار"])[0] if tech.get("reasons") else "در انتظار",
         }
 
-    fund = await calculate_fundamental_score(symbol)
+    fund = await calculate_fundamental_score(symbol, as_of=now)
     news_score = news_sentiment
     mem = calculate_memory_score(symbol)
 
