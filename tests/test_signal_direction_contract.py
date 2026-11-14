@@ -391,3 +391,57 @@ def test_database_closed_signal_query_excludes_post_snapshot_outcomes(monkeypatc
     )
 
     assert [row["id"] for row in result] == [1]
+
+
+def test_explicit_fundamental_snapshot_near_wall_clock_still_fails_closed(monkeypatch):
+    from datetime import datetime, timezone
+    from backend import fundamental_analyzer as fa
+
+    async def unexpected_fetch():
+        raise AssertionError("an explicit replay snapshot must never fetch live FRED data")
+
+    monkeypatch.setattr(fa, "fetch_all_fundamental_data", unexpected_fetch)
+    result = asyncio.run(fa.calculate_fundamental_score(
+        "EURUSD=X",
+        as_of=datetime.now(timezone.utc),
+    ))
+
+    assert result["score"] == 0.0
+    assert result["available"] is False
+    assert result["point_in_time"] is False
+
+
+def test_database_closed_signal_query_normalizes_precision_and_offsets(monkeypatch):
+    import sqlite3
+    from contextlib import contextmanager
+    from datetime import datetime, timezone
+    from backend import database as db
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE signals (
+            id INTEGER PRIMARY KEY, symbol TEXT, status TEXT,
+            created_at TEXT, closed_at TEXT, pnl_pips REAL
+        )
+    """)
+    conn.executemany(
+        "INSERT INTO signals (id, symbol, status, created_at, closed_at, pnl_pips) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            (1, "EURUSD=X", "WIN", "2024-01-01T09:00:00+00:00", "2024-01-01T10:00:00+00:00", 10.0),
+            (2, "EURUSD=X", "LOSS", "2024-01-01T09:00:00+00:00", "2024-01-01T10:00:00.000001+00:00", -10.0),
+            (3, "EURUSD=X", "WIN", "2024-01-01T09:00:00+00:00", "2024-01-01T11:00:00+01:00", 8.0),
+            (4, "EURUSD=X", "WIN", "2024-01-01T09:00:00+00:00", "malformed", 8.0),
+        ],
+    )
+
+    @contextmanager
+    def fake_get_conn():
+        yield conn
+
+    monkeypatch.setattr(db, "get_conn", fake_get_conn)
+    result = db.get_closed_signals(
+        as_of=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
+    )
+
+    assert [row["id"] for row in result] == [3, 1]
