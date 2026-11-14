@@ -299,39 +299,60 @@ def get_all_signals(limit: int = 200):
         return _process_rows(cur)
 
 
+def _parse_signal_timestamp_utc(value):
+    """Parse stored ISO timestamps as UTC without relying on string ordering."""
+    if value is None:
+        raise ValueError("timestamp is missing")
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
 def get_closed_signals(as_of=None, limit: int = 1000):
-    """معاملات WIN/LOSS که نتیجه‌شان حداکثر تا زمان snapshot معلوم شده است.
+    """Return only completed outcomes knowable at the requested UTC snapshot.
 
-    closed_at در مسیر نوشتن دیتابیس به UTC ISO-8601 ذخیره می‌شود؛ بنابراین
-    مقایسه‌ی رشته‌ای cutoff در این query با قالب canonical UTC سازگار است.
+    Timestamps are parsed and compared as datetimes in Python. Lexicographic
+    ISO-string comparisons are unsafe when stored values vary in fractional
+    precision or UTC offsets.
     """
-    if as_of is None:
-        cutoff_dt = datetime.now(timezone.utc)
-    elif isinstance(as_of, datetime):
-        cutoff_dt = as_of
-    else:
-        cutoff_dt = datetime.fromisoformat(str(as_of).strip().replace("Z", "+00:00"))
-
-    if cutoff_dt.tzinfo is None:
-        cutoff_dt = cutoff_dt.replace(tzinfo=timezone.utc)
-    else:
-        cutoff_dt = cutoff_dt.astimezone(timezone.utc)
+    try:
+        cutoff_dt = (
+            datetime.now(timezone.utc)
+            if as_of is None
+            else _parse_signal_timestamp_utc(as_of)
+        )
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("invalid as_of timestamp") from exc
 
     limit = int(limit)
     if limit < 1:
         raise ValueError("limit must be positive")
 
-    cutoff = cutoff_dt.isoformat()
     with get_conn() as conn:
         cur = _execute(conn, """
             SELECT * FROM signals
             WHERE status IN ('WIN', 'LOSS')
               AND closed_at IS NOT NULL
-              AND closed_at <= ?
-            ORDER BY closed_at DESC
-            LIMIT ?
-        """, (cutoff, limit))
-        return _process_rows(cur)
+        """)
+        rows = _process_rows(cur)
+
+    eligible = []
+    for row in rows:
+        try:
+            created_at = _parse_signal_timestamp_utc(row.get("created_at"))
+            closed_at = _parse_signal_timestamp_utc(row.get("closed_at"))
+            if created_at <= cutoff_dt and created_at <= closed_at <= cutoff_dt:
+                eligible.append((closed_at, row))
+        except (TypeError, ValueError, OverflowError):
+            # Missing or malformed timestamps cannot prove historical availability.
+            continue
+
+    eligible.sort(key=lambda item: item[0], reverse=True)
+    return [row for _, row in eligible[:limit]]
 
 
 def get_signals_by_ids(ids: list):
