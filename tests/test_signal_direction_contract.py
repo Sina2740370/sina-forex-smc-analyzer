@@ -111,7 +111,7 @@ def _stub_analysis_dependencies(monkeypatch, technical_direction="SELL", memory_
         "features": {},
     })
 
-    async def fake_fundamental(_symbol):
+    async def fake_fundamental(_symbol, as_of=None):
         return {"score": 0.0, "reasons": []}
 
     monkeypatch.setattr(fa, "calculate_fundamental_score", fake_fundamental)
@@ -258,3 +258,35 @@ def test_daily_and_weekly_candle_closes_respect_new_york_dst():
     assert len(_drop_forming(
         weekly_spring, 10080, now=pd.Timestamp("2025-03-09T21:00:00Z"), timeframe="1wk"
     )) == 1
+
+
+
+def test_historical_fundamental_snapshot_fails_closed_without_fetch(monkeypatch):
+    from datetime import datetime, timezone
+    from backend import fundamental_analyzer as fa
+
+    async def unexpected_fetch():
+        raise AssertionError("historical analysis must not fetch current FRED values")
+
+    monkeypatch.setattr(fa, "fetch_all_fundamental_data", unexpected_fetch)
+    result = asyncio.run(fa.calculate_fundamental_score(
+        "EURUSD=X",
+        as_of=datetime(2020, 1, 2, tzinfo=timezone.utc),
+    ))
+
+    assert result["score"] == 0.0
+    assert result["available"] is False
+    assert result["point_in_time"] is False
+    assert any("Historical fundamentals disabled" in reason for reason in result["reasons"])
+
+
+def test_live_fundamental_path_remains_enabled_without_explicit_asof(monkeypatch):
+    from backend import fundamental_analyzer as fa
+
+    async def fake_fetch():
+        return {"dxy": [], "fed_rate": [], "us_cpi": [], "us_unemp": []}
+
+    monkeypatch.setattr(fa, "fetch_all_fundamental_data", fake_fetch)
+    result = asyncio.run(fa.calculate_fundamental_score("EURUSD=X"))
+
+    assert result["score"] == 0.0
