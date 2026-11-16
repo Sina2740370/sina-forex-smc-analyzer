@@ -255,7 +255,7 @@ def test_atomic_close_and_post_settlement_mark_batch_is_persisted_and_retry_safe
     assert ledger.balance == Decimal("10049")
     assert ledger.unrealized_pnl == Decimal("-30")
     assert ledger.equity == Decimal("10019")
-    assert ledger.open_trades == 1 if hasattr(ledger, "open_trades") else len(ledger.snapshot()["open_positions"]) == 1
+    assert len(ledger.snapshot()["open_positions"]) == 1
 
     # Replaying the exact same complete batch must be idempotent.
     assert apply_ledger_events(
