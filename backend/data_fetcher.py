@@ -283,3 +283,78 @@ def fetch_live_prices(use_cache: bool = True) -> dict:
                 df = yf.download(
                     symbol, period="1d", interval="5m",
                     progress=False, auto_adjust=False, threads=False,
+                )
+
+            if df is None or df.empty:
+                continue
+
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+
+            df = df.rename(columns={
+                "Open": "open", "High": "high", "Low": "low",
+                "Close": "close", "Volume": "volume",
+            })
+
+            current = float(df["close"].iloc[-1])
+            open_price = float(df["open"].iloc[0])
+
+            change = current - open_price
+            change_pct = (change / open_price * 100) if open_price else 0
+
+            is_gold = symbol == "GC=F"
+            decimals = 2 if is_gold else 5
+
+            result[symbol] = {
+                "symbol": symbol,
+                "name": name,
+                "price": round(current, decimals),
+                "change": round(change, decimals),
+                "change_pct": round(change_pct, 2),
+                "direction": "up" if change >= 0 else "down",
+            }
+
+        except Exception as e:
+            logger.warning(f"خطا در قیمت زنده {symbol}: {e}")
+            continue
+
+    if result:
+        _prices_cache["data"] = result
+        _prices_cache["ts"] = time.time()
+        global _last_price_success_ts
+        _last_price_success_ts = time.time()
+        logger.info(f"💰 {len(result)} قیمت زنده دریافت شد")
+
+    return result
+
+
+# ============================================================
+#  وضعیت سلامت Data Feed (برای /api/health)
+# ============================================================
+
+def data_feed_health(max_age_seconds: int = 900) -> dict:
+    """آیا اخیراً قیمت زنده با موفقیت دریافت شده؟
+    max_age_seconds: بعد از این مدت بدون دریافت موفق، Feed 'down' حساب می‌شه
+    (پیش‌فرض ۱۵ دقیقه = یک دور اسکن کامل)."""
+    if _last_price_success_ts == 0:
+        return {"healthy": False, "seconds_since_success": None, "reason": "هنوز هیچ دریافت موفقی ثبت نشده"}
+
+    age = time.time() - _last_price_success_ts
+    healthy = age < max_age_seconds
+    return {
+        "healthy": healthy,
+        "seconds_since_success": round(age),
+        "reason": None if healthy else f"{round(age)} ثانیه از آخرین دریافت موفق گذشته",
+    }
+
+
+# ============================================================
+#  سازگاری
+# ============================================================
+
+def get_cache_stats() -> dict:
+    return {
+        "size": len(_cache),
+        "prices_cached": len(_prices_cache["data"]) > 0,
+        "disk_cache": os.path.exists(CACHE_FILE),
+    }
