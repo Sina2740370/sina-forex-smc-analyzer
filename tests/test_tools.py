@@ -138,9 +138,15 @@ def test_margin_makes_trade_impossible():
     assert not r.ok and r.lots == 0.0
 
 
-def test_tp_on_wrong_side_gives_no_rr_and_note():
+def test_tp_on_wrong_side_rejects_position_size():
     r = position_size("EURUSD", 10_000, 1.0, 1.10, 1.098, tp=1.096)   # TP هم‌جهت SL
-    assert r.ok and r.rr is None and "TP" in r.note
+    assert not r.ok and r.lots == 0.0 and r.rr is None and "TP" in r.note
+
+
+def test_position_milestones_reject_invalid_direction():
+    from engine.tools.risk import calculate_position_milestones
+    with pytest.raises(ValueError, match="BUY یا SELL"):
+        calculate_position_milestones("HOLD", 1.10, 1.09, 1.12)
 
 
 def test_lot_step_decimals():
