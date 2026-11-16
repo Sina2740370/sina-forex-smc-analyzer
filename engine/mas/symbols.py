@@ -73,10 +73,14 @@ def size_lots_for_risk(symbol: str, entry: float, sl: float, risk_usd: float,
         raise ValueError("per-lot risk must be finite and positive")
 
     step = Decimal(str(lot_step))
+    min_lot_d = Decimal(str(min_lot))
+    max_lot_d = Decimal(str(max_lots))
+    if (min_lot_d / step) != (min_lot_d / step).to_integral_value():
+        raise ValueError("min_lot must be an exact multiple of lot_step")
     raw = Decimal(str(risk_usd)) / Decimal(str(per_lot_risk))
     steps = (raw / step).to_integral_value(rounding=ROUND_DOWN)
-    lots = min(steps * step, Decimal(str(max_lots)))
-    min_lot_d = Decimal(str(min_lot))
+    max_steps = (max_lot_d / step).to_integral_value(rounding=ROUND_DOWN)
+    lots = min(steps, max_steps) * step
     if lots < min_lot_d:
         return 0.0, 0.0
     lots_f = float(lots)
