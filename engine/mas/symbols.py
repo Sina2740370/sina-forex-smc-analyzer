@@ -52,43 +52,61 @@ def pip_value_usd(symbol: str, price: float) -> float:
 def size_lots_for_risk(symbol: str, entry: float, sl: float, risk_usd: float,
                        lot_step: float = 0.01, min_lot: float = 0.01,
                        max_lots: float = 50.0) -> tuple[float, float]:
-    """Return (lots, actual_risk_usd), rounded DOWN to broker lot step.
+    """Return (lots, actual_risk_usd), conservatively floored using Decimal.
 
-    This is a conservative model default, not a substitute for broker contract
-    specifications. A result below min_lot is rejected with (0, 0).
+    All price-distance, pip-value, risk and lot-step arithmetic is performed
+    in Decimal from the original string representation. Broker constraints
+    remain simulation defaults, not broker certification.
     """
-    values = (entry, sl, risk_usd, lot_step, min_lot, max_lots)
-    if not all(math.isfinite(float(v)) for v in values):
-        raise ValueError("position sizing inputs must be finite")
-    if entry <= 0 or sl <= 0 or risk_usd <= 0:
-        raise ValueError("entry, SL and risk_usd must be positive")
-    if lot_step <= 0 or min_lot <= 0 or max_lots < min_lot:
-        raise ValueError("invalid lot constraints")
-    spec = get_spec(symbol)
-    distance_pips = abs(entry - sl) / spec.pip
-    if distance_pips <= 0:
-        raise ValueError("entry and SL must differ")
-    per_lot_risk = distance_pips * pip_value_usd(symbol, entry)
-    if not math.isfinite(per_lot_risk) or per_lot_risk <= 0:
-        raise ValueError("per-lot risk must be finite and positive")
+    from decimal import localcontext
 
-    step = Decimal(str(lot_step))
-    min_lot_d = Decimal(str(min_lot))
-    max_lot_d = Decimal(str(max_lots))
-    if (min_lot_d / step) != (min_lot_d / step).to_integral_value():
-        raise ValueError("min_lot must be an exact multiple of lot_step")
-    raw = Decimal(str(risk_usd)) / Decimal(str(per_lot_risk))
-    steps = (raw / step).to_integral_value(rounding=ROUND_DOWN)
-    max_steps = (max_lot_d / step).to_integral_value(rounding=ROUND_DOWN)
-    lots = min(steps, max_steps) * step
-    if lots < min_lot_d:
+    try:
+        entry_d, sl_d, risk_d = (Decimal(str(v)) for v in (entry, sl, risk_usd))
+        step_d, min_d, max_d = (Decimal(str(v)) for v in (lot_step, min_lot, max_lots))
+    except Exception as exc:
+        raise ValueError("position sizing inputs must be decimal-compatible") from exc
+
+    values = (entry_d, sl_d, risk_d, step_d, min_d, max_d)
+    if not all(v.is_finite() for v in values):
+        raise ValueError("position sizing inputs must be finite")
+    if entry_d <= 0 or sl_d <= 0 or risk_d <= 0:
+        raise ValueError("entry, SL and risk_usd must be positive")
+    if step_d <= 0 or min_d <= 0 or max_d < min_d:
+        raise ValueError("invalid lot constraints")
+
+    spec = get_spec(symbol)
+    with localcontext() as ctx:
+        ctx.prec = 40
+        pip_d = Decimal(str(spec.pip))
+        quote_value_d = Decimal(str(spec.pip_value_quote_per_lot))
+        distance_pips = abs(entry_d - sl_d) / pip_d
+        if distance_pips <= 0:
+            raise ValueError("entry and SL must differ")
+        per_lot_risk = quote_value_d if spec.quote_is_usd else quote_value_d / entry_d
+        per_lot_risk *= distance_pips
+        if not per_lot_risk.is_finite() or per_lot_risk <= 0:
+            raise ValueError("per-lot risk must be finite and positive")
+
+        if min_d % step_d != 0:
+            raise ValueError("min_lot must be an exact multiple of lot_step")
+
+        raw_steps = (risk_d / per_lot_risk / step_d).to_integral_value(rounding=ROUND_DOWN)
+        max_steps = (max_d / step_d).to_integral_value(rounding=ROUND_DOWN)
+        steps = min(raw_steps, max_steps)
+        lots_d = steps * step_d
+        if lots_d < min_d:
+            return 0.0, 0.0
+
+        # Validate the exact value that will actually be returned to callers.
+        # If float serialization rounds modeled risk upward over budget, step down.
+        while lots_d >= min_d:
+            actual_d = lots_d * per_lot_risk
+            actual_f = float(actual_d)
+            if Decimal(str(actual_f)) <= risk_d:
+                return float(lots_d), actual_f
+            lots_d -= step_d
+
         return 0.0, 0.0
-    lots_f = float(lots)
-    actual_risk = lots_f * per_lot_risk
-    # Defensive invariant against float conversion or future implementation drift.
-    if actual_risk > risk_usd * (1.0 + 1e-12):
-        raise ArithmeticError("rounded position exceeds requested risk")
-    return lots_f, actual_risk
 
 def supported_symbols(csv_dir: str | None = None, suffixes: tuple = ("_M15.csv", "_i_M15.csv")) -> list:
     """نمادهای تعریف‌شده؛ اگر csv_dir داده شود فقط نمادهایی که داده دارند."""
