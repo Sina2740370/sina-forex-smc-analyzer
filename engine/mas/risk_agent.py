@@ -75,7 +75,8 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
 
     import math
     inputs_valid = all(math.isfinite(float(v)) for v in (entry, sl, tp2, price, acct.equity, size_factor))
-    inputs_valid = inputs_valid and entry > 0 and sl > 0 and tp2 > 0 and price > 0 and acct.equity > 0
+    inputs_valid = (inputs_valid and entry > 0 and sl > 0 and tp2 > 0
+                    and price > 0 and acct.equity > 0 and 0.1 <= size_factor <= 1.0)
     direction_valid = direction in ("BUY", "SELL")
     risk_dist = abs(entry - sl) if inputs_valid else 0.0
     stop_valid = direction_valid and ((sl < entry) if direction == "BUY" else (sl > entry))
@@ -92,7 +93,7 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
         except (KeyError, ValueError, ArithmeticError) as exc:
             sizing_error = str(exc)
     else:
-        sizing_error = "ورودی، نماد، جهت، SL یا TP نامعتبر است"
+        sizing_error = "ورودی، نماد، جهت، SL، TP یا ضریب حجم نامعتبر است (0.1 تا 1.0)"
 
     g("R-RR", rr >= RISK_RULES["min_rr"] - 1e-9, f"RR={rr:.2f} < {RISK_RULES['min_rr']}")
     g("R-OPEN", acct.open_trades < RISK_RULES["max_open_trades"],
