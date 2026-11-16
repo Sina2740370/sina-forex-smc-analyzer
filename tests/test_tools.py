@@ -149,6 +149,12 @@ def test_position_milestones_reject_invalid_direction():
         calculate_position_milestones("HOLD", 1.10, 1.09, 1.12)
 
 
+def test_position_milestones_reject_wrong_side_stop():
+    from engine.tools.risk import calculate_position_milestones
+    with pytest.raises(ValueError, match="SL باید"):
+        calculate_position_milestones("BUY", 1.10, 1.11, 1.12)
+
+
 def test_lot_step_decimals():
     r = position_size("EURUSD", 10_000, 1.0, 1.10, 1.098, lot_step=0.001, min_lot=0.001)
     assert r.lots == 0.5
