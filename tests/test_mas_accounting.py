@@ -179,3 +179,42 @@ def test_negative_swap_is_accounted_as_financing_credit():
     assert ledger.realized_pnl_lifetime == Decimal("1")
     assert ledger.fees_lifetime == Decimal("-1")
     assert ledger.daily_realized_net_pnl == Decimal("1")
+
+def test_daily_and_weekly_loss_include_unrealized_drawdown():
+    ledger = RiskLedger("10000")
+    apply_ledger_event(
+        ledger,
+        mark_to_market_event(
+            ledger, mark_id="floating-loss-350", unrealized_pnl="-350",
+            timestamp=NOW,
+        ),
+    )
+
+    assert ledger.balance == Decimal("10000")
+    assert ledger.equity == Decimal("9650")
+    assert ledger.daily_loss_pct == Decimal("3.50")
+    assert ledger.weekly_loss_pct == Decimal("3.50")
+
+
+def test_daily_rollover_uses_equity_as_new_period_baseline():
+    ledger = RiskLedger("10000")
+    apply_ledger_event(
+        ledger,
+        mark_to_market_event(
+            ledger, mark_id="carry-loss-100", unrealized_pnl="-100",
+            timestamp=NOW,
+        ),
+    )
+
+    assert roll_account_period(ledger, "2026-11-17T22:00:00Z") is True
+    assert ledger.daily_start_balance == Decimal("9900")
+    assert ledger.daily_loss_pct == Decimal("0")
+
+    apply_ledger_event(
+        ledger,
+        mark_to_market_event(
+            ledger, mark_id="carry-loss-200", unrealized_pnl="-200",
+            timestamp="2026-11-17T22:01:00Z",
+        ),
+    )
+    assert ledger.daily_loss_pct == Decimal("100") / Decimal("9900") * Decimal("100")
