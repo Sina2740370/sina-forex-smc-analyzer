@@ -162,3 +162,20 @@ def test_risk_gate_projection_uses_ledger_as_single_source_of_truth():
     assert account.consecutive_losses == 1
     assert account.per_symbol_open == {}
     assert account.imminent_news_minutes == 30
+
+def test_negative_swap_is_accounted_as_financing_credit():
+    ledger = RiskLedger("10000")
+    apply_ledger_event(ledger, open_event(ledger))
+    close = position_closed_event(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="swap-credit-1", quantity="1", gross_pnl="0",
+        commission="1", swap="-2", other_fees="0", timestamp=NOW,
+    )
+
+    apply_ledger_event(ledger, close)
+
+    # A negative swap is a financing credit, not an invalid negative fee.
+    assert ledger.balance == Decimal("10001")
+    assert ledger.realized_pnl_lifetime == Decimal("1")
+    assert ledger.fees_lifetime == Decimal("-1")
+    assert ledger.daily_realized_net_pnl == Decimal("1")
