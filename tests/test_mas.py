@@ -118,3 +118,32 @@ def test_mas_walkforward_no_lookahead():
     s1 = analyze_mas(m, "EURUSD", t)
     s2 = analyze_mas(m.iloc[:i + 1].reset_index(drop=True), "EURUSD", t)
     assert s1.signal == s2.signal and abs(s1.final_score - s2.final_score) < 1e-9
+
+
+from engine.mas.symbols import size_lots_for_risk
+
+
+def test_shared_lot_sizing_floors_and_never_exceeds_requested_risk():
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 100.55)
+    assert lots == 1.0
+    assert actual == pytest.approx(100.0)
+    assert actual <= 100.55
+
+
+def test_shared_lot_sizing_rejects_below_minimum_lot():
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 0.99)
+    assert (lots, actual) == (0.0, 0.0)
+
+
+def test_shared_lot_sizing_supports_non_usd_quote_and_gold():
+    jpy_lots, jpy_risk = size_lots_for_risk("USDJPY", 155.0, 154.8, 100.0)
+    gold_lots, gold_risk = size_lots_for_risk("XAUUSD", 2500.0, 2490.0, 100.0)
+    assert jpy_lots > 0 and jpy_risk <= 100.0
+    assert gold_lots > 0 and gold_risk <= 100.0
+
+
+def test_risk_agent_rejects_stop_or_target_on_wrong_side():
+    bad_buy = evaluate_risk("EURUSD", "BUY", 1.1000, 1.1010, 1.1020, 1.1000)
+    bad_sell = evaluate_risk("EURUSD", "SELL", 1.1000, 1.0990, 1.0980, 1.1000)
+    assert not bad_buy.approved and any(g.gate == "R-DIR" for g in bad_buy.gates)
+    assert not bad_sell.approved and any(g.gate == "R-DIR" for g in bad_sell.gates)
