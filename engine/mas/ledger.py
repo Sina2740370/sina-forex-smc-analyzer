@@ -108,67 +108,61 @@ class RiskLedger:
 
     @classmethod
     def from_snapshot(cls, snapshot: dict) -> "RiskLedger":
-        """Restore a complete ledger snapshot, including event idempotency state."""
-        if not isinstance(snapshot, dict) or snapshot.get("schema_version") != cls.SCHEMA_VERSION:
+        """Restore by replaying and verifying the complete event history.
+
+        A snapshot is accepted only when its event stream reconstructs every
+        persisted accounting field exactly. This detects tampering, gaps,
+        reordered events and inconsistent derived state.
+        """
+        if not isinstance(snapshot, dict) or type(snapshot.get("schema_version")) is not int or snapshot.get("schema_version") != cls.SCHEMA_VERSION:
             raise ValueError("unsupported or invalid ledger snapshot")
-        ledger = cls(
-            snapshot.get("balance"),
-            base_currency=snapshot.get("base_currency", "USD"),
-            daily_period_id=snapshot.get("daily_period_id", "initial"),
-            weekly_period_id=snapshot.get("weekly_period_id", "initial"),
-        )
-        decimal_fields = (
-            "daily_start_balance", "weekly_start_balance",
-            "daily_realized_net_pnl", "weekly_realized_net_pnl",
-            "realized_pnl_lifetime", "fees_lifetime", "unrealized_pnl",
-            "peak_equity", "max_drawdown_amount", "max_drawdown_pct",
-        )
-        for field in decimal_fields:
-            setattr(ledger, field, _decimal(snapshot.get(field), field))
+
         sequence = snapshot.get("sequence")
         if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
             raise ValueError("snapshot sequence must be a non-negative integer")
-        ledger.sequence = sequence
-        losses = snapshot.get("consecutive_losses")
-        if isinstance(losses, bool) or not isinstance(losses, int) or losses < 0:
-            raise ValueError("snapshot consecutive_losses must be non-negative")
-        ledger.consecutive_losses = losses
-        last_event_at = snapshot.get("last_event_at")
-        ledger.last_event_at = _timestamp(last_event_at) if last_event_at else None
-
-        raw_positions = snapshot.get("open_positions")
-        if not isinstance(raw_positions, dict):
-            raise ValueError("snapshot open_positions must be a mapping")
-        position_decimal_fields = (
-            "quantity", "original_quantity", "entry", "stop",
-            "approved_risk", "actual_risk", "realized_net_pnl",
-        )
-        positions = {}
-        for position_id, raw in raw_positions.items():
-            if not isinstance(raw, dict) or raw.get("position_id") != position_id:
-                raise ValueError("invalid position in ledger snapshot")
-            position = dict(raw)
-            for field in position_decimal_fields:
-                position[field] = _decimal(position.get(field), field,
-                                           positive=field in ("quantity", "original_quantity",
-                                                              "entry", "approved_risk", "actual_risk"))
-            positions[position_id] = position
-        ledger._positions = positions
 
         applied = snapshot.get("applied_events")
         if not isinstance(applied, list):
             raise ValueError("snapshot applied_events is required for idempotent recovery")
-        restored_events = {}
-        for event in applied:
+        if len(applied) != sequence:
+            raise ValueError("snapshot event history does not match sequence")
+
+        base_currency = snapshot.get("base_currency")
+        if not isinstance(base_currency, str) or not base_currency.strip():
+            raise ValueError("snapshot base_currency is required")
+        balance = _decimal(snapshot.get("balance"), "balance")
+        realized = _decimal(snapshot.get("realized_pnl_lifetime"),
+                            "realized_pnl_lifetime")
+        initial_balance = balance - realized
+        if initial_balance <= ZERO:
+            raise ValueError("snapshot implies a non-positive initial balance")
+
+        daily_period_id = snapshot.get("daily_period_id")
+        weekly_period_id = snapshot.get("weekly_period_id")
+        if not isinstance(daily_period_id, str) or not daily_period_id:
+            raise ValueError("snapshot daily_period_id is required")
+        if not isinstance(weekly_period_id, str) or not weekly_period_id:
+            raise ValueError("snapshot weekly_period_id is required")
+
+        ledger = cls(
+            initial_balance,
+            base_currency=base_currency,
+            daily_period_id="initial",
+            weekly_period_id="initial",
+        )
+        for expected_sequence, event in enumerate(applied, start=1):
             if not isinstance(event, dict):
                 raise ValueError("invalid applied event in snapshot")
-            event_id = event.get("event_id")
-            if not isinstance(event_id, str) or not event_id.strip() or event_id in restored_events:
-                raise ValueError("invalid or duplicate event ID in snapshot")
-            restored_events[event_id] = deepcopy(event)
-        if len(restored_events) != sequence:
-            raise ValueError("snapshot event history does not match sequence")
-        ledger._applied_event_ids = restored_events
+            event_sequence = event.get("sequence")
+            if isinstance(event_sequence, bool) or event_sequence != expected_sequence:
+                raise ValueError("snapshot event history sequence is not contiguous")
+            ledger.apply(event)
+
+        # Strict equality checks both persisted fields and all derived values.
+        # The schema version is the compatibility boundary for this contract.
+        restored = ledger.snapshot()
+        if restored != snapshot:
+            raise ValueError("snapshot state is inconsistent with its event history")
         return ledger
 
     def _apply_event(self, event: dict, occurred_at: datetime) -> None:
@@ -217,7 +211,7 @@ class RiskLedger:
             if quantity > remaining:
                 raise ValueError("close quantity exceeds remaining quantity")
             if kind == "PositionClosed" and quantity != remaining:
-                raise ValueError("PositionClosed must settle all remaining quantity")
+                raise ValueError("PositionClosed quantity must equal full remaining quantity")
             if kind == "PositionPartiallyClosed" and quantity >= remaining:
                 raise ValueError("partial close must leave positive remaining quantity")
             gross = _decimal(event.get("gross_pnl"), "gross_pnl")
@@ -254,6 +248,8 @@ class RiskLedger:
                 daily_id = str(daily_id)
                 if not daily_id or daily_id == self.daily_period_id:
                     raise ValueError("new daily period ID must differ")
+                if self.balance <= ZERO:
+                    raise ValueError("daily period start balance must be positive")
                 self.daily_period_id = daily_id
                 self.daily_start_balance = self.balance
                 self.daily_realized_net_pnl = ZERO
@@ -261,6 +257,8 @@ class RiskLedger:
                 weekly_id = str(weekly_id)
                 if not weekly_id or weekly_id == self.weekly_period_id:
                     raise ValueError("new weekly period ID must differ")
+                if self.balance <= ZERO:
+                    raise ValueError("weekly period start balance must be positive")
                 self.weekly_period_id = weekly_id
                 self.weekly_start_balance = self.balance
                 self.weekly_realized_net_pnl = ZERO
@@ -299,10 +297,14 @@ class RiskLedger:
 
     @property
     def daily_loss_pct(self) -> Decimal:
+        if self.daily_start_balance <= ZERO:
+            raise ValueError("daily period start balance must be positive")
         return max(ZERO, -self.daily_realized_net_pnl / self.daily_start_balance * Decimal("100"))
 
     @property
     def weekly_loss_pct(self) -> Decimal:
+        if self.weekly_start_balance <= ZERO:
+            raise ValueError("weekly period start balance must be positive")
         return max(ZERO, -self.weekly_realized_net_pnl / self.weekly_start_balance * Decimal("100"))
 
     def snapshot(self) -> dict:
