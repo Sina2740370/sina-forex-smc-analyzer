@@ -54,7 +54,8 @@ class SQLiteLedgerStore:
         return connection
 
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
             connection.execute("PRAGMA journal_mode = WAL")
             connection.executescript(
                 """
@@ -77,12 +78,35 @@ class SQLiteLedgerStore:
                 );
                 """
             )
+        finally:
+            connection.close()
 
     @staticmethod
     def _without_history(snapshot: dict) -> dict:
         stored = dict(snapshot)
         stored.pop("applied_events", None)
         return stored
+
+    @staticmethod
+    def _replay(
+        connection: sqlite3.Connection, ledger_id: str,
+        schema_version: int, sequence: int, snapshot_json: str,
+    ) -> RiskLedger:
+        if schema_version != RiskLedger.SCHEMA_VERSION:
+            raise ValueError("stored ledger schema version is unsupported")
+        events = connection.execute(
+            """SELECT sequence, payload_json FROM mas_ledger_events
+               WHERE ledger_id = ? ORDER BY sequence""",
+            (ledger_id,),
+        ).fetchall()
+        if len(events) != sequence:
+            raise ValueError("persisted event count does not match snapshot sequence")
+        for expected, (actual, _) in enumerate(events, start=1):
+            if actual != expected:
+                raise ValueError("persisted event sequence is not contiguous")
+        snapshot = json.loads(snapshot_json)
+        snapshot["applied_events"] = [json.loads(payload) for _, payload in events]
+        return RiskLedger.from_snapshot(snapshot)
 
     def create(self, ledger_id: str, ledger: RiskLedger) -> None:
         """Create a persisted ledger only from its pristine sequence-zero state."""
@@ -93,28 +117,34 @@ class SQLiteLedgerStore:
         if snapshot["sequence"] != 0 or snapshot["applied_events"]:
             raise ValueError("only a pristine sequence-zero ledger can be created")
         payload = self._json(self._without_history(snapshot))
+        connection = self._connect()
         try:
-            with self._connect() as connection:
-                connection.execute("BEGIN IMMEDIATE")
-                connection.execute(
-                    """INSERT INTO mas_ledger_snapshots
-                       (ledger_id, schema_version, sequence, snapshot_json)
-                       VALUES (?, ?, 0, ?)""",
-                    (ledger_id, RiskLedger.SCHEMA_VERSION, payload),
-                )
-                connection.commit()
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """INSERT INTO mas_ledger_snapshots
+                   (ledger_id, schema_version, sequence, snapshot_json)
+                   VALUES (?, ?, 0, ?)""",
+                (ledger_id, RiskLedger.SCHEMA_VERSION, payload),
+            )
+            connection.commit()
         except sqlite3.IntegrityError:
+            connection.rollback()
             raise ValueError("ledger_id already exists") from None
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
     def append(
         self, ledger_id: str, *, expected_sequence: int,
         event: dict, ledger: RiskLedger,
-    ) -> None:
+    ) -> bool:
         """Atomically append one event and persist its resulting ledger state.
 
-        The adapter independently replays the stored history plus the proposed
-        event and compares it with the caller's ledger before committing. This
-        prevents stale writers and mismatched in-memory state from being saved.
+        Returns False for an exact retry after a successful prior commit. The
+        adapter replays persisted history before accepting either a new commit
+        or an idempotent retry, preventing stale writers and state divergence.
         """
         ledger_id = self._ledger_id(ledger_id)
         if isinstance(expected_sequence, bool) or not isinstance(expected_sequence, int) or expected_sequence < 0:
@@ -141,19 +171,30 @@ class SQLiteLedgerStore:
             if row is None:
                 raise ValueError("unknown ledger_id")
             schema_version, stored_sequence, snapshot_json = row
-            if schema_version != RiskLedger.SCHEMA_VERSION:
-                raise ValueError("stored ledger schema version is unsupported")
+
             if stored_sequence != expected_sequence:
+                if stored_sequence == expected_sequence + 1:
+                    prior = connection.execute(
+                        """SELECT sequence, payload_json FROM mas_ledger_events
+                           WHERE ledger_id = ? AND event_id = ?""",
+                        (ledger_id, event.get("event_id")),
+                    ).fetchone()
+                    if prior and prior[0] == expected_sequence + 1:
+                        if prior[1] != event_json:
+                            raise ValueError("event_id was reused with a different payload")
+                        restored = self._replay(
+                            connection, ledger_id, schema_version,
+                            stored_sequence, snapshot_json,
+                        )
+                        if restored.snapshot() == caller_snapshot:
+                            connection.rollback()
+                            return False
                 raise ValueError("stale ledger writer: persisted sequence changed")
 
-            stored_events = connection.execute(
-                """SELECT payload_json FROM mas_ledger_events
-                   WHERE ledger_id = ? ORDER BY sequence""",
-                (ledger_id,),
-            ).fetchall()
-            restored_snapshot = json.loads(snapshot_json)
-            restored_snapshot["applied_events"] = [json.loads(item[0]) for item in stored_events]
-            restored = RiskLedger.from_snapshot(restored_snapshot)
+            restored = self._replay(
+                connection, ledger_id, schema_version,
+                stored_sequence, snapshot_json,
+            )
             restored.apply(event)
             if restored.snapshot() != caller_snapshot:
                 raise ValueError("caller ledger does not match persisted event replay")
@@ -176,6 +217,7 @@ class SQLiteLedgerStore:
                 ),
             )
             connection.commit()
+            return True
         except Exception:
             connection.rollback()
             raise
@@ -183,9 +225,10 @@ class SQLiteLedgerStore:
             connection.close()
 
     def load(self, ledger_id: str) -> RiskLedger:
-        """Load and cryptographically-independent replay-validate stored history."""
+        """Load and replay-validate the complete persisted event history."""
         ledger_id = self._ledger_id(ledger_id)
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
             row = connection.execute(
                 """SELECT schema_version, sequence, snapshot_json
                    FROM mas_ledger_snapshots WHERE ledger_id = ?""",
@@ -194,18 +237,8 @@ class SQLiteLedgerStore:
             if row is None:
                 raise KeyError(ledger_id)
             schema_version, sequence, snapshot_json = row
-            if schema_version != RiskLedger.SCHEMA_VERSION:
-                raise ValueError("stored ledger schema version is unsupported")
-            events = connection.execute(
-                """SELECT sequence, payload_json FROM mas_ledger_events
-                   WHERE ledger_id = ? ORDER BY sequence""",
-                (ledger_id,),
-            ).fetchall()
-        if len(events) != sequence:
-            raise ValueError("persisted event count does not match snapshot sequence")
-        for expected, (actual, _) in enumerate(events, start=1):
-            if actual != expected:
-                raise ValueError("persisted event sequence is not contiguous")
-        snapshot = json.loads(snapshot_json)
-        snapshot["applied_events"] = [json.loads(payload) for _, payload in events]
-        return RiskLedger.from_snapshot(snapshot)
+            return self._replay(
+                connection, ledger_id, schema_version, sequence, snapshot_json
+            )
+        finally:
+            connection.close()
