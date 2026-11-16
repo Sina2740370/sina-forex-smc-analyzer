@@ -49,7 +49,7 @@ class RiskLedger:
     explicit PeriodRolled events; the core never infers local-time rollovers.
     """
 
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
 
     def __init__(self, initial_balance: Any, base_currency: str = "USD",
                  daily_period_id: str = "initial",
@@ -58,6 +58,7 @@ class RiskLedger:
         if not isinstance(base_currency, str) or not base_currency.strip():
             raise ValueError("base_currency is required")
         self.base_currency = base_currency.upper()
+        self.initial_balance = balance
         self.balance = balance
         self.daily_start_balance = balance
         self.weekly_start_balance = balance
@@ -130,12 +131,8 @@ class RiskLedger:
         base_currency = snapshot.get("base_currency")
         if not isinstance(base_currency, str) or not base_currency.strip():
             raise ValueError("snapshot base_currency is required")
-        balance = _decimal(snapshot.get("balance"), "balance")
-        realized = _decimal(snapshot.get("realized_pnl_lifetime"),
-                            "realized_pnl_lifetime")
-        initial_balance = balance - realized
-        if initial_balance <= ZERO:
-            raise ValueError("snapshot implies a non-positive initial balance")
+        initial_balance = _decimal(snapshot.get("initial_balance"),
+                                    "initial_balance", positive=True)
 
         daily_period_id = snapshot.get("daily_period_id")
         weekly_period_id = snapshot.get("weekly_period_id")
@@ -316,7 +313,8 @@ class RiskLedger:
                               for k, v in value.items()}
         return {
             "schema_version": self.SCHEMA_VERSION, "base_currency": self.base_currency,
-            "sequence": self.sequence, "balance": money(self.balance),
+            "sequence": self.sequence, "initial_balance": money(self.initial_balance),
+            "balance": money(self.balance),
             "equity": money(self.equity), "unrealized_pnl": money(self.unrealized_pnl),
             "realized_pnl_lifetime": money(self.realized_pnl_lifetime),
             "fees_lifetime": money(self.fees_lifetime),
