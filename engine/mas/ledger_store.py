@@ -229,6 +229,10 @@ class SQLiteLedgerStore:
         ledger_id = self._ledger_id(ledger_id)
         connection = self._connect()
         try:
+            # Pin the snapshot row and event rows to one SQLite read snapshot.
+            # Without an explicit transaction, a concurrent append between the
+            # two SELECTs could combine an old snapshot with a newer event log.
+            connection.execute("BEGIN")
             row = connection.execute(
                 """SELECT schema_version, sequence, snapshot_json
                    FROM mas_ledger_snapshots WHERE ledger_id = ?""",
