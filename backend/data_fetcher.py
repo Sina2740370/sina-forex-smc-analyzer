@@ -39,7 +39,7 @@ def _is_cache_valid(key: str, ttl_minutes: float) -> bool:
     if key not in _cache:
         return False
     elapsed = (time.time() - _cache[key]["ts"]) / 60
-    return elapsed < ttl_minutes
+    return 0 <= elapsed < ttl_minutes
 
 
 def _get_cached(key: str) -> Optional[list]:
@@ -188,9 +188,12 @@ def fetch_ohlcv(symbol: str, timeframe: str = "15m",
 
     except Exception as e:
         logger.error(f"❌ خطا fetch {symbol} {timeframe}: {e}")
-        old = _get_cached(key)
-        if old:
-            return old[-limit:]
+        # فقط کشی که هنوز در TTL همین تایم‌فریم است مجاز به fallback است.
+        # کش منقضی یا use_cache=False نباید داده‌ی قدیمی را به مسیر تحلیل برگرداند.
+        if use_cache and _is_cache_valid(key, ttl):
+            old = _get_cached(key)
+            if old:
+                return old[-limit:]
         return []
 
 
@@ -232,19 +235,35 @@ def fetch_topdown(symbol: str, now=None) -> dict:
 
         result[tf] = data
 
-    # در مسیر CLI همین سقف ۴۵ دقیقه برای کندل M15 استفاده می‌شود.
-    # کش قدیمی در صورت خطای منبع نباید به سیگنال زنده تبدیل شود.
+    # Timestamp integrity is checked independently for every timeframe.
+    # This catches provider/cache timestamps that are ahead of the decision clock.
+    for tf in timeframes:
+        try:
+            last_open = pd.Timestamp(result[tf][-1]["time"])
+            if pd.isna(last_open):
+                raise ValueError("آخرین زمان کندل تهی است")
+            if last_open.tzinfo is None:
+                last_open = last_open.tz_localize("UTC")
+            else:
+                last_open = last_open.tz_convert("UTC")
+        except (KeyError, TypeError, ValueError, OverflowError, IndexError) as exc:
+            return {"error": f"زمان آخرین کندل {tf} نامعتبر است: {exc}"}
+        if last_open > snapshot:
+            return {"error": f"timestamp کندل {tf} در آینده است"}
+
+    # M15 is the decision timeframe: a bar must be fully closed before analysis.
+    # Its timestamp denotes bar open, so close = open + 15 minutes.
     try:
         last_open = pd.Timestamp(result["15m"][-1]["time"])
-        if pd.isna(last_open):
-            raise ValueError("آخرین زمان کندل 15m تهی است")
         if last_open.tzinfo is None:
             last_open = last_open.tz_localize("UTC")
         else:
             last_open = last_open.tz_convert("UTC")
         last_close = last_open + pd.Timedelta(minutes=15)
+        if last_close > snapshot:
+            return {"error": "آخرین کندل 15m هنوز بسته نشده است"}
         age_minutes = (snapshot - last_close).total_seconds() / 60.0
-    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+    except (KeyError, TypeError, ValueError, OverflowError, IndexError) as exc:
         return {"error": f"زمان آخرین کندل 15m نامعتبر است: {exc}"}
 
     if age_minutes > 45:
