@@ -7,7 +7,7 @@ Timestamps must be timezone-aware; no host-local or UTC fallback is allowed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 _NEW_YORK = ZoneInfo("America/New_York")
