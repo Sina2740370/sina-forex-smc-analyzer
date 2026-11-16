@@ -15,18 +15,21 @@ FF_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 # کش ساده برای جلوگیری از درخواست زیاد
 _cache = {"data": [], "fetched_at": None, "ok": False}
 CACHE_MINUTES = 60  # هر ۱ ساعت یک بار از منبع بخواه
+MAX_STALE_MINUTES = CACHE_MINUTES  # دادهٔ قدیمی‌تر از TTL برای وتوی ایمنی معتبر نیست
 MAX_RETRIES = 3
 BASE_BACKOFF_SEC = 8  # بعد از ۴۲۹ کمی صبر کن
 
 
-async def fetch_news(force: bool = False) -> list:
+async def fetch_news(force: bool = False) -> list | None:
     """
-    دریافت تقویم اقتصادی این هفته
-    با کش ۱ ساعته، retry بعد از ۴۲۹، و برگشت به آخرین دادهٔ سالم
+    دریافت تقویم اقتصادی با کش ۱ ساعته.
+
+    None یعنی فید قابل اتکا در دسترس نیست؛ مصرف‌کننده باید صدور سیگنال را
+    fail-closed متوقف کند. لیست خالی فقط وقتی برمی‌گردد که منبع واقعاً
+    پاسخ معتبرِ بدون رویداد داده باشد.
     """
     now = datetime.now(timezone.utc)
 
-    # چک کش
     if not force and _cache["fetched_at"]:
         elapsed = (now - _cache["fetched_at"]).total_seconds() / 60
         if elapsed < CACHE_MINUTES and (_cache["ok"] or _cache["data"]):
@@ -89,21 +92,26 @@ async def fetch_news(force: bool = False) -> list:
         logger.info(f"✅ {len(data)} خبر دریافت شد")
         return data
 
-    # دریافت شکست خورد — آخرین اخبار سالم را نگه دار تا امتیاز خبر صفر نشود
-    if _cache["data"]:
+    cached_at = _cache.get("fetched_at")
+    if _cache["data"] and cached_at is not None:
+        age = (now - cached_at).total_seconds() / 60
+        if age <= MAX_STALE_MINUTES:
+            logger.warning(
+                f"خطا در دریافت اخبار: {last_error} — "
+                f"استفاده از کش محدود و هنوز تازه ({age:.0f} دقیقه)"
+            )
+            return _cache["data"]
         logger.error(
-            f"خطا در دریافت اخبار: {last_error} — "
-            f"استفاده از کش قبلی ({len(_cache['data'])} خبر)"
+            f"خطا در دریافت اخبار: {last_error} — کش قدیمی است "
+            f"({age:.0f} دقیقه)، فید نامعتبر تلقی شد"
         )
-        return _cache["data"]
+    else:
+        logger.error(f"خطا در دریافت اخبار و کش معتبر موجود نیست: {last_error}")
 
-    logger.error(f"خطا در دریافت اخبار و کش خالی است: {last_error}")
-    _cache["fetched_at"] = now  # تا هر اسکن دوباره به منبع نکوبیم
-    _cache["ok"] = False
-    return []
+    # عدم دسترسی به فید با «تقویم خالی» یکی نیست؛ سیگنال باید fail-closed شود.
+    return None
 
-
-def upcoming_high_impact(news: list,
+def upcoming_high_impact(news: list | None,
                           within_minutes: int = 30,
                           after_minutes: int = None,
                           now=None) -> list:
@@ -161,7 +169,7 @@ def upcoming_high_impact(news: list,
     return result
 
 
-def is_news_safe(news: list, symbol: str,
+def is_news_safe(news: list | None, symbol: str,
                   buffer_min: int = 30, now=None) -> tuple[bool, str]:
     """
     آیا معامله روی این نماد امن هست؟
@@ -174,6 +182,9 @@ def is_news_safe(news: list, symbol: str,
     Returns:
         (safe: bool, reason: str)
     """
+    if news is None or not isinstance(news, list):
+        return False, "تقویم اقتصادی در دسترس یا معتبر نیست؛ صدور سیگنال برای ایمنی مسدود شد"
+
     # استخراج ارزهای مربوطه از نماد
     base = symbol.split("=")[0]
     currencies = []

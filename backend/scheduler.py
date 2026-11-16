@@ -113,7 +113,8 @@ async def _scan_market_locked():
             logger.error(f"خطا در پیام شروع: {e}")
 
     news = await fetch_news()
-    logger.info(f"📰 {len(news)} خبر بارگذاری شد")
+    news_count = len(news) if news is not None else "ناموجود"
+    logger.info(f"📰 {news_count} خبر بارگذاری شد")
 
     signals_created = 0
     errors = 0
@@ -272,7 +273,7 @@ async def check_open_signals_and_notify():
 
 
 async def _scan_symbol(symbol, name, news, now=None):
-    data = await asyncio.to_thread(fetch_topdown, symbol)
+    data = await asyncio.to_thread(fetch_topdown, symbol, now=now)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None

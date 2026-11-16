@@ -5,6 +5,7 @@
 + فیلتر همبستگی ارزی (جلوگیری از باخت هم‌زمان روی نمادهای هم‌ارز)
 """
 import logging
+import math
 from datetime import datetime, timezone, timedelta
 
 from .config import PIP_SIZE, SPREAD
@@ -103,20 +104,33 @@ def _check_expired_signals(signals: list):
                 effective_entry = _apply_spread(symbol, entry, direction)
                 half = SPREAD.get(symbol, 1.0) * PIP_SIZE.get(symbol, 0.0001) / 2.0
 
-                exit_price = entry
-                pnl = 0.0
                 try:
                     candles = fetch_ohlcv(symbol, "15m", limit=5)
-                    if candles:
-                        last_close = candles[-1]["close"]
-                        if direction == "BUY":
-                            exit_price = last_close - half
-                            pnl = _to_pips(symbol, exit_price - effective_entry)
-                        else:
-                            exit_price = last_close + half
-                            pnl = _to_pips(symbol, effective_entry - exit_price)
+                    if not candles:
+                        logger.warning(
+                            f"انقضای {symbol} به تعویق افتاد: قیمت معتبر برای mark-to-market موجود نیست"
+                        )
+                        continue
+                    last = candles[-1]
+                    last_close = float(last["close"])
+                    _parse_dt(last["time"])
+                    if not math.isfinite(last_close):
+                        raise ValueError("آخرین قیمت کندل finite نیست")
                 except Exception as fetch_err:
-                    logger.warning(f"عدم امکان دریافت قیمت زنده برای انقضای {symbol}: {fetch_err}")
+                    logger.warning(
+                        f"انقضای {symbol} به تعویق افتاد؛ قیمت معتبر در دسترس نیست: {fetch_err}"
+                    )
+                    continue
+
+                if direction == "BUY":
+                    exit_price = last_close - half
+                    pnl = _to_pips(symbol, exit_price - effective_entry)
+                elif direction == "SELL":
+                    exit_price = last_close + half
+                    pnl = _to_pips(symbol, effective_entry - exit_price)
+                else:
+                    logger.warning(f"انقضای {symbol} به تعویق افتاد: جهت نامعتبر {direction!r}")
+                    continue
 
                 close_signal(
                     sig["id"],
