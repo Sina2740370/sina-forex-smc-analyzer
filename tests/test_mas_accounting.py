@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 
 from engine.mas.accounting import (
+    account_state_from_ledger,
     apply_ledger_event,
     mark_to_market_event,
     position_closed_event,
@@ -140,3 +141,24 @@ def test_persisted_exact_retry_is_idempotent(tmp_path):
         ledger, event, store=store, ledger_id="paper-account"
     ) is False
     assert store.load("paper-account").snapshot() == ledger.snapshot()
+
+def test_risk_gate_projection_uses_ledger_as_single_source_of_truth():
+    ledger = RiskLedger("10000")
+    opened = open_event(ledger)
+    apply_ledger_event(ledger, opened)
+    closed = position_closed_event(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="loss-1", quantity="1", gross_pnl="-20",
+        commission="1", timestamp="2026-11-17T00:00:00+02:00",
+    )
+    apply_ledger_event(ledger, closed)
+
+    account = account_state_from_ledger(ledger, imminent_news_minutes=30)
+    assert account.equity == 9979.0
+    assert account.open_trades == 0
+    assert account.open_risk_pct == 0.0
+    assert account.daily_loss_pct == pytest.approx(0.21)
+    assert account.weekly_loss_pct == pytest.approx(0.21)
+    assert account.consecutive_losses == 1
+    assert account.per_symbol_open == {}
+    assert account.imminent_news_minutes == 30
