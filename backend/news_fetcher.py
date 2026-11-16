@@ -111,7 +111,7 @@ async def fetch_news(force: bool = False) -> list | None:
     # عدم دسترسی به فید با «تقویم خالی» یکی نیست؛ سیگنال باید fail-closed شود.
     return None
 
-def upcoming_high_impact(news: list,
+def upcoming_high_impact(news: list | None,
                           within_minutes: int = 30,
                           after_minutes: int = None,
                           now=None) -> list:
@@ -169,7 +169,7 @@ def upcoming_high_impact(news: list,
     return result
 
 
-def is_news_safe(news: list, symbol: str,
+def is_news_safe(news: list | None, symbol: str,
                   buffer_min: int = 30, now=None) -> tuple[bool, str]:
     """
     آیا معامله روی این نماد امن هست؟
