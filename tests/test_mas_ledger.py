@@ -442,3 +442,18 @@ def test_sqlite_store_rejects_duplicate_ledger_id(tmp_path):
     store.create("account", RiskLedger("10000"))
     with pytest.raises(ValueError, match="already exists"):
         store.create("account", RiskLedger("20000"))
+
+
+
+def test_sqlite_store_makes_exact_commit_retries_idempotent(tmp_path):
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("account", ledger)
+    first = event(1, "MarkToMarketUpdated", unrealized_pnl="-10")
+    ledger.apply(first)
+
+    assert store.append("account", expected_sequence=0, event=first, ledger=ledger) is True
+    # Simulates a client retry after the database committed but the response was lost.
+    assert store.append("account", expected_sequence=0, event=first, ledger=ledger) is False
+    assert store.load("account").snapshot() == ledger.snapshot()
