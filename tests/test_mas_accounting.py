@@ -7,9 +7,11 @@ import pytest
 from engine.mas.accounting import (
     account_state_from_ledger,
     apply_ledger_event,
+    apply_ledger_events,
     mark_to_market_event,
     position_closed_event,
     position_opened_event,
+    position_settlement_events,
     roll_account_period,
 )
 from engine.mas.ledger import RiskLedger
@@ -218,3 +220,69 @@ def test_daily_rollover_uses_equity_as_new_period_baseline():
         ),
     )
     assert ledger.daily_loss_pct == Decimal("100") / Decimal("9900") * Decimal("100")
+
+def test_atomic_close_and_post_settlement_mark_batch_is_persisted_and_retry_safe(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "ledger-batch.sqlite")
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+
+    apply_ledger_event(ledger, open_event(ledger), store=store, ledger_id="paper-account")
+    second_open = position_opened_event(
+        ledger, position_id="paper:GBPUSD:2026-11-16T22:00:00+00:00",
+        symbol="GBPUSD", side="BUY", quantity="1", entry="1.2500",
+        stop="1.2490", approved_risk="100", actual_risk="98", timestamp=NOW,
+    )
+    apply_ledger_event(ledger, second_open, store=store, ledger_id="paper-account")
+    initial_mark = mark_to_market_event(
+        ledger, mark_id="before-close", unrealized_pnl="-50", timestamp=NOW,
+    )
+    apply_ledger_event(ledger, initial_mark, store=store, ledger_id="paper-account")
+
+    batch = position_settlement_events(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="exit-with-reprice", quantity="1", gross_pnl="50",
+        commission="1", timestamp=NOW, remaining_unrealized_pnl="-30",
+        mark_id="after-close",
+    )
+    assert [event["sequence"] for event in batch] == [4, 5]
+    assert [event["type"] for event in batch] == [
+        "PositionClosed", "MarkToMarketUpdated",
+    ]
+
+    assert apply_ledger_events(
+        ledger, batch, store=store, ledger_id="paper-account"
+    ) is True
+    assert ledger.balance == Decimal("10049")
+    assert ledger.unrealized_pnl == Decimal("-30")
+    assert ledger.equity == Decimal("10019")
+    assert ledger.open_trades == 1 if hasattr(ledger, "open_trades") else len(ledger.snapshot()["open_positions"]) == 1
+
+    # Replaying the exact same complete batch must be idempotent.
+    assert apply_ledger_events(
+        ledger, batch, store=store, ledger_id="paper-account"
+    ) is False
+    assert store.load("paper-account").snapshot() == ledger.snapshot()
+
+
+def test_failed_batch_does_not_publish_partial_close_or_mark():
+    ledger = RiskLedger("10000")
+    apply_ledger_event(ledger, open_event(ledger))
+    close = position_closed_event(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="close-before-invalid-mark", quantity="1",
+        gross_pnl="10", timestamp=NOW,
+    )
+    invalid_mark = {
+        "event_id": "mas:mark:invalid-after-close",
+        "sequence": close["sequence"] + 1,
+        "timestamp": close["timestamp"],
+        "type": "MarkToMarketUpdated",
+        "unrealized_pnl": "NaN",
+        "currency": ledger.base_currency,
+    }
+    before = ledger.snapshot()
+
+    with pytest.raises(ValueError):
+        apply_ledger_events(ledger, [close, invalid_mark])
+
+    assert ledger.snapshot() == before
