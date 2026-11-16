@@ -250,7 +250,11 @@ class RiskLedger:
                 if self.balance <= ZERO:
                     raise ValueError("daily period start balance must be positive")
                 self.daily_period_id = daily_id
-                self.daily_start_balance = self.balance
+                # Period risk is measured from account equity at rollover,
+                # including floating PnL on positions carried across sessions.
+                self.daily_start_balance = self.equity
+                if self.daily_start_balance <= ZERO:
+                    raise ValueError("daily period start equity must be positive")
                 self.daily_realized_net_pnl = ZERO
             if weekly_id is not None:
                 weekly_id = str(weekly_id)
@@ -259,7 +263,10 @@ class RiskLedger:
                 if self.balance <= ZERO:
                     raise ValueError("weekly period start balance must be positive")
                 self.weekly_period_id = weekly_id
-                self.weekly_start_balance = self.balance
+                # Weekly risk uses the same equity-based boundary as daily risk.
+                self.weekly_start_balance = self.equity
+                if self.weekly_start_balance <= ZERO:
+                    raise ValueError("weekly period start equity must be positive")
                 self.weekly_realized_net_pnl = ZERO
             if daily_id is None and weekly_id is None:
                 raise ValueError("PeriodRolled must roll a period")
@@ -296,15 +303,25 @@ class RiskLedger:
 
     @property
     def daily_loss_pct(self) -> Decimal:
+        """Peak-independent daily loss from rollover equity, including floating PnL."""
         if self.daily_start_balance <= ZERO:
-            raise ValueError("daily period start balance must be positive")
-        return max(ZERO, -self.daily_realized_net_pnl / self.daily_start_balance * Decimal("100"))
+            raise ValueError("daily period start equity must be positive")
+        return max(
+            ZERO,
+            (self.daily_start_balance - self.equity)
+            / self.daily_start_balance * Decimal("100"),
+        )
 
     @property
     def weekly_loss_pct(self) -> Decimal:
+        """Peak-independent weekly loss from rollover equity, including floating PnL."""
         if self.weekly_start_balance <= ZERO:
-            raise ValueError("weekly period start balance must be positive")
-        return max(ZERO, -self.weekly_realized_net_pnl / self.weekly_start_balance * Decimal("100"))
+            raise ValueError("weekly period start equity must be positive")
+        return max(
+            ZERO,
+            (self.weekly_start_balance - self.equity)
+            / self.weekly_start_balance * Decimal("100"),
+        )
 
     def snapshot(self) -> dict:
         def money(value: Decimal) -> str:
