@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+import sqlite3
 
 from engine.mas.accounting import (
     account_state_from_ledger,
@@ -286,3 +287,44 @@ def test_failed_batch_does_not_publish_partial_close_or_mark():
         apply_ledger_events(ledger, [close, invalid_mark])
 
     assert ledger.snapshot() == before
+
+def test_batch_storage_failure_rolls_back_every_insert_and_snapshot(tmp_path):
+    database = tmp_path / "ledger-batch-rollback.sqlite"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+    apply_ledger_event(ledger, open_event(ledger), store=store, ledger_id="paper-account")
+
+    first = mark_to_market_event(
+        ledger, mark_id="batch-first", unrealized_pnl="-10", timestamp=NOW,
+    )
+    candidate = RiskLedger.from_snapshot(ledger.snapshot())
+    candidate.apply(first)
+    second = mark_to_market_event(
+        candidate, mark_id="batch-second", unrealized_pnl="-20", timestamp=NOW,
+    )
+    before = ledger.snapshot()
+
+    # Force SQLite to fail on the second INSERT, after the first batch row
+    # has been written inside the same transaction.
+    connection = sqlite3.connect(database)
+    try:
+        connection.execute(
+            """CREATE TRIGGER reject_second_batch_event
+               BEFORE INSERT ON mas_ledger_events
+               WHEN NEW.sequence = 3
+               BEGIN
+                   SELECT RAISE(ABORT, 'injected batch write failure');
+               END"""
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected batch write failure"):
+        apply_ledger_events(
+            ledger, [first, second], store=store, ledger_id="paper-account",
+        )
+
+    assert ledger.snapshot() == before
+    assert store.load("paper-account").snapshot() == before
