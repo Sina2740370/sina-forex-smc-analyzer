@@ -126,3 +126,17 @@ def test_successful_persisted_apply_recovers_identical_snapshot(tmp_path):
     event = open_event(ledger)
     apply_ledger_event(ledger, event, store=store, ledger_id="paper-account")
     assert store.load("paper-account").snapshot() == ledger.snapshot()
+
+
+def test_persisted_exact_retry_is_idempotent(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "ledger.sqlite")
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+    event = open_event(ledger)
+    assert apply_ledger_event(
+        ledger, event, store=store, ledger_id="paper-account"
+    ) is True
+    assert apply_ledger_event(
+        ledger, event, store=store, ledger_id="paper-account"
+    ) is False
+    assert store.load("paper-account").snapshot() == ledger.snapshot()
