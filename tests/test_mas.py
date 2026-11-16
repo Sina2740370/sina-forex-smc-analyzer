@@ -162,3 +162,20 @@ def test_shared_lot_sizing_rejects_minimum_not_aligned_to_step():
         size_lots_for_risk(
             "EURUSD", 1.1000, 1.0990, 100.0, lot_step=0.01, min_lot=0.015
         )
+
+
+def test_risk_agent_rejects_size_factor_above_risk_budget():
+    verdict = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, size_factor=1.5
+    )
+    assert not verdict.approved
+    assert any(g.gate == "R-SIZE" for g in verdict.gates)
+
+
+def test_risk_agent_rejects_non_positive_or_non_finite_size_factor():
+    for factor in (0.0, -0.1, float("nan"), float("inf")):
+        verdict = evaluate_risk(
+            "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, size_factor=factor
+        )
+        assert not verdict.approved
+        assert any(g.gate == "R-SIZE" for g in verdict.gates)
