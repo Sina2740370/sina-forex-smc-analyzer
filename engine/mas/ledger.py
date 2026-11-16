@@ -75,7 +75,7 @@ class RiskLedger:
         self.sequence = 0
         self.last_event_at: datetime | None = None
         self._positions: dict[str, dict] = {}
-        self._applied_event_ids: set[str] = set()
+        self._applied_event_ids: dict[str, dict] = {}
 
     def apply(self, event: dict) -> bool:
         """Apply atomically; False means this event ID was already applied."""
@@ -85,6 +85,8 @@ class RiskLedger:
         if not isinstance(event_id, str) or not event_id.strip():
             raise ValueError("event_id is required")
         if event_id in self._applied_event_ids:
+            if self._applied_event_ids[event_id] != event:
+                raise ValueError("event_id was reused with a different payload")
             return False
         sequence = event.get("sequence")
         if isinstance(sequence, bool) or not isinstance(sequence, int):
@@ -99,7 +101,7 @@ class RiskLedger:
         candidate._apply_event(event, occurred_at)
         candidate.sequence = sequence
         candidate.last_event_at = occurred_at
-        candidate._applied_event_ids.add(event_id)
+        candidate._applied_event_ids[event_id] = deepcopy(event)
         candidate._update_drawdown()
         self.__dict__.update(candidate.__dict__)
         return True
@@ -224,7 +226,11 @@ class RiskLedger:
 
     @property
     def open_risk_pct(self) -> Decimal:
-        return self.open_risk_amount / self.equity * Decimal("100") if self.equity > ZERO else ZERO
+        if self.equity <= ZERO:
+            if self.open_risk_amount > ZERO:
+                raise ValueError("cannot calculate open risk with non-positive equity")
+            return ZERO
+        return self.open_risk_amount / self.equity * Decimal("100")
 
     @property
     def daily_loss_pct(self) -> Decimal:
