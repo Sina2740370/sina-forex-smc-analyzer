@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 
 from engine.mas.ledger import RiskLedger
+from engine.mas.ledger_store import SQLiteLedgerStore
 
 
 def event(seq, event_type, event_id=None, timestamp=None, **fields):
@@ -346,3 +347,98 @@ def test_snapshot_restore_rejects_event_history_sequence_mismatch():
     snapshot["applied_events"] = []
     with pytest.raises(ValueError, match="does not match sequence"):
         RiskLedger.from_snapshot(snapshot)
+
+
+
+def test_sqlite_store_round_trips_and_replays_events_after_reopen(tmp_path):
+    database = tmp_path / "mas-ledger.sqlite3"
+    ledger = RiskLedger("10000")
+    SQLiteLedgerStore(database).create("paper-account", ledger)
+
+    first = event(1, "PositionOpened", position_id="p-1", symbol="EURUSD",
+                  side="BUY", quantity="1", entry="1.1", stop="1.099",
+                  approved_risk="100", actual_risk="99")
+    ledger.apply(first)
+    SQLiteLedgerStore(database).append(
+        "paper-account", expected_sequence=0, event=first, ledger=ledger
+    )
+
+    restored = SQLiteLedgerStore(database).load("paper-account")
+    assert restored.snapshot() == ledger.snapshot()
+    assert restored.open_risk_amount == Decimal("99")
+
+
+def test_sqlite_store_appends_event_and_snapshot_atomically(tmp_path):
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("account", ledger)
+
+    first = event(1, "MarkToMarketUpdated", unrealized_pnl="-10")
+    ledger.apply(first)
+    store.append("account", expected_sequence=0, event=first, ledger=ledger)
+
+    second = event(2, "MarkToMarketUpdated", unrealized_pnl="-25")
+    ledger.apply(second)
+    store.append("account", expected_sequence=1, event=second, ledger=ledger)
+
+    assert store.load("account").snapshot() == ledger.snapshot()
+
+
+def test_sqlite_store_rejects_stale_writer_without_partial_commit(tmp_path):
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    initial = RiskLedger("10000")
+    store.create("account", initial)
+    writer_a = store.load("account")
+    writer_b = store.load("account")
+
+    first = event(1, "MarkToMarketUpdated", unrealized_pnl="-10")
+    writer_a.apply(first)
+    store.append("account", expected_sequence=0, event=first, ledger=writer_a)
+
+    stale = event(1, "MarkToMarketUpdated", event_id="stale-event",
+                  unrealized_pnl="-20")
+    writer_b.apply(stale)
+    with pytest.raises(ValueError, match="stale ledger writer"):
+        store.append("account", expected_sequence=0, event=stale, ledger=writer_b)
+
+    persisted = store.load("account")
+    assert persisted.sequence == 1
+    assert persisted.unrealized_pnl == Decimal("-10")
+
+
+def test_sqlite_store_detects_event_log_tampering(tmp_path):
+    import sqlite3
+
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("account", ledger)
+    first = event(1, "MarkToMarketUpdated", unrealized_pnl="-10")
+    ledger.apply(first)
+    store.append("account", expected_sequence=0, event=first, ledger=ledger)
+
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE mas_ledger_events SET payload_json = ? WHERE ledger_id = ? AND sequence = 1",
+            ('{"event_id":"evt-1","sequence":1,"timestamp":"2026-11-16T10:01:00+00:00","type":"MarkToMarketUpdated","unrealized_pnl":"-20"}', "account"),
+        )
+
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        store.load("account")
+
+
+def test_sqlite_store_requires_pristine_ledger_for_creation(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "mas-ledger.sqlite3")
+    ledger = RiskLedger("10000")
+    ledger.apply(event(1, "MarkToMarketUpdated", unrealized_pnl="0"))
+    with pytest.raises(ValueError, match="pristine"):
+        store.create("account", ledger)
+
+
+def test_sqlite_store_rejects_duplicate_ledger_id(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "mas-ledger.sqlite3")
+    store.create("account", RiskLedger("10000"))
+    with pytest.raises(ValueError, match="already exists"):
+        store.create("account", RiskLedger("20000"))
