@@ -219,3 +219,22 @@ def test_non_finite_money_values_are_rejected():
     with pytest.raises(ValueError, match="finite"):
         ledger.apply(event(1, "MarkToMarketUpdated", unrealized_pnl="NaN"))
     assert ledger.sequence == 0
+
+
+def test_reusing_event_id_with_different_payload_is_rejected():
+    ledger = RiskLedger("10000")
+    first = event(1, "MarkToMarketUpdated", event_id="same-id",
+                  unrealized_pnl="-10")
+    ledger.apply(first)
+    altered = dict(first, unrealized_pnl="-20")
+    with pytest.raises(ValueError, match="different payload"):
+        ledger.apply(altered)
+    assert ledger.unrealized_pnl == Decimal("-10")
+
+
+def test_open_risk_ratio_fails_closed_when_equity_is_non_positive():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    ledger.apply(event(2, "MarkToMarketUpdated", unrealized_pnl="-10000"))
+    with pytest.raises(ValueError, match="non-positive equity"):
+        _ = ledger.open_risk_pct
