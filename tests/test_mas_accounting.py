@@ -37,7 +37,7 @@ def test_open_and_close_events_have_stable_ids_and_contiguous_sequences():
     closed = position_closed_event(
         ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
         execution_id="exit-1", quantity="1", gross_pnl="-20",
-        commission="1", timestamp="2026-11-17T02:00:00+02:00",
+        commission="1", timestamp="2026-11-17T00:00:00+02:00",
     )
     assert closed["type"] == "PositionClosed"
     assert closed["sequence"] == 2
