@@ -224,6 +224,110 @@ class SQLiteLedgerStore:
         finally:
             connection.close()
 
+    def append_batch(
+        self, ledger_id: str, *, expected_sequence: int,
+        events: list[dict], ledger: RiskLedger,
+    ) -> bool:
+        """Atomically append a contiguous event batch and its final snapshot.
+
+        Exact retries return False only when every persisted payload and the
+        replayed final ledger snapshot match the caller. Partial/stale retries
+        are rejected; a batch is never partially committed.
+        """
+        ledger_id = self._ledger_id(ledger_id)
+        if isinstance(expected_sequence, bool) or not isinstance(expected_sequence, int) or expected_sequence < 0:
+            raise ValueError("expected_sequence must be a non-negative integer")
+        if not isinstance(events, list) or not events:
+            raise ValueError("events must be a non-empty list")
+        if not isinstance(ledger, RiskLedger):
+            raise ValueError("ledger must be a RiskLedger")
+
+        event_json = []
+        for offset, event in enumerate(events, start=1):
+            if not isinstance(event, dict):
+                raise ValueError("each event must be a mapping")
+            if event.get("sequence") != expected_sequence + offset:
+                raise ValueError("batch event sequences must be contiguous")
+            event_json.append(self._json(event))
+
+        caller_snapshot = ledger.snapshot()
+        final_sequence = expected_sequence + len(events)
+        if caller_snapshot["sequence"] != final_sequence:
+            raise ValueError("ledger sequence must equal the batch final sequence")
+        if caller_snapshot["applied_events"][-len(events):] != events:
+            raise ValueError("events must be the ledger's most recently applied batch")
+
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """SELECT schema_version, sequence, snapshot_json
+                   FROM mas_ledger_snapshots WHERE ledger_id = ?""",
+                (ledger_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("unknown ledger_id")
+            schema_version, stored_sequence, snapshot_json = row
+
+            if stored_sequence != expected_sequence:
+                if stored_sequence == final_sequence:
+                    prior = connection.execute(
+                        """SELECT sequence, payload_json FROM mas_ledger_events
+                           WHERE ledger_id = ? AND sequence BETWEEN ? AND ?
+                           ORDER BY sequence""",
+                        (ledger_id, expected_sequence + 1, final_sequence),
+                    ).fetchall()
+                    if len(prior) == len(events) and all(
+                        sequence == expected_sequence + offset
+                        and payload == event_json[offset - 1]
+                        for offset, (sequence, payload) in enumerate(prior, start=1)
+                    ):
+                        restored = self._replay(
+                            connection, ledger_id, schema_version,
+                            stored_sequence, snapshot_json,
+                        )
+                        if restored.snapshot() == caller_snapshot:
+                            connection.rollback()
+                            return False
+                raise ValueError("stale ledger writer: persisted sequence changed")
+
+            restored = self._replay(
+                connection, ledger_id, schema_version,
+                stored_sequence, snapshot_json,
+            )
+            for event in events:
+                restored.apply(event)
+            if restored.snapshot() != caller_snapshot:
+                raise ValueError("caller ledger does not match persisted event replay")
+
+            connection.executemany(
+                """INSERT INTO mas_ledger_events
+                   (ledger_id, sequence, event_id, payload_json)
+                   VALUES (?, ?, ?, ?)""",
+                [
+                    (ledger_id, expected_sequence + offset, event["event_id"], payload)
+                    for offset, (event, payload) in enumerate(zip(events, event_json), start=1)
+                ],
+            )
+            connection.execute(
+                """UPDATE mas_ledger_snapshots
+                   SET schema_version = ?, sequence = ?, snapshot_json = ?
+                   WHERE ledger_id = ?""",
+                (
+                    RiskLedger.SCHEMA_VERSION,
+                    final_sequence,
+                    self._json(self._without_history(caller_snapshot)),
+                    ledger_id,
+                ),
+            )
+            connection.commit()
+            return True
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     def load(self, ledger_id: str) -> RiskLedger:
         """Load and replay-validate the complete persisted event history."""
         ledger_id = self._ledger_id(ledger_id)
