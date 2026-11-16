@@ -134,7 +134,7 @@ def test_unknown_position_cannot_be_settled():
 def test_full_close_must_match_remaining_quantity():
     ledger = RiskLedger("10000")
     opened(ledger)
-    with pytest.raises(ValueError, match="full remaining"):
+    with pytest.raises(ValueError, match="full remaining quantity"):
         ledger.apply(event(2, "PositionClosed", position_id="p-1",
                            quantity="0.5", gross_pnl="-10"))
 
@@ -239,6 +239,76 @@ def test_open_risk_ratio_fails_closed_when_equity_is_non_positive():
     with pytest.raises(ValueError, match="non-positive equity"):
         _ = ledger.open_risk_pct
 
+
+
+def test_snapshot_restore_rejects_non_contiguous_event_sequence():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["applied_events"][0]["sequence"] = 2
+    with pytest.raises(ValueError, match="not contiguous"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_rejects_tampered_initial_balance():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["initial_balance"] = "10001"
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_rejects_tampered_accounting_state():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["balance"] = "10001"
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_rejects_tampered_position_state():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["open_positions"]["p-1"]["quantity"] = "2"
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_rejects_last_event_timestamp_mismatch():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["last_event_at"] = "2026-11-16T11:00:00+00:00"
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_replays_period_roll_and_realized_pnl():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    ledger.apply(event(2, "PositionClosed", position_id="p-1",
+                       quantity="1", gross_pnl="-25", commission="2"))
+    ledger.apply(event(3, "PeriodRolled", daily_period_id="day-2",
+                       weekly_period_id="week-2"))
+    restored = RiskLedger.from_snapshot(ledger.snapshot())
+    assert restored.snapshot() == ledger.snapshot()
+    assert restored.daily_start_balance == Decimal("9973")
+    assert restored.daily_realized_net_pnl == 0
+
+
+def test_period_roll_rejects_non_positive_start_balance_atomically():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    ledger.apply(event(2, "PositionClosed", position_id="p-1",
+                       quantity="1", gross_pnl="-10000"))
+    before = ledger.snapshot()
+    with pytest.raises(ValueError, match="period start balance must be positive"):
+        ledger.apply(event(3, "PeriodRolled", daily_period_id="day-zero"))
+    assert ledger.snapshot() == before
+    assert ledger.sequence == 2
 
 
 def test_snapshot_restore_preserves_event_idempotency_and_contiguous_sequence():
