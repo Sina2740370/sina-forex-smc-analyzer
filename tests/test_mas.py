@@ -147,3 +147,18 @@ def test_risk_agent_rejects_stop_or_target_on_wrong_side():
     bad_sell = evaluate_risk("EURUSD", "SELL", 1.1000, 1.0990, 1.0980, 1.1000)
     assert not bad_buy.approved and any(g.gate == "R-DIR" for g in bad_buy.gates)
     assert not bad_sell.approved and any(g.gate == "R-DIR" for g in bad_sell.gates)
+
+
+def test_shared_lot_sizing_caps_volume_on_valid_lot_step():
+    lots, actual = size_lots_for_risk(
+        "EURUSD", 1.1000, 1.0990, 10_000.0, lot_step=0.01, min_lot=0.01, max_lots=0.015
+    )
+    assert lots == 0.01
+    assert actual == pytest.approx(1.0)
+
+
+def test_shared_lot_sizing_rejects_minimum_not_aligned_to_step():
+    with pytest.raises(ValueError, match="multiple of lot_step"):
+        size_lots_for_risk(
+            "EURUSD", 1.1000, 1.0990, 100.0, lot_step=0.01, min_lot=0.015
+        )
