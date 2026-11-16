@@ -250,6 +250,15 @@ def test_snapshot_restore_rejects_non_contiguous_event_sequence():
         RiskLedger.from_snapshot(snapshot)
 
 
+def test_snapshot_restore_rejects_tampered_initial_balance():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["initial_balance"] = "10001"
+    with pytest.raises(ValueError, match="inconsistent with its event history"):
+        RiskLedger.from_snapshot(snapshot)
+
+
 def test_snapshot_restore_rejects_tampered_accounting_state():
     ledger = RiskLedger("10000")
     opened(ledger)
