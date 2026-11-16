@@ -499,3 +499,40 @@ def test_load_uses_one_consistent_snapshot_during_concurrent_append(tmp_path, mo
     latest = store.load("account")
     assert latest.sequence == 1
     assert latest.unrealized_pnl == Decimal("-15")
+
+
+
+def test_sqlite_store_rolls_back_event_when_snapshot_update_fails(tmp_path):
+    import sqlite3
+
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("account", ledger)
+
+    next_event = event(1, "MarkToMarketUpdated", unrealized_pnl="-12")
+    ledger.apply(next_event)
+
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER reject_snapshot_update
+            BEFORE UPDATE ON mas_ledger_snapshots
+            BEGIN
+                SELECT RAISE(ABORT, 'forced snapshot failure');
+            END;
+            """
+        )
+
+    with pytest.raises(sqlite3.IntegrityError, match="forced snapshot failure"):
+        store.append(
+            "account", expected_sequence=0, event=next_event, ledger=ledger
+        )
+
+    with sqlite3.connect(database) as connection:
+        connection.execute("DROP TRIGGER reject_snapshot_update")
+
+    # The event INSERT must roll back together with the failed snapshot UPDATE.
+    restored = store.load("account")
+    assert restored.sequence == 0
+    assert restored.unrealized_pnl == Decimal("0")
