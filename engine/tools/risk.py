@@ -115,6 +115,12 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
     sp = SPECS[symbol]
     q2u = (cross_rates or {}).get(sp["quote"]) if sp["quote"] != "USD" else None
     risk_amount = balance * risk_pct / 100.0
+    pips = dist / SPECS[symbol]["pip"]
+    if tp is not None and (tp - entry) * (entry - sl) <= 0:
+        return SizeResult(
+            False, 0.0, risk_amount, 0.0, dist, round(pips, 1), None,
+            "TP در سمت اشتباه است؛ حجم محاسبه نشد (BUY: TP بالای ورود و SL پایین؛ SELL برعکس)",
+        )
     per_lot = loss_per_lot_per_unit(symbol, entry, contract, quote_to_usd=q2u) * dist
     raw = risk_amount / per_lot
     lots = math.floor(raw / lot_step + 1e-9) * lot_step
@@ -127,11 +133,7 @@ def position_size(symbol: str, balance: float, risk_pct: float, entry: float, sl
             lots, margin_limited = round(cap, 8), True
     rr, tp_note = None, ""
     if tp is not None:
-        if (tp - entry) * (entry - sl) > 0:
-            rr = round(abs(tp - entry) / dist, 2)
-        else:
-            tp_note = "TP در سمت اشتباه است (باید خلاف جهت SL باشد)؛ R:R محاسبه نشد"
-    pips = dist / SPECS[symbol]["pip"]
+        rr = round(abs(tp - entry) / dist, 2)
     if lots < min_lot:
         why = ("مارجین/اهرم اجازه‌ی حداقل لات را نمی‌دهد؛ اهرم یا موجودی را بالا ببر یا SL را دورتر بگذار"
                if margin_limited else
@@ -180,7 +182,10 @@ def calculate_position_milestones(direction: str, entry: float, sl: float, tp: f
     """
     محاسبه سطوح مدیریت زنده پوزیشن: قیمت فعال‌سازی ریسک‌فری (Break-Even) و خروج پله‌ای (Partial TP).
     """
-    side = 1 if direction.upper() == "BUY" else -1
+    direction = direction.upper()
+    if direction not in ("BUY", "SELL"):
+        raise ValueError("direction باید BUY یا SELL باشد")
+    side = 1 if direction == "BUY" else -1
     risk_dist = abs(entry - sl)
     if risk_dist <= 0:
         return {}
