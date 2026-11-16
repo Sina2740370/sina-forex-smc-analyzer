@@ -20,7 +20,7 @@ import pandas as pd
 from .aggregator import analyze_mas
 from .contracts import BUY
 from .risk_agent import AccountState, RISK_RULES
-from .symbols import get_spec, pip_value_usd
+from .symbols import get_spec, pip_value_usd, size_lots_for_risk
 
 
 @dataclass
@@ -174,9 +174,13 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         sl, tp2 = float(sig.cand["sl"]), float(sig.cand["tp2"])
         if not (0 < abs(entry - sl) and abs(tp2 - entry) > 0):
             continue
-        risk_usd = equity * RISK_RULES["risk_per_trade_pct"] / 100.0
-        pips = abs(entry - sl) / spec.pip
-        lots = round(risk_usd / max(1e-9, pips * pip_value_usd(symbol, float(row["close"]))), 2)
+        requested_risk_usd = equity * RISK_RULES["risk_per_trade_pct"] / 100.0
+        try:
+            lots, risk_usd = size_lots_for_risk(symbol, entry, sl, requested_risk_usd)
+        except (KeyError, ValueError, ArithmeticError):
+            lots, risk_usd = 0.0, 0.0
+        if lots <= 0 or risk_usd <= 0:
+            continue
         pos = {"direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
                "last_idx": j, "regime": sig.market_regime, "session": sig.session,
