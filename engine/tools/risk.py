@@ -186,9 +186,9 @@ def calculate_position_milestones(direction: str, entry: float, sl: float, tp: f
     if direction not in ("BUY", "SELL"):
         raise ValueError("direction باید BUY یا SELL باشد")
     side = 1 if direction == "BUY" else -1
-    risk_dist = abs(entry - sl)
+    risk_dist = (entry - sl) * side
     if risk_dist <= 0:
-        return {}
+        raise ValueError("SL باید در سمت زیان باشد (BUY: زیر ورود، SELL: بالای ورود)")
 
     be_trigger = entry + side * risk_dist * be_r_trigger
     partial_tp = entry + side * risk_dist * partial_r_trigger
