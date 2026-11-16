@@ -56,3 +56,18 @@ def test_fetch_topdown_rejects_invalid_m15_timestamp(monkeypatch):
 
     assert "error" in result
     assert "نامعتبر" in result["error"]
+
+def test_fetch_topdown_rejects_nat_m15_timestamp(monkeypatch):
+    now = pd.Timestamp("2026-11-16T12:00:00Z")
+
+    def fake_fetch(_symbol, timeframe):
+        bars = _bars("2026-11-16T11:45:00Z")
+        if timeframe == "15m":
+            bars[-1]["time"] = "NaT"
+        return bars
+
+    monkeypatch.setattr(data_fetcher, "fetch_ohlcv", fake_fetch)
+    result = data_fetcher.fetch_topdown("EURUSD=X", now=now)
+
+    assert "error" in result
+    assert "نامعتبر" in result["error"]
