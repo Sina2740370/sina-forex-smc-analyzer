@@ -210,8 +210,14 @@ def _resample_to_4h(df: pd.DataFrame) -> pd.DataFrame:
 #  دریافت 5 تایم‌فریم
 # ============================================================
 
-def fetch_topdown(symbol: str) -> dict:
+def fetch_topdown(symbol: str, now=None) -> dict:
+    """داده‌های Top-Down را می‌گیرد و تازگی M15 را پیش از تحلیل اعتبارسنجی می‌کند."""
     result = {}
+    snapshot = pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)
+    if snapshot.tzinfo is None:
+        snapshot = snapshot.tz_localize("UTC")
+    else:
+        snapshot = snapshot.tz_convert("UTC")
     timeframes = ["1wk", "1d", "4h", "1h", "15m"]
 
     for tf in timeframes:
@@ -225,6 +231,22 @@ def fetch_topdown(symbol: str) -> dict:
             return {"error": f"{tf} داده کافی نیست"}
 
         result[tf] = data
+
+    # در مسیر CLI همین سقف ۴۵ دقیقه برای کندل M15 استفاده می‌شود.
+    # کش قدیمی در صورت خطای منبع نباید به سیگنال زنده تبدیل شود.
+    try:
+        last_open = pd.Timestamp(result["15m"][-1]["time"])
+        if last_open.tzinfo is None:
+            last_open = last_open.tz_localize("UTC")
+        else:
+            last_open = last_open.tz_convert("UTC")
+        last_close = last_open + pd.Timedelta(minutes=15)
+        age_minutes = (snapshot - last_close).total_seconds() / 60.0
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        return {"error": f"زمان آخرین کندل 15m نامعتبر است: {exc}"}
+
+    if age_minutes > 45:
+        return {"error": f"داده 15m کهنه است ({age_minutes:.0f} دقیقه از بسته‌شدن آخرین کندل گذشته)"}
 
     return result
 
