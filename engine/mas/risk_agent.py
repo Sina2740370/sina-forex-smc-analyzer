@@ -48,7 +48,7 @@ class RiskVerdict:
 
 # مشخصات نمادها به engine/mas/symbols.py منتقل شد (تک منبع حقیقت برای چندارزی).
 # SYM_SPEC اینجا برای سازگاری قبلی به شکل دیکشنری ساده نگه داشته می‌شود.
-from .symbols import SYM_SPECS as _SYM_SPECS
+from .symbols import SYM_SPECS as _SYM_SPECS, size_lots_for_risk
 
 SYM_SPEC = {sym: {"pip": s.pip, "pip_value_quote_per_lot": s.pip_value_quote_per_lot,
                   "quote_is_usd": s.quote_is_usd} for sym, s in _SYM_SPECS.items()}
@@ -73,14 +73,26 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
             rej.append(f"{name}: {detail}")
         return ok
 
-    risk_dist = abs(entry - sl)
+    import math
+    inputs_valid = all(math.isfinite(float(v)) for v in (entry, sl, tp2, price, acct.equity, size_factor))
+    inputs_valid = inputs_valid and entry > 0 and sl > 0 and tp2 > 0 and price > 0 and acct.equity > 0
+    direction_valid = direction in ("BUY", "SELL")
+    risk_dist = abs(entry - sl) if inputs_valid else 0.0
+    stop_valid = direction_valid and ((sl < entry) if direction == "BUY" else (sl > entry))
+    target_valid = direction_valid and ((tp2 > entry) if direction == "BUY" else (tp2 < entry))
     rr = abs(tp2 - entry) / risk_dist if risk_dist > 0 else 0.0
-    risk_usd_full = acct.equity * RISK_RULES["risk_per_trade_pct"] / 100.0
-    pip_val = _pip_value_usd(symbol, price)
-    pips = risk_dist / SYM_SPEC[symbol]["pip"]
-    lots_raw = (risk_usd_full / max(1e-9, pips * pip_val)) * max(0.1, size_factor)
-    lots = round(min(lots_raw, 50.0), 2)
-    risk_amount = lots * pips * pip_val
+    risk_usd_full = acct.equity * RISK_RULES["risk_per_trade_pct"] / 100.0 if inputs_valid else 0.0
+    lots, risk_amount = 0.0, 0.0
+    pips = risk_dist / SYM_SPEC[symbol]["pip"] if symbol in SYM_SPEC else 0.0
+    sizing_error = ""
+    if inputs_valid and direction_valid and stop_valid and target_valid and symbol in SYM_SPEC:
+        try:
+            requested_risk = risk_usd_full * max(0.1, size_factor)
+            lots, risk_amount = size_lots_for_risk(symbol, entry, sl, requested_risk)
+        except (KeyError, ValueError, ArithmeticError) as exc:
+            sizing_error = str(exc)
+    else:
+        sizing_error = "ورودی، نماد، جهت، SL یا TP نامعتبر است"
 
     g("R-RR", rr >= RISK_RULES["min_rr"] - 1e-9, f"RR={rr:.2f} < {RISK_RULES['min_rr']}")
     g("R-OPEN", acct.open_trades < RISK_RULES["max_open_trades"],
@@ -95,7 +107,12 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
       "یک معامله باز در همین جفت‌ارز وجود دارد")
     g("R-ADDTOLOSS", acct.consecutive_losses < RISK_RULES["consecutive_losses_stop"] or size_factor < 1.0,
       "سه ضرر متوالی → توقف تا بازبینی")
-    g("R-SL", risk_dist > 0 and pips > 0, f"فاصله SL نامعتبر ({risk_dist:.6f})")
+    g("R-DIR", direction_valid and stop_valid and target_valid,
+      "جهت معامله یا سمت SL/TP با BUY/SELL سازگار نیست")
+    g("R-SL", inputs_valid and risk_dist > 0 and pips > 0,
+      f"فاصله SL یا ورودی نامعتبر ({risk_dist:.6f})")
+    g("R-SIZE", lots > 0 and risk_amount > 0,
+      sizing_error or "حجم پس از گرد کردن محافظه‌کارانه کمتر از حداقل لات است")
 
     if acct.imminent_news_minutes >= 0:
         g("R-NEWS", acct.imminent_news_minutes > RISK_RULES["news_buffer_minutes"],
