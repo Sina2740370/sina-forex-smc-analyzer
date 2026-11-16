@@ -236,6 +236,8 @@ def fetch_topdown(symbol: str, now=None) -> dict:
     # کش قدیمی در صورت خطای منبع نباید به سیگنال زنده تبدیل شود.
     try:
         last_open = pd.Timestamp(result["15m"][-1]["time"])
+        if pd.isna(last_open):
+            raise ValueError("آخرین زمان کندل 15m تهی است")
         if last_open.tzinfo is None:
             last_open = last_open.tz_localize("UTC")
         else:
