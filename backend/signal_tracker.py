@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # حداکثر عمر سیگنال (ساعت) - بعدش EXPIRED می‌شه
 MAX_SIGNAL_LIFETIME_HOURS = 72
+MAX_EXPIRY_PRICE_AGE_MINUTES = 45
 
 
 def _parse_dt(t):
@@ -113,9 +114,19 @@ def _check_expired_signals(signals: list):
                         continue
                     last = candles[-1]
                     last_close = float(last["close"])
-                    _parse_dt(last["time"])
+                    last_time = _parse_dt(last["time"])
                     if not math.isfinite(last_close):
                         raise ValueError("آخرین قیمت کندل finite نیست")
+                    if last_time > now + timedelta(minutes=5):
+                        raise ValueError("زمان آخرین کندل در آینده است")
+                    last_close_time = last_time + timedelta(minutes=15)
+                    age_minutes = (now - last_close_time).total_seconds() / 60.0
+                    if age_minutes > MAX_EXPIRY_PRICE_AGE_MINUTES:
+                        logger.warning(
+                            f"انقضای {symbol} به تعویق افتاد: آخرین قیمت "
+                            f"{age_minutes:.0f} دقیقه کهنه است"
+                        )
+                        continue
                 except Exception as fetch_err:
                     logger.warning(
                         f"انقضای {symbol} به تعویق افتاد؛ قیمت معتبر در دسترس نیست: {fetch_err}"

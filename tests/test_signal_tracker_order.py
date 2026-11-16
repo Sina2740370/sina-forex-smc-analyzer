@@ -10,7 +10,8 @@ def _sig(age_h):
 
 def _run(monkeypatch, sig, low):
     calls = []
-    t = datetime.now(timezone.utc) - timedelta(hours=70)
+    # Expiry accounting requires a fresh mark-to-market candle.
+    t = datetime.now(timezone.utc) - timedelta(minutes=15)
     candles = [{"time": t.isoformat(), "open": 1.1, "high": 1.1, "low": low, "close": 1.1}]
     monkeypatch.setattr(st, "get_open_signals", lambda: [sig])
     monkeypatch.setattr(st, "fetch_ohlcv", lambda *a, **k: candles)
