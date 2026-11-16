@@ -457,3 +457,45 @@ def test_sqlite_store_makes_exact_commit_retries_idempotent(tmp_path):
     # Simulates a client retry after the database committed but the response was lost.
     assert store.append("account", expected_sequence=0, event=first, ledger=ledger) is False
     assert store.load("account").snapshot() == ledger.snapshot()
+
+
+
+def test_load_uses_one_consistent_snapshot_during_concurrent_append(tmp_path, monkeypatch):
+    database = tmp_path / "mas-ledger.sqlite3"
+    store = SQLiteLedgerStore(database)
+    initial = RiskLedger("10000")
+    store.create("account", initial)
+
+    writer = store.load("account")
+    new_event = event(1, "MarkToMarketUpdated", unrealized_pnl="-15")
+    writer.apply(new_event)
+
+    original_replay = SQLiteLedgerStore._replay
+    raced = False
+
+    def append_between_snapshot_and_event_reads(connection, ledger_id,
+                                                  schema_version, sequence,
+                                                  snapshot_json):
+        nonlocal raced
+        if not raced:
+            raced = True
+            store.append(
+                "account", expected_sequence=0, event=new_event, ledger=writer
+            )
+        return original_replay(
+            connection, ledger_id, schema_version, sequence, snapshot_json
+        )
+
+    monkeypatch.setattr(
+        SQLiteLedgerStore, "_replay", staticmethod(append_between_snapshot_and_event_reads)
+    )
+
+    # load() must see the old, internally consistent read snapshot even though
+    # another connection commits immediately after its snapshot-row SELECT.
+    restored = store.load("account")
+    assert restored.sequence == 0
+    assert restored.unrealized_pnl == Decimal("0")
+
+    latest = store.load("account")
+    assert latest.sequence == 1
+    assert latest.unrealized_pnl == Decimal("-15")
