@@ -238,3 +238,41 @@ def test_open_risk_ratio_fails_closed_when_equity_is_non_positive():
     ledger.apply(event(2, "MarkToMarketUpdated", unrealized_pnl="-10000"))
     with pytest.raises(ValueError, match="non-positive equity"):
         _ = ledger.open_risk_pct
+
+
+
+def test_snapshot_restore_preserves_event_idempotency_and_contiguous_sequence():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    close = event(2, "PositionPartiallyClosed", event_id="partial-1",
+                  position_id="p-1", quantity="0.4", gross_pnl="-8")
+    ledger.apply(close)
+
+    restored = RiskLedger.from_snapshot(ledger.snapshot())
+    before = restored.snapshot()
+    assert restored.apply(close) is False
+    assert restored.snapshot() == before
+
+    restored.apply(event(3, "PositionClosed", position_id="p-1",
+                         quantity="0.6", gross_pnl="-4"))
+    assert restored.daily_realized_net_pnl == Decimal("-12")
+    assert restored.open_risk_amount == 0
+    assert restored.consecutive_losses == 1
+
+
+def test_snapshot_restore_rejects_missing_event_history():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot.pop("applied_events")
+    with pytest.raises(ValueError, match="applied_events"):
+        RiskLedger.from_snapshot(snapshot)
+
+
+def test_snapshot_restore_rejects_event_history_sequence_mismatch():
+    ledger = RiskLedger("10000")
+    opened(ledger)
+    snapshot = ledger.snapshot()
+    snapshot["applied_events"] = []
+    with pytest.raises(ValueError, match="does not match sequence"):
+        RiskLedger.from_snapshot(snapshot)
