@@ -179,3 +179,24 @@ def test_risk_agent_rejects_non_positive_or_non_finite_size_factor():
         )
         assert not verdict.approved
         assert any(g.gate == "R-SIZE" for g in verdict.gates)
+
+
+def test_decimal_sizing_exact_ten_pip_stop_returns_one_lot_without_float_drift():
+    """A 10-pip EURUSD stop and $100 budget must not floor to 0.99 lots."""
+    from decimal import Decimal
+    from engine.mas.symbols import size_lots_for_risk
+
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 100.0)
+    assert lots == 1.0
+    assert Decimal(str(actual)) <= Decimal("100.0")
+    assert actual == 100.0
+
+
+def test_decimal_sizing_returned_risk_never_exceeds_budget_near_step_boundary():
+    from decimal import Decimal
+    from engine.mas.symbols import size_lots_for_risk
+
+    for budget in (99.999999, 100.0, 100.000001, 100.55):
+        lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, budget)
+        assert Decimal(str(actual)) <= Decimal(str(budget))
+        assert lots in (0.99, 1.0)
