@@ -4,7 +4,7 @@ import pandas as pd
 from engine.backtest.runner import check_exit, evaluate_gate, run_backtest, summarize, wilson
 from engine.core import smc
 from engine.core.config import EngineConfig, spread_price
-from engine.data.providers import TopDownView, build_topdown, resample_ohlc
+from engine.data.providers import TopDownView, build_topdown, resample_ohlc, staleness_minutes
 from engine.strategy.smc_topdown import analyze
 
 
@@ -148,3 +148,35 @@ def test_backtest_end_bounds_eod_close():
         side = 1 if t["side"] == "BUY" else -1
         assert pd.Timestamp(t["close_time"]) == last["time"] + bar
         assert abs(float(t["exit"]) - (float(last["close"]) - side * half)) < 1e-6
+
+def test_topdown_view_weekly_bar_close_respects_new_york_fall_dst():
+    start = pd.Timestamp("2025-10-26 17:00", tz="America/New_York").tz_convert("UTC")
+    weekly = pd.DataFrame({
+        "time": [start], "open": [1.0], "high": [1.1],
+        "low": [0.9], "close": [1.05], "volume": [1.0],
+    })
+    view = TopDownView({"1wk": weekly})
+    before_close = pd.Timestamp("2025-11-02T21:30:00Z")
+    at_close = pd.Timestamp("2025-11-02T22:00:00Z")
+
+    assert view.at(before_close)["1wk"].empty
+    assert len(view.at(at_close)["1wk"]) == 1
+    assert staleness_minutes(weekly, "1wk", before_close) == -30.0
+    assert staleness_minutes(weekly, "1wk", at_close) == 0.0
+
+
+def test_topdown_view_weekly_bar_close_respects_new_york_spring_dst():
+    start = pd.Timestamp("2025-03-02 17:00", tz="America/New_York").tz_convert("UTC")
+    weekly = pd.DataFrame({
+        "time": [start], "open": [1.0], "high": [1.1],
+        "low": [0.9], "close": [1.05], "volume": [1.0],
+    })
+    view = TopDownView({"1wk": weekly})
+    before_close = pd.Timestamp("2025-03-09T20:30:00Z")
+    at_close = pd.Timestamp("2025-03-09T21:00:00Z")
+
+    assert view.at(before_close)["1wk"].empty
+    assert len(view.at(at_close)["1wk"]) == 1
+    assert staleness_minutes(weekly, "1wk", before_close) == -30.0
+    assert staleness_minutes(weekly, "1wk", at_close) == 0.0
+
