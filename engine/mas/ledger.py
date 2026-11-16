@@ -213,7 +213,9 @@ class RiskLedger:
                 raise ValueError("partial close must leave positive remaining quantity")
             gross = _decimal(event.get("gross_pnl"), "gross_pnl")
             commission = _decimal(event.get("commission", 0), "commission", non_negative=True)
-            swap = _decimal(event.get("swap", 0), "swap", non_negative=True)
+            # FX rollover financing can be a debit or a credit; unlike commissions
+            # and explicit fees, swap is signed and must retain its direction.
+            swap = _decimal(event.get("swap", 0), "swap")
             other_fees = _decimal(event.get("other_fees", 0), "other_fees", non_negative=True)
             fees = commission + swap + other_fees
             net = gross - fees
