@@ -152,12 +152,37 @@ def load_yfinance_topdown(yf_symbol: str) -> dict:
 
 
 # ---------------------------------------------------------------- تازگی
+def _bar_close_times(df: pd.DataFrame, tf: str) -> pd.Series:
+    """Return UTC close timestamps, preserving the 17:00 New York FX boundary.
+
+    Native provider bars that are not NY-17 anchored retain their fixed-duration
+    timestamp convention. Resampled FX daily/weekly bars use calendar offsets so
+    weekly closes remain correct across New York DST transitions.
+    """
+    if tf in ("1d", "1wk") and not df.empty:
+        local = df["time"].dt.tz_convert(NY_TZ)
+        anchored = (
+            local.dt.hour.eq(17)
+            & local.dt.minute.eq(0)
+            & local.dt.second.eq(0)
+        )
+        if bool(anchored.all()):
+            offset = pd.DateOffset(days=1) if tf == "1d" else pd.DateOffset(weeks=1)
+            return (local + offset).dt.tz_convert("UTC")
+    return df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf])
+
+
 def staleness_minutes(df: pd.DataFrame, tf: str, now: pd.Timestamp) -> float:
     """چند دقیقه از بسته‌شدن آخرین کندل گذشته؛ برای رد داده‌ی کهنه در live."""
     if df.empty:
         return float("inf")
-    last_close = df["time"].iloc[-1] + pd.Timedelta(minutes=TF_MINUTES[tf])
-    return (now - last_close).total_seconds() / 60.0
+    snapshot = pd.Timestamp(now)
+    if snapshot.tzinfo is None:
+        snapshot = snapshot.tz_localize("UTC")
+    else:
+        snapshot = snapshot.tz_convert("UTC")
+    last_close = _bar_close_times(df, tf).iloc[-1]
+    return (snapshot - last_close).total_seconds() / 60.0
 
 
 # ---------------------------------------------------------------- نمای بدون lookahead
@@ -170,7 +195,7 @@ class TopDownView:
     def __init__(self, data: dict):
         self.data = data
         self._close = {
-            tf: (df["time"] + pd.Timedelta(minutes=TF_MINUTES[tf]))
+            tf: _bar_close_times(df, tf)
             .dt.tz_convert("UTC").dt.tz_localize(None).to_numpy(dtype="datetime64[ns]")
             for tf, df in data.items()
         }
