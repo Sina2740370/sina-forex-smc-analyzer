@@ -118,3 +118,85 @@ def test_mas_walkforward_no_lookahead():
     s1 = analyze_mas(m, "EURUSD", t)
     s2 = analyze_mas(m.iloc[:i + 1].reset_index(drop=True), "EURUSD", t)
     assert s1.signal == s2.signal and abs(s1.final_score - s2.final_score) < 1e-9
+
+
+from engine.mas.symbols import size_lots_for_risk
+
+
+def test_shared_lot_sizing_floors_and_never_exceeds_requested_risk():
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 100.55)
+    assert lots == 1.0
+    assert actual == pytest.approx(100.0)
+    assert actual <= 100.55
+
+
+def test_shared_lot_sizing_rejects_below_minimum_lot():
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 0.99)
+    assert (lots, actual) == (0.0, 0.0)
+
+
+def test_shared_lot_sizing_supports_non_usd_quote_and_gold():
+    jpy_lots, jpy_risk = size_lots_for_risk("USDJPY", 155.0, 154.8, 100.0)
+    gold_lots, gold_risk = size_lots_for_risk("XAUUSD", 2500.0, 2490.0, 100.0)
+    assert jpy_lots > 0 and jpy_risk <= 100.0
+    assert gold_lots > 0 and gold_risk <= 100.0
+
+
+def test_risk_agent_rejects_stop_or_target_on_wrong_side():
+    bad_buy = evaluate_risk("EURUSD", "BUY", 1.1000, 1.1010, 1.1020, 1.1000)
+    bad_sell = evaluate_risk("EURUSD", "SELL", 1.1000, 1.0990, 1.0980, 1.1000)
+    assert not bad_buy.approved and any(g.gate == "R-DIR" for g in bad_buy.gates)
+    assert not bad_sell.approved and any(g.gate == "R-DIR" for g in bad_sell.gates)
+
+
+def test_shared_lot_sizing_caps_volume_on_valid_lot_step():
+    lots, actual = size_lots_for_risk(
+        "EURUSD", 1.1000, 1.0990, 10_000.0, lot_step=0.01, min_lot=0.01, max_lots=0.015
+    )
+    assert lots == 0.01
+    assert actual == pytest.approx(1.0)
+
+
+def test_shared_lot_sizing_rejects_minimum_not_aligned_to_step():
+    with pytest.raises(ValueError, match="multiple of lot_step"):
+        size_lots_for_risk(
+            "EURUSD", 1.1000, 1.0990, 100.0, lot_step=0.01, min_lot=0.015
+        )
+
+
+def test_risk_agent_rejects_size_factor_above_risk_budget():
+    verdict = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, size_factor=1.5
+    )
+    assert not verdict.approved
+    assert any(g.gate == "R-SIZE" for g in verdict.gates)
+
+
+def test_risk_agent_rejects_non_positive_or_non_finite_size_factor():
+    for factor in (0.0, -0.1, float("nan"), float("inf")):
+        verdict = evaluate_risk(
+            "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, size_factor=factor
+        )
+        assert not verdict.approved
+        assert any(g.gate == "R-SIZE" for g in verdict.gates)
+
+
+def test_decimal_sizing_exact_ten_pip_stop_returns_one_lot_without_float_drift():
+    """A 10-pip EURUSD stop and $100 budget must not floor to 0.99 lots."""
+    from decimal import Decimal
+    from engine.mas.symbols import size_lots_for_risk
+
+    lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, 100.0)
+    assert lots == 1.0
+    assert Decimal(str(actual)) <= Decimal("100.0")
+    assert actual == 100.0
+
+
+def test_decimal_sizing_returned_risk_never_exceeds_budget_near_step_boundary():
+    from decimal import Decimal
+    from engine.mas.symbols import size_lots_for_risk
+
+    for budget in (99.999999, 100.0, 100.000001, 100.55):
+        lots, actual = size_lots_for_risk("EURUSD", 1.1000, 1.0990, budget)
+        assert Decimal(str(actual)) <= Decimal(str(budget))
+        assert lots in (0.99, 1.0)
