@@ -113,7 +113,8 @@ async def _scan_market_locked():
             logger.error(f"خطا در پیام شروع: {e}")
 
     news = await fetch_news()
-    logger.info(f"📰 {len(news)} خبر بارگذاری شد")
+    news_count = len(news) if news is not None else "ناموجود"
+    logger.info(f"📰 {news_count} خبر بارگذاری شد")
 
     signals_created = 0
     errors = 0
