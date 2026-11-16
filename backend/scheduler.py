@@ -273,7 +273,7 @@ async def check_open_signals_and_notify():
 
 
 async def _scan_symbol(symbol, name, news, now=None):
-    data = await asyncio.to_thread(fetch_topdown, symbol)
+    data = await asyncio.to_thread(fetch_topdown, symbol, now=now)
     if "error" in data:
         logger.warning(f"{name}: {data['error']}")
         return None
