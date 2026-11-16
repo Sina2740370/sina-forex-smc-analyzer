@@ -107,8 +107,11 @@ def apply_ledger_event(
     if store is not None:
         if not isinstance(ledger_id, str) or not ledger_id.strip():
             raise ValueError("ledger_id is required when a store is supplied")
+        expected_sequence = (
+            event["sequence"] - 1 if not changed else previous_sequence
+        )
         store.append(
-            ledger_id, expected_sequence=previous_sequence,
+            ledger_id, expected_sequence=expected_sequence,
             event=event, ledger=candidate,
         )
     ledger.__dict__.update(candidate.__dict__)
