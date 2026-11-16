@@ -128,3 +128,29 @@ def roll_account_period(
         return False
     apply_ledger_event(ledger, event, store=store, ledger_id=ledger_id)
     return True
+
+def account_state_from_ledger(ledger: RiskLedger, *, imminent_news_minutes: float = -1.0):
+    """Project canonical ledger metrics into the legacy strategy-gate DTO.
+
+    The projection is read-only: Decimal remains authoritative in RiskLedger;
+    conversion to float happens only at the existing signal-gate boundary.
+    """
+    from .risk_agent import AccountState
+
+    if not isinstance(ledger, RiskLedger):
+        raise ValueError("ledger must be a RiskLedger")
+    positions = ledger.snapshot()["open_positions"]
+    per_symbol_open: dict[str, int] = {}
+    for position in positions.values():
+        symbol = position["symbol"]
+        per_symbol_open[symbol] = per_symbol_open.get(symbol, 0) + 1
+    return AccountState(
+        equity=float(ledger.equity),
+        open_trades=len(positions),
+        open_risk_pct=float(ledger.open_risk_pct),
+        daily_loss_pct=float(ledger.daily_loss_pct),
+        weekly_loss_pct=float(ledger.weekly_loss_pct),
+        consecutive_losses=ledger.consecutive_losses,
+        per_symbol_open=per_symbol_open,
+        imminent_news_minutes=imminent_news_minutes,
+    )
