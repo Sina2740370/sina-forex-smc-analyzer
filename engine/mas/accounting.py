@@ -118,6 +118,66 @@ def apply_ledger_event(
     return changed
 
 
+def position_settlement_events(
+    ledger: RiskLedger, *, position_id: str, execution_id: str,
+    quantity: Any, gross_pnl: Any, timestamp: datetime | str,
+    remaining_unrealized_pnl: Any, mark_id: str,
+    commission: Any = 0, swap: Any = 0, other_fees: Any = 0,
+) -> list[dict]:
+    """Build a close + post-settlement aggregate MTM batch.
+
+    The caller must calculate remaining_unrealized_pnl from current marks for
+    every position that remains open after this execution. Pass zero when no
+    positions remain. Both events share one timestamp and contiguous sequence.
+    """
+    candidate = RiskLedger.from_snapshot(ledger.snapshot())
+    close_event = position_closed_event(
+        candidate, position_id=position_id, execution_id=execution_id,
+        quantity=quantity, gross_pnl=gross_pnl, timestamp=timestamp,
+        commission=commission, swap=swap, other_fees=other_fees,
+    )
+    candidate.apply(close_event)
+    mark_event = mark_to_market_event(
+        candidate, mark_id=mark_id,
+        unrealized_pnl=remaining_unrealized_pnl, timestamp=timestamp,
+    )
+    return [close_event, mark_event]
+
+
+def apply_ledger_events(
+    ledger: RiskLedger, events: list[dict], *, store=None,
+    ledger_id: str | None = None,
+) -> bool:
+    """Apply a contiguous event batch and publish only after atomic persistence.
+
+    A batch is either entirely new or an exact retry. Mixed duplicate/new batches
+    are rejected so callers cannot accidentally commit a partial retry.
+    """
+    if not isinstance(ledger, RiskLedger):
+        raise ValueError("ledger must be a RiskLedger")
+    if not isinstance(events, list) or not events:
+        raise ValueError("events must be a non-empty list")
+
+    candidate = RiskLedger.from_snapshot(ledger.snapshot())
+    outcomes = [candidate.apply(event) for event in events]
+    if any(outcomes) and not all(outcomes):
+        raise ValueError("event batch cannot mix duplicate and new events")
+
+    if store is not None:
+        if not isinstance(ledger_id, str) or not ledger_id.strip():
+            raise ValueError("ledger_id is required when a store is supplied")
+        first_sequence = events[0].get("sequence")
+        if isinstance(first_sequence, bool) or not isinstance(first_sequence, int):
+            raise ValueError("first batch event sequence must be an integer")
+        store.append_batch(
+            ledger_id, expected_sequence=first_sequence - 1,
+            events=events, ledger=candidate,
+        )
+
+    ledger.__dict__.update(candidate.__dict__)
+    return all(outcomes)
+
+
 def roll_account_period(
     ledger: RiskLedger, timestamp: datetime | str, *, store=None,
     ledger_id: str | None = None,
