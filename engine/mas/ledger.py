@@ -106,6 +106,71 @@ class RiskLedger:
         self.__dict__.update(candidate.__dict__)
         return True
 
+    @classmethod
+    def from_snapshot(cls, snapshot: dict) -> "RiskLedger":
+        """Restore a complete ledger snapshot, including event idempotency state."""
+        if not isinstance(snapshot, dict) or snapshot.get("schema_version") != cls.SCHEMA_VERSION:
+            raise ValueError("unsupported or invalid ledger snapshot")
+        ledger = cls(
+            snapshot.get("balance"),
+            base_currency=snapshot.get("base_currency", "USD"),
+            daily_period_id=snapshot.get("daily_period_id", "initial"),
+            weekly_period_id=snapshot.get("weekly_period_id", "initial"),
+        )
+        decimal_fields = (
+            "daily_start_balance", "weekly_start_balance",
+            "daily_realized_net_pnl", "weekly_realized_net_pnl",
+            "realized_pnl_lifetime", "fees_lifetime", "unrealized_pnl",
+            "peak_equity", "max_drawdown_amount", "max_drawdown_pct",
+        )
+        for field in decimal_fields:
+            setattr(ledger, field, _decimal(snapshot.get(field), field))
+        sequence = snapshot.get("sequence")
+        if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
+            raise ValueError("snapshot sequence must be a non-negative integer")
+        ledger.sequence = sequence
+        losses = snapshot.get("consecutive_losses")
+        if isinstance(losses, bool) or not isinstance(losses, int) or losses < 0:
+            raise ValueError("snapshot consecutive_losses must be non-negative")
+        ledger.consecutive_losses = losses
+        last_event_at = snapshot.get("last_event_at")
+        ledger.last_event_at = _timestamp(last_event_at) if last_event_at else None
+
+        raw_positions = snapshot.get("open_positions")
+        if not isinstance(raw_positions, dict):
+            raise ValueError("snapshot open_positions must be a mapping")
+        position_decimal_fields = (
+            "quantity", "original_quantity", "entry", "stop",
+            "approved_risk", "actual_risk", "realized_net_pnl",
+        )
+        positions = {}
+        for position_id, raw in raw_positions.items():
+            if not isinstance(raw, dict) or raw.get("position_id") != position_id:
+                raise ValueError("invalid position in ledger snapshot")
+            position = dict(raw)
+            for field in position_decimal_fields:
+                position[field] = _decimal(position.get(field), field,
+                                           positive=field in ("quantity", "original_quantity",
+                                                              "entry", "approved_risk", "actual_risk"))
+            positions[position_id] = position
+        ledger._positions = positions
+
+        applied = snapshot.get("applied_events")
+        if not isinstance(applied, list):
+            raise ValueError("snapshot applied_events is required for idempotent recovery")
+        restored_events = {}
+        for event in applied:
+            if not isinstance(event, dict):
+                raise ValueError("invalid applied event in snapshot")
+            event_id = event.get("event_id")
+            if not isinstance(event_id, str) or not event_id.strip() or event_id in restored_events:
+                raise ValueError("invalid or duplicate event ID in snapshot")
+            restored_events[event_id] = deepcopy(event)
+        if len(restored_events) != sequence:
+            raise ValueError("snapshot event history does not match sequence")
+        ledger._applied_event_ids = restored_events
+        return ledger
+
     def _apply_event(self, event: dict, occurred_at: datetime) -> None:
         kind = event.get("type")
         currency = str(event.get("currency", self.base_currency)).upper()
@@ -269,4 +334,7 @@ class RiskLedger:
             "consecutive_losses": self.consecutive_losses,
             "open_positions": positions,
             "last_event_at": self.last_event_at.isoformat() if self.last_event_at else None,
+            "applied_events": [deepcopy(event) for _, event in sorted(
+                self._applied_event_ids.items(), key=lambda item: item[1]["sequence"]
+            )],
         }
