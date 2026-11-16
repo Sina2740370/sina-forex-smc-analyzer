@@ -56,3 +56,36 @@ def test_naive_timestamps_are_rejected(value):
 def test_invalid_timestamp_is_rejected():
     with pytest.raises(ValueError, match="ISO-8601"):
         trading_periods("not-a-timestamp")
+
+
+def test_period_roll_event_is_deterministic_and_only_emitted_on_change():
+    from engine.mas.ledger import RiskLedger
+    from engine.mas.periods import build_period_roll_event
+
+    ledger = RiskLedger("10000")
+    first = build_period_roll_event(ledger, "2026-11-15T22:00:00Z")
+    assert first is not None
+    assert first["event_id"] == "period-roll:2026-11-16:2026-W47"
+    assert first["sequence"] == 1
+    assert first["daily_period_id"] == "2026-11-16"
+    assert first["weekly_period_id"] == "2026-W47"
+
+    ledger.apply(first)
+    assert build_period_roll_event(ledger, "2026-11-15T22:00:00Z") is None
+
+
+def test_period_roll_event_updates_daily_without_resetting_weekly():
+    from engine.mas.ledger import RiskLedger
+    from engine.mas.periods import build_period_roll_event
+
+    ledger = RiskLedger(
+        "10000", daily_period_id="2026-11-16", weekly_period_id="2026-W47"
+    )
+    event = build_period_roll_event(ledger, "2026-11-16T22:00:00Z")
+    assert event is not None
+    assert event["type"] == "PeriodRolled"
+    assert event["daily_period_id"] == "2026-11-17"
+    assert "weekly_period_id" not in event
+    ledger.apply(event)
+    assert ledger.daily_period_id == "2026-11-17"
+    assert ledger.weekly_period_id == "2026-W47"
