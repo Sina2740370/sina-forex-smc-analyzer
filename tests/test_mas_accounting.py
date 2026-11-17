@@ -3,13 +3,16 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+import sqlite3
 
 from engine.mas.accounting import (
     account_state_from_ledger,
     apply_ledger_event,
+    apply_ledger_events,
     mark_to_market_event,
     position_closed_event,
     position_opened_event,
+    position_settlement_events,
     roll_account_period,
 )
 from engine.mas.ledger import RiskLedger
@@ -218,3 +221,135 @@ def test_daily_rollover_uses_equity_as_new_period_baseline():
         ),
     )
     assert ledger.daily_loss_pct == Decimal("100") / Decimal("9900") * Decimal("100")
+
+def test_atomic_close_and_post_settlement_mark_batch_is_persisted_and_retry_safe(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "ledger-batch.sqlite")
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+
+    apply_ledger_event(ledger, open_event(ledger), store=store, ledger_id="paper-account")
+    second_open = position_opened_event(
+        ledger, position_id="paper:GBPUSD:2026-11-16T22:00:00+00:00",
+        symbol="GBPUSD", side="BUY", quantity="1", entry="1.2500",
+        stop="1.2490", approved_risk="100", actual_risk="98", timestamp=NOW,
+    )
+    apply_ledger_event(ledger, second_open, store=store, ledger_id="paper-account")
+    initial_mark = mark_to_market_event(
+        ledger, mark_id="before-close", unrealized_pnl="-50", timestamp=NOW,
+    )
+    apply_ledger_event(ledger, initial_mark, store=store, ledger_id="paper-account")
+
+    batch = position_settlement_events(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="exit-with-reprice", quantity="1", gross_pnl="50",
+        commission="1", timestamp=NOW, remaining_unrealized_pnl="-30",
+        mark_id="after-close",
+    )
+    assert [event["sequence"] for event in batch] == [4, 5]
+    assert [event["type"] for event in batch] == [
+        "PositionClosed", "MarkToMarketUpdated",
+    ]
+
+    assert apply_ledger_events(
+        ledger, batch, store=store, ledger_id="paper-account"
+    ) is True
+    assert ledger.balance == Decimal("10049")
+    assert ledger.unrealized_pnl == Decimal("-30")
+    assert ledger.equity == Decimal("10019")
+    assert len(ledger.snapshot()["open_positions"]) == 1
+
+    # Replaying the exact same complete batch must be idempotent.
+    assert apply_ledger_events(
+        ledger, batch, store=store, ledger_id="paper-account"
+    ) is False
+    assert store.load("paper-account").snapshot() == ledger.snapshot()
+
+
+def test_failed_batch_does_not_publish_partial_close_or_mark():
+    ledger = RiskLedger("10000")
+    apply_ledger_event(ledger, open_event(ledger))
+    close = position_closed_event(
+        ledger, position_id="paper:EURUSD:2026-11-16T22:00:00+00:00",
+        execution_id="close-before-invalid-mark", quantity="1",
+        gross_pnl="10", timestamp=NOW,
+    )
+    invalid_mark = {
+        "event_id": "mas:mark:invalid-after-close",
+        "sequence": close["sequence"] + 1,
+        "timestamp": close["timestamp"],
+        "type": "MarkToMarketUpdated",
+        "unrealized_pnl": "NaN",
+        "currency": ledger.base_currency,
+    }
+    before = ledger.snapshot()
+
+    with pytest.raises(ValueError):
+        apply_ledger_events(ledger, [close, invalid_mark])
+
+    assert ledger.snapshot() == before
+
+def test_batch_storage_failure_rolls_back_every_insert_and_snapshot(tmp_path):
+    database = tmp_path / "ledger-batch-rollback.sqlite"
+    store = SQLiteLedgerStore(database)
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+    apply_ledger_event(ledger, open_event(ledger), store=store, ledger_id="paper-account")
+
+    first = mark_to_market_event(
+        ledger, mark_id="batch-first", unrealized_pnl="-10", timestamp=NOW,
+    )
+    candidate = RiskLedger.from_snapshot(ledger.snapshot())
+    candidate.apply(first)
+    second = mark_to_market_event(
+        candidate, mark_id="batch-second", unrealized_pnl="-20", timestamp=NOW,
+    )
+    before = ledger.snapshot()
+
+    # Force SQLite to fail on the second INSERT, after the first batch row
+    # has been written inside the same transaction.
+    connection = sqlite3.connect(database)
+    try:
+        connection.execute(
+            """CREATE TRIGGER reject_second_batch_event
+               BEFORE INSERT ON mas_ledger_events
+               WHEN NEW.sequence = 3
+               BEGIN
+                   SELECT RAISE(ABORT, 'injected batch write failure');
+               END"""
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected batch write failure"):
+        apply_ledger_events(
+            ledger, [first, second], store=store, ledger_id="paper-account",
+        )
+
+    assert ledger.snapshot() == before
+    assert store.load("paper-account").snapshot() == before
+
+def test_batch_rejects_boolean_sequence_and_duplicate_event_ids(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "ledger-batch-input-validation.sqlite")
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+    first = {
+        "event_id": "duplicate-id",
+        "sequence": 1,
+        "timestamp": NOW.isoformat(),
+        "type": "MarkToMarketUpdated",
+        "unrealized_pnl": "0",
+        "currency": ledger.base_currency,
+    }
+    with pytest.raises(ValueError, match="sequence must be an integer"):
+        store.append_batch(
+            "paper-account", expected_sequence=0,
+            events=[dict(first, sequence=True)], ledger=ledger,
+        )
+    second = dict(first, sequence=2)
+    with pytest.raises(ValueError, match="event IDs must be unique"):
+        store.append_batch(
+            "paper-account", expected_sequence=0,
+            events=[first, second], ledger=ledger,
+        )
+    assert store.load("paper-account").snapshot() == ledger.snapshot()
