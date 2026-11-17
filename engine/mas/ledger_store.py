@@ -243,11 +243,21 @@ class SQLiteLedgerStore:
             raise ValueError("ledger must be a RiskLedger")
 
         event_json = []
+        seen_event_ids: set[str] = set()
         for offset, event in enumerate(events, start=1):
             if not isinstance(event, dict):
                 raise ValueError("each event must be a mapping")
-            if event.get("sequence") != expected_sequence + offset:
+            sequence = event.get("sequence")
+            if isinstance(sequence, bool) or not isinstance(sequence, int):
+                raise ValueError("batch event sequence must be an integer")
+            if sequence != expected_sequence + offset:
                 raise ValueError("batch event sequences must be contiguous")
+            event_id = event.get("event_id")
+            if not isinstance(event_id, str) or not event_id.strip():
+                raise ValueError("batch event_id is required")
+            if event_id in seen_event_ids:
+                raise ValueError("batch event IDs must be unique")
+            seen_event_ids.add(event_id)
             event_json.append(self._json(event))
 
         caller_snapshot = ledger.snapshot()
