@@ -328,3 +328,28 @@ def test_batch_storage_failure_rolls_back_every_insert_and_snapshot(tmp_path):
 
     assert ledger.snapshot() == before
     assert store.load("paper-account").snapshot() == before
+
+def test_batch_rejects_boolean_sequence_and_duplicate_event_ids(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "ledger-batch-input-validation.sqlite")
+    ledger = RiskLedger("10000")
+    store.create("paper-account", ledger)
+    first = {
+        "event_id": "duplicate-id",
+        "sequence": 1,
+        "timestamp": NOW.isoformat(),
+        "type": "MarkToMarketUpdated",
+        "unrealized_pnl": "0",
+        "currency": ledger.base_currency,
+    }
+    with pytest.raises(ValueError, match="sequence must be an integer"):
+        store.append_batch(
+            "paper-account", expected_sequence=0,
+            events=[dict(first, sequence=True)], ledger=ledger,
+        )
+    second = dict(first, sequence=2)
+    with pytest.raises(ValueError, match="event IDs must be unique"):
+        store.append_batch(
+            "paper-account", expected_sequence=0,
+            events=[first, second], ledger=ledger,
+        )
+    assert store.load("paper-account").snapshot() == ledger.snapshot()
