@@ -40,6 +40,7 @@ class BTTrade:
     session: str
     final_score: float = 50.0    # امتیاز تجمیعی هنگام صدور سیگنال (برای کالیبراسیون Brier)
     confidence: float = 0.0
+    exit_reason: str = "UNKNOWN"
 
 
 @dataclass
@@ -148,7 +149,8 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                           pos["lots"], pnl, r, last_idx - entry_idx,
                                           pos["regime"], pos["session"],
                                           pos.get("final_score", 50.0),
-                                          pos.get("confidence", 0.0)))
+                                          pos.get("confidence", 0.0),
+                                          "SL" if was_loss else "TP"))
                 equity += pnl
                 acct.equity = equity
                 if was_loss:
@@ -214,7 +216,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                       pos["lots"], pnl, r, last_idx - entry_idx,
                                       pos["regime"], pos["session"],
                                       pos.get("final_score", 50.0),
-                                      pos.get("confidence", 0.0)))
+                                      pos.get("confidence", 0.0), "TIME_EXIT"))
             equity += pnl
 
     res.equity_end = equity
@@ -241,7 +243,7 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
         if hit_tp:
             return pos["tp2"], df["time"].iloc[last_idx], last_idx, False
     if force_exit and last_idx >= len(df) - 1:
-        return float(df["close"].iloc[-1]), df["time"].iloc[-1], last_idx, False
+        return float(df["close"].iloc[-1]), df["time"].iloc[-1], last_idx, None
     if not force_exit:
         pos["last_idx"] = limit
     return None
