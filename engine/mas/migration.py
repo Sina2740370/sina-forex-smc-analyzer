@@ -117,6 +117,7 @@ def inspect_legacy_paper_state(
             reasons.append(f"journal_cycle_{index}_equity_invalid")
             cycle_equity = None
 
+        cycle_pnl = Decimal("0")
         for kind, counts in (("opened", opened), ("closed", closed)):
             entries = record.get(kind)
             if not isinstance(entries, list):
@@ -134,24 +135,18 @@ def inspect_legacy_paper_state(
                 counts[key] = counts.get(key, 0) + 1
                 if kind == "closed":
                     try:
-                        realized_total += _money(
+                        trade_pnl = _money(
                             trade.get("pnl_usd"), "closed_trade.pnl_usd"
                         )
+                        realized_total += trade_pnl
+                        cycle_pnl += trade_pnl
                     except ValueError:
                         reasons.append(
                             f"journal_cycle_{index}_closed_pnl_invalid"
                         )
 
         if previous_equity is not None and cycle_equity is not None:
-            expected = previous_equity + sum(
-                (
-                    _money(trade.get("pnl_usd"), "closed_trade.pnl_usd")
-                    for trade in record.get("closed", [])
-                    if isinstance(trade, Mapping)
-                    and trade.get("pnl_usd") is not None
-                ),
-                Decimal("0"),
-            )
+            expected = previous_equity + cycle_pnl
             if expected != cycle_equity:
                 reasons.append(f"journal_cycle_{index}_equity_rollforward_mismatch")
         if cycle_equity is not None:
