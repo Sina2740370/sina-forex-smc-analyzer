@@ -191,3 +191,22 @@ def test_paper_uses_fill_price_risk_authorization_and_persists_snapshot(env, mon
     assert float(sizing["actual_risk"]) <= float(sizing["requested_risk"])
     persisted = _state(out)["open_positions"][0]
     assert persisted["sizing_result"]["sizing_id"] == sizing["sizing_id"]
+
+def test_paper_rebuilds_deleted_state_and_journal_from_ledger(env):
+    root, data_dir, frame = env
+    out = root / "paper-recovery"
+    first = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    first_state = _state(out)
+    assert (out / "ledger.sqlite3").exists()
+
+    # Simulate a crash after the financial commit but before derived projections were saved.
+    os.remove(out / "state.json")
+    os.remove(out / "journal.jsonl")
+    second = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    recovered = _state(out)
+
+    assert recovered["runs"] == first_state["runs"]
+    assert recovered["equity"] == first_state["equity"]
+    assert recovered["open_positions"] == first_state["open_positions"]
+    assert second["cycle"] == first["cycle"]
+    assert (out / "journal.jsonl").exists()
