@@ -86,6 +86,12 @@ def order_portfolio_events(
     ids = [event["event_id"] for event in supplied]
     if len(set(ids)) != len(ids):
         raise ValueError("portfolio batch contains duplicate event IDs")
+    mark_times = [
+        key[0] for event, key in zip(supplied, keys)
+        if event.get("type") == "MarkToMarketUpdated"
+    ]
+    if len(set(mark_times)) != len(mark_times):
+        raise ValueError("at most one aggregate MTM event is allowed per timestamp")
 
     history = {
         event["event_id"]: event
