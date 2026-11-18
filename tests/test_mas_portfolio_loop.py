@@ -139,7 +139,7 @@ def test_commit_adapter_uses_ordered_atomic_batch(tmp_path):
     assert commit_portfolio_events(adapter, events) is True
     snapshot = adapter.ledger.snapshot()
     assert snapshot["sequence"] == 3
-    assert snapshot["unrealized_pnl"] == Decimal("12.5")
+    assert snapshot["unrealized_pnl"] == "12.5"
     assert [e["event_id"] for e in snapshot["applied_events"]] == [
         "open-a", "open-b", "mark",
     ]
