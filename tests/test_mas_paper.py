@@ -74,7 +74,7 @@ def test_settlement_of_open_position(env):
     # Journal is a rebuildable projection containing the complete ledger trade history.
     lines = open(out / "journal.jsonl", encoding="utf-8").read().strip().splitlines()
     assert len(lines) == 1
-    assert json.loads(lines[0])["closed"][0]["pnl_usd"] < 0
+    assert float(json.loads(lines[0])["closed"][0]["pnl_usd"]) < 0
 
 
 def test_gap_skip_between_runs(env):
