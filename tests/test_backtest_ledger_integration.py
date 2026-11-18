@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
 import engine.mas.backtest as backtest
 
