@@ -144,15 +144,15 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                         "sizing_result": position.get("sizing_result"),
                     },
                 })
-            for index, trade in enumerate(_read_legacy_closed_trades(journal_p)):
-                legacy_trade_id = str(trade.get("trade_id") or f"legacy-closed-{index}")
-                seed_events.append({
-                    "account_id": account_id,
-                    "trade_id": legacy_trade_id,
-                    "event_type": "HistoricalTradeImported",
-                    "idempotency_key": f"legacy-history:{index}:{legacy_trade_id}",
-                    "payload": {"trade": trade},
-                })
+        for index, trade in enumerate(_read_legacy_closed_trades(journal_p)):
+            legacy_trade_id = str(trade.get("trade_id") or f"legacy-closed-{index}")
+            seed_events.append({
+                "account_id": account_id,
+                "trade_id": legacy_trade_id,
+                "event_type": "HistoricalTradeImported",
+                "idempotency_key": f"legacy-history:{index}:{legacy_trade_id}",
+                "payload": {"trade": trade},
+            })
         if seed_events:
             ledger.append_events(seed_events)
 
