@@ -384,7 +384,9 @@ def _load_all_trades(journal_p: str) -> list:
     for line in open(journal_p, encoding="utf-8"):
         rec = json.loads(line)
         for t in rec.get("closed", []):
-            out.append(t)
+            item = dict(t)
+            item["pnl_usd"] = float(item.get("pnl_usd", 0.0))
+            out.append(item)
     return out
 
 
