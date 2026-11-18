@@ -272,6 +272,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         )
         if not execution_verdict.approved or execution_verdict.sizing_result is None:
             results[symbol]["risk_approved"] = False
+            results[symbol]["sizing_result"] = None
             results[symbol]["wait_reason"] = "رد تأیید مجدد ریسک در قیمت Fill: " + "; ".join(execution_verdict.rejection_reasons)
             continue
 
@@ -280,6 +281,10 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             f"{symbol}|{signal.signal}|{t_now[symbol].isoformat()}|{fingerprint}".encode()
         ).hexdigest()[:32]
         sizing_snapshot = asdict(execution_verdict.sizing_result)
+        results[symbol]["risk_approved"] = True
+        results[symbol]["sizing_result"] = sizing_snapshot
+        results[symbol]["lot_size"] = f"{execution_verdict.lots:.2f}"
+        results[symbol]["risk_amount"] = f"{execution_verdict.risk_amount:.2f} USD"
         new_signal = {
             "trade_id": trade_id,
             "symbol": symbol,
