@@ -405,3 +405,49 @@ def test_paper_close_batch_recovers_once_after_crash_before_projection(env, monk
     assert len([trade for trade in projection["closed_trades"]
                 if trade["trade_id"] == "crash-trade"]) == 1
 
+def test_paper_rebuilds_both_projections_after_crash_between_atomic_replaces(env, monkeypatch):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+    from types import SimpleNamespace
+
+    root, data_dir, _frame = env
+    out = root / "paper-projection-crash"
+
+    def wait_signal(*_args, **_kwargs):
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="projection-crash-test",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "projection-crash-test"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", wait_signal)
+    original_replace = paper.os.replace
+    crashed = {"done": False}
+
+    def crash_before_state_projection(source, destination):
+        if str(destination).endswith("state.json") and not crashed["done"]:
+            crashed["done"] = True
+            raise RuntimeError("simulated crash between journal and state projection")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(paper.os, "replace", crash_before_state_projection)
+    with pytest.raises(RuntimeError, match="between journal and state"):
+        run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    # Journal was atomically replaced, while state.json was not. The Ledger is
+    # authoritative; restart must rebuild both projections from the same events.
+    assert (out / "journal.jsonl").exists()
+    monkeypatch.setattr(paper.os, "replace", original_replace)
+    recovered = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    events = ledger.read_events("paper")
+    cycle_events = [event for event in events if event.event_type == "PaperCycleCompleted"]
+    journal = json.loads((out / "journal.jsonl").read_text(encoding="utf-8"))
+    state = _state(out)
+
+    assert len(cycle_events) == 1
+    assert recovered["cycle"] == 1
+    assert state["runs"] == 1
+    assert journal["cycle"] == 1
+    assert journal["analysis_point"] == state["last_run_ts"]
+
