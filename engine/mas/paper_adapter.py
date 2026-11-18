@@ -164,6 +164,36 @@ class PaperLedgerAdapter:
             other_fees=_exact_decimal_text(other_fees, "other_fees"),
         )
 
+    def build_execution_settlement_events(
+        self, *, position_id: str, execution_identity: str,
+        execution_result: Any, timestamp: str,
+        remaining_unrealized_pnl: Any, mark_id: str,
+    ) -> list[dict]:
+        """Translate a Decimal execution result into the canonical close+MTM batch."""
+        if not all(hasattr(execution_result, name) for name in (
+            "side", "lots", "gross_pnl_account", "commission_account",
+            "swap_account", "other_fees_account",
+        )):
+            raise ValueError("execution_result does not satisfy the execution contract")
+        position = self.ledger.snapshot()["open_positions"].get(position_id)
+        if position is None:
+            raise ValueError("cannot settle an unknown position")
+        if execution_result.side != position["side"]:
+            raise ValueError("execution side does not match the open position")
+        if _exact_decimal_text(execution_result.lots, "execution lots") != position["quantity"]:
+            raise ValueError("execution lots must equal the settlement quantity")
+        return self.build_settlement_events(
+            position_id=position_id, execution_identity=execution_identity,
+            quantity=execution_result.lots,
+            gross_pnl=execution_result.gross_pnl_account,
+            timestamp=timestamp,
+            remaining_unrealized_pnl=remaining_unrealized_pnl,
+            mark_id=mark_id,
+            commission=execution_result.commission_account,
+            swap=execution_result.swap_account,
+            other_fees=execution_result.other_fees_account,
+        )
+
     def commit_events(self, events: list[dict]) -> bool:
         stable_events = [self._reuse_exact_event(event) for event in events]
         return apply_ledger_events(
