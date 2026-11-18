@@ -19,7 +19,7 @@ import pandas as pd
 
 from .aggregator import analyze_mas
 from .contracts import BUY
-from .risk_agent import AccountState, RISK_RULES
+from .risk_agent import AccountState, RISK_RULES, evaluate_risk
 from .symbols import get_spec, pip_value_usd
 
 
@@ -151,7 +151,12 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                           pos.get("confidence", 0.0)))
                 equity += pnl
                 acct.equity = equity
-                acct.consecutive_losses = acct.consecutive_losses + 1 if was_loss else 0
+                if was_loss:
+                    acct.consecutive_losses += 1
+                    if acct.consecutive_losses >= RISK_RULES["consecutive_losses_stop"]:
+                        acct.risk_lock_active = True
+                elif not acct.risk_lock_active:
+                    acct.consecutive_losses = 0
                 pos = None
             else:
                 continue     # معامله باز است؛ قانون R-SYM ورود جدید را بسته نگه می‌دارد
@@ -174,11 +179,19 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         sl, tp2 = float(sig.cand["sl"]), float(sig.cand["tp2"])
         if not (0 < abs(entry - sl) and abs(tp2 - entry) > 0):
             continue
-        risk_usd = equity * RISK_RULES["risk_per_trade_pct"] / 100.0
-        pips = abs(entry - sl) / spec.pip
-        lots = round(risk_usd / max(1e-9, pips * pip_value_usd(symbol, float(row["close"]))), 2)
+        execution_verdict = evaluate_risk(
+            symbol, sig.signal, entry, sl, tp2, entry, acct=acct,
+            fx_timestamp=pd.Timestamp(now).isoformat(),
+        )
+        if not execution_verdict.approved or execution_verdict.sizing_result is None:
+            key = "FILL_RISK_REJECTED"
+            res.wait_reasons[key] = res.wait_reasons.get(key, 0) + 1
+            continue
+        lots = execution_verdict.lots
+        risk_usd = execution_verdict.risk_amount
         pos = {"direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
+               "sizing_result": execution_verdict.sizing_result,
                "last_idx": j, "regime": sig.market_regime, "session": sig.session,
                "final_score": float(sig.final_score), "confidence": float(sig.confidence)}
         res.n_signals += 1
