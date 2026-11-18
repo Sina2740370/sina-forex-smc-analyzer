@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import hashlib
+from datetime import timedelta
 
 import pandas as pd
 
@@ -156,6 +157,14 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                         "idempotency_key": f"bt-daily-reset:{exit_day}",
                         "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
                     })
+                    current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)                exit_date = pd.Timestamp(exit_time).date()
+                exit_week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
+                if current_projection["weekly_risk_week"] != exit_week:
+                    ledger.append_event({
+                        "account_id": ledger_account_id, "event_type": "WeeklyRiskReset",
+                        "idempotency_key": f"bt-weekly-reset:{exit_week}",
+                        "occurred_at": exit_ts, "payload": {"weekly_risk_week": exit_week},
+                    })
                     current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
                 loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
                 ledger.append_event({
@@ -167,6 +176,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                         "lots_closed": str(pos["lots"]), "pnl_gross": str(gross_pnl),
                         "commission": "0", "slippage": "0", "swap": "0",
                         "daily_loss_pct_delta": str(loss_delta),
+                        "weekly_loss_pct_delta": str(loss_delta),
                         "consecutive_loss_stop": RISK_RULES["consecutive_losses_stop"],
                         "exit_price": str(exit_px), "exit_time": exit_ts,
                         "outcome": "SL" if was_loss else "TP",
@@ -188,6 +198,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 acct.consecutive_losses = int(projection["consecutive_losses"])
                 acct.risk_lock_active = bool(projection["risk_lock_active"])
                 acct.daily_loss_pct = float(projection["daily_loss_pct"])
+                acct.weekly_loss_pct = float(projection["weekly_loss_pct"])
                 pos = None
             else:
                 continue     # معامله باز است؛ قانون R-SYM ورود جدید را بسته نگه می‌دارد
@@ -264,6 +275,14 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                     "idempotency_key": f"bt-daily-reset:{exit_day}",
                     "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
                 })
+                current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)            exit_date = pd.Timestamp(exit_time).date()
+            exit_week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
+            if current_projection["weekly_risk_week"] != exit_week:
+                ledger.append_event({
+                    "account_id": ledger_account_id, "event_type": "WeeklyRiskReset",
+                    "idempotency_key": f"bt-weekly-reset:{exit_week}",
+                    "occurred_at": exit_ts, "payload": {"weekly_risk_week": exit_week},
+                })
                 current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
             loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
             ledger.append_event({
@@ -275,6 +294,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                     "lots_closed": str(pos["lots"]), "pnl_gross": str(gross_pnl),
                     "commission": "0", "slippage": "0", "swap": "0",
                     "daily_loss_pct_delta": str(loss_delta),
+                    "weekly_loss_pct_delta": str(loss_delta),
                     "consecutive_loss_stop": RISK_RULES["consecutive_losses_stop"],
                     "exit_price": str(exit_px), "exit_time": exit_ts,
                     "outcome": "TIME_EXIT",
