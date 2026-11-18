@@ -451,3 +451,54 @@ def test_paper_rebuilds_both_projections_after_crash_between_atomic_replaces(env
     assert journal["cycle"] == 1
     assert journal["analysis_point"] == state["last_run_ts"]
 
+
+
+def test_risk_lock_release_recovers_after_ledger_commit_before_state_replace(env, monkeypatch):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+
+    root, data_dir, _frame = env
+    out = root / "paper-risk-release-crash"
+    out.mkdir()
+    json.dump({
+        "equity": 10_000.0, "consecutive_losses": 3, "risk_lock_active": True,
+        "daily_loss_pct": 0.0, "open_positions": [], "runs": 0,
+        "last_run_ts": "1900-01-01T00:00:00+00:00",
+    }, open(out / "state.json", "w"))
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    original_replace = paper.os.replace
+    crashed = {"done": False}
+
+    def crash_before_state_projection(source, destination):
+        if str(destination).endswith("state.json") and not crashed["done"]:
+            crashed["done"] = True
+            raise RuntimeError("simulated crash after durable risk release")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(paper.os, "replace", crash_before_state_projection)
+    with pytest.raises(RuntimeError, match="durable risk release"):
+        paper.release_paper_risk_lock(
+            str(out), reviewer="senior-reviewer", reason="review completed",
+            request_id="release-crash-001",
+        )
+
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    committed = [event for event in ledger.read_events("paper")
+                 if event.event_type == "RiskLockReleased"]
+    assert len(committed) == 1
+    assert ledger.replay_account(
+        "paper", ledger.get_meta("initial_balance:paper")
+    )["risk_lock_active"] is False
+
+    # A retry after restart must reuse the original idempotency key and timestamp.
+    monkeypatch.setattr(paper.os, "replace", original_replace)
+    recovered = paper.release_paper_risk_lock(
+        str(out), reviewer="senior-reviewer", reason="review completed",
+        request_id="release-crash-001",
+    )
+    assert recovered["risk_lock_active"] is False
+    assert recovered["consecutive_losses"] == 0
+    releases = [event for event in ledger.read_events("paper")
+                if event.event_type == "RiskLockReleased"]
+    assert len(releases) == 1
