@@ -13,12 +13,14 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+import hashlib
 
 import pandas as pd
 
 from .aggregator import analyze_mas
 from .contracts import BUY
+from .ledger import SQLiteLedger
 from .risk_agent import AccountState, RISK_RULES, evaluate_risk
 from .symbols import get_spec, pip_value_usd
 
@@ -121,6 +123,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     res = BTResult(symbol=symbol)
     equity = res.equity_start
     acct = AccountState(equity=equity, consecutive_losses=0)
+    ledger = SQLiteLedger(":memory:")
+    ledger_account_id = f"backtest:{symbol}"
+    ledger_initial_balance = str(res.equity_start)
     times = pd.date_range(t0, t1, freq=step, tz="UTC")
     res.n_points = len(times)
 
@@ -141,7 +146,34 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 exit_px, exit_time, last_idx, was_loss = outcome
                 d = 1 if pos["direction"] == BUY else -1
                 pips = (exit_px - pos["entry"]) / spec.pip * d
-                pnl = pips * pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+                gross_pnl = pips * pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+                exit_ts = pd.Timestamp(exit_time).isoformat()
+                exit_day = pd.Timestamp(exit_time).date().isoformat()
+                current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+                if current_projection["daily_risk_date"] != exit_day:
+                    ledger.append_event({
+                        "account_id": ledger_account_id, "event_type": "DailyRiskReset",
+                        "idempotency_key": f"bt-daily-reset:{exit_day}",
+                        "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
+                    })
+                    current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+                loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
+                ledger.append_event({
+                    "account_id": ledger_account_id, "trade_id": pos["trade_id"],
+                    "event_type": "PositionClosed",
+                    "idempotency_key": f"bt-close:{pos['trade_id']}:{exit_ts}",
+                    "occurred_at": exit_ts,
+                    "payload": {
+                        "lots_closed": str(pos["lots"]), "pnl_gross": str(gross_pnl),
+                        "commission": "0", "slippage": "0", "swap": "0",
+                        "daily_loss_pct_delta": str(loss_delta),
+                        "consecutive_loss_stop": RISK_RULES["consecutive_losses_stop"],
+                        "exit_price": str(exit_px), "exit_time": exit_ts,
+                        "outcome": "SL" if was_loss else "TP",
+                    },
+                })
+                projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+                pnl = float(projection["closed_trades"][-1]["pnl_usd"])
                 r = pnl / pos["risk_usd"] if pos["risk_usd"] > 0 else 0.0
                 entry_idx = int(df["time"].searchsorted(pos["entry_time"]))
                 res.trades.append(BTTrade(symbol, pos["direction"], pos["entry_time"],
@@ -151,14 +183,11 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                           pos.get("final_score", 50.0),
                                           pos.get("confidence", 0.0),
                                           "SL" if was_loss else "TP"))
-                equity += pnl
+                equity = float(projection["equity"])
                 acct.equity = equity
-                if was_loss:
-                    acct.consecutive_losses += 1
-                    if acct.consecutive_losses >= RISK_RULES["consecutive_losses_stop"]:
-                        acct.risk_lock_active = True
-                elif not acct.risk_lock_active:
-                    acct.consecutive_losses = 0
+                acct.consecutive_losses = int(projection["consecutive_losses"])
+                acct.risk_lock_active = bool(projection["risk_lock_active"])
+                acct.daily_loss_pct = float(projection["daily_loss_pct"])
                 pos = None
             else:
                 continue     # معامله باز است؛ قانون R-SYM ورود جدید را بسته نگه می‌دارد
@@ -191,7 +220,24 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
             continue
         lots = execution_verdict.lots
         risk_usd = execution_verdict.risk_amount
-        pos = {"direction": sig.signal, "entry_time": now, "entry": entry,
+        trade_id = hashlib.sha256(
+            f"{symbol}|{sig.signal}|{pd.Timestamp(now).isoformat()}|{sig.fingerprint()}".encode()
+        ).hexdigest()[:32]
+        sizing_snapshot = asdict(execution_verdict.sizing_result)
+        ledger.append_event({
+            "account_id": ledger_account_id, "trade_id": trade_id,
+            "event_type": "PositionOpened", "idempotency_key": f"bt-open:{trade_id}",
+            "occurred_at": pd.Timestamp(now).isoformat(),
+            "payload": {
+                "symbol": symbol, "direction": sig.signal, "lots": str(lots),
+                "entry_price": str(entry), "sl": str(sl), "tp2": str(tp2),
+                "entry_time": pd.Timestamp(now).isoformat(), "risk_usd": str(risk_usd),
+                "risk_pct": str(risk_usd / equity * 100.0),
+                "final_score": float(sig.final_score), "regime": sig.market_regime,
+                "session": sig.session, "sizing_result": sizing_snapshot,
+            },
+        })
+        pos = {"trade_id": trade_id, "direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
                "sizing_result": execution_verdict.sizing_result,
                "last_idx": j, "regime": sig.market_regime, "session": sig.session,
@@ -207,8 +253,35 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         if outcome is not None:
             exit_px, exit_time, last_idx, _ = outcome
             d = 1 if pos["direction"] == BUY else -1
-            pnl = (exit_px - pos["entry"]) / spec.pip * d * \
+            gross_pnl = (exit_px - pos["entry"]) / spec.pip * d * \
                 pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+            exit_ts = pd.Timestamp(exit_time).isoformat()
+            exit_day = pd.Timestamp(exit_time).date().isoformat()
+            current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+            if current_projection["daily_risk_date"] != exit_day:
+                ledger.append_event({
+                    "account_id": ledger_account_id, "event_type": "DailyRiskReset",
+                    "idempotency_key": f"bt-daily-reset:{exit_day}",
+                    "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
+                })
+                current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+            loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
+            ledger.append_event({
+                "account_id": ledger_account_id, "trade_id": pos["trade_id"],
+                "event_type": "PositionClosed",
+                "idempotency_key": f"bt-close:{pos['trade_id']}:{exit_ts}",
+                "occurred_at": exit_ts,
+                "payload": {
+                    "lots_closed": str(pos["lots"]), "pnl_gross": str(gross_pnl),
+                    "commission": "0", "slippage": "0", "swap": "0",
+                    "daily_loss_pct_delta": str(loss_delta),
+                    "consecutive_loss_stop": RISK_RULES["consecutive_losses_stop"],
+                    "exit_price": str(exit_px), "exit_time": exit_ts,
+                    "outcome": "TIME_EXIT",
+                },
+            })
+            projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+            pnl = float(projection["closed_trades"][-1]["pnl_usd"])
             r = pnl / pos["risk_usd"] if pos["risk_usd"] > 0 else 0.0
             entry_idx = int(df["time"].searchsorted(pos["entry_time"]))
             res.trades.append(BTTrade(symbol, pos["direction"], pos["entry_time"],
@@ -217,9 +290,10 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                       pos["regime"], pos["session"],
                                       pos.get("final_score", 50.0),
                                       pos.get("confidence", 0.0), "TIME_EXIT"))
-            equity += pnl
+            equity = float(projection["equity"])
 
     res.equity_end = equity
+    ledger.close()
     return res
 
 
