@@ -34,9 +34,13 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     state_p = os.path.join(out_dir, "state.json")
     journal_p = os.path.join(out_dir, "journal.jsonl")
     state = {"equity": equity or RISK_RULES["equity_default"], "consecutive_losses": 0,
-             "daily_loss_pct": 0.0, "open_positions": [], "runs": 0}
+             "risk_lock_active": False, "daily_loss_pct": 0.0,
+             "open_positions": [], "runs": 0}
     if os.path.exists(state_p):
         state.update(json.load(open(state_p)))
+    # مهاجرت محافظه‌کارانه: state قدیمی با سه ضرر متوالی، قفل‌شده تلقی می‌شود.
+    if state.get("consecutive_losses", 0) >= RISK_RULES["consecutive_losses_stop"]:
+        state["risk_lock_active"] = True
 
     spec_of = {s: get_spec(s) for s in symbols}
     dfs, t_now = {}, {}
@@ -71,7 +75,9 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             state["consecutive_losses"] += 1
             state["daily_loss_pct"] = round(state["daily_loss_pct"]
                                             + pos["risk_usd"] / state["equity"] * 100, 3)
-        else:
+            if state["consecutive_losses"] >= RISK_RULES["consecutive_losses_stop"]:
+                state["risk_lock_active"] = True
+        elif not state.get("risk_lock_active", False):
             state["consecutive_losses"] = 0
         closed.append({**pos, "exit": exit_px, "exit_time": str(exit_time),
                        "pnl_usd": round(pnl, 2), "outcome": "SL" if was_loss else "TP"})
@@ -82,6 +88,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                         open_risk_pct=sum(p.get("risk_pct", 0.0) for p in still_open),
                         daily_loss_pct=state["daily_loss_pct"],
                         consecutive_losses=state["consecutive_losses"],
+                        risk_lock_active=state.get("risk_lock_active", False),
                         per_symbol_open={p["symbol"]: 1 for p in still_open})
     new_signals, results = [], {}
     last_run = state.get("last_run_ts")
