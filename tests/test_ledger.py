@@ -307,3 +307,70 @@ def test_replay_attributes_delayed_closes_to_actual_day_and_week(tmp_path):
     assert Decimal(state["weekly_loss_pct"]) == Decimal("20") / Decimal("9990") * 100
     assert state["realized_pnl"] == "-30"
     assert state["open_positions"] == {}
+
+
+def test_consecutive_losses_follow_exit_time_not_append_sequence(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    account = "paper-account"
+    trades = (
+        ("loss-1", "2026-11-18T10:00:00+00:00", "-10"),
+        ("win", "2026-11-18T11:00:00+00:00", "15"),
+        ("loss-2", "2026-11-18T12:00:00+00:00", "-12"),
+        ("loss-3", "2026-11-18T13:00:00+00:00", "-8"),
+    )
+    for trade_id, _closed_at, _pnl in trades:
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionOpened", "idempotency_key": f"open:{trade_id}",
+            "occurred_at": "2026-11-18T09:00:00+00:00",
+            "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                        "entry_price": "1.1000"},
+        })
+
+    # Deliberately append in reverse exit-time order to simulate delayed Paper settlement.
+    for trade_id, closed_at, pnl in reversed(trades):
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionClosed", "idempotency_key": f"close:{trade_id}",
+            "occurred_at": closed_at,
+            "payload": {"lots_closed": "1", "pnl_gross": pnl,
+                        "commission": "0", "slippage": "0", "swap": "0",
+                        "consecutive_loss_stop": 3, "exit_time": closed_at},
+        })
+
+    state = ledger.replay_account(account, "10000")
+    # Actual order is loss, win, loss, loss: only the final two are consecutive.
+    assert state["consecutive_losses"] == 2
+    assert state["risk_lock_active"] is False
+
+
+def test_partial_closes_count_once_using_aggregate_trade_result(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    account = "paper-account"
+    ledger.append_event({
+        "account_id": account, "trade_id": "partial-trade",
+        "event_type": "PositionOpened", "idempotency_key": "open:partial",
+        "occurred_at": "2026-11-18T09:00:00+00:00",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "partial-trade",
+        "event_type": "PositionPartiallyClosed", "idempotency_key": "partial:1",
+        "occurred_at": "2026-11-18T10:00:00+00:00",
+        "payload": {"lots_closed": "0.5", "pnl_gross": "-20",
+                    "commission": "0", "slippage": "0", "swap": "0"},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "partial-trade",
+        "event_type": "PositionClosed", "idempotency_key": "close:partial",
+        "occurred_at": "2026-11-18T11:00:00+00:00",
+        "payload": {"lots_closed": "0.5", "pnl_gross": "30",
+                    "commission": "0", "slippage": "0", "swap": "0",
+                    "consecutive_loss_stop": 3},
+    })
+
+    state = ledger.replay_account(account, "10000")
+    assert state["consecutive_losses"] == 0
+    assert state["risk_lock_active"] is False
+    assert state["realized_pnl"] == "10"
