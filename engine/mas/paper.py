@@ -22,7 +22,7 @@ from .aggregator import analyze_mas
 from .backtest import _advance_position
 from .contracts import BUY
 from .portfolio import _csv_path
-from .risk_agent import AccountState, RISK_RULES
+from .risk_agent import AccountState, RISK_RULES, evaluate_risk
 from .symbols import get_spec, pip_value_usd
 
 
@@ -107,14 +107,23 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             spec = spec_of[sym]
             d = 1 if sig.signal == BUY else -1
             entry = float(row["close"]) + d * spec.spread_price()
-            risk_usd = state["equity"] * RISK_RULES["risk_per_trade_pct"] / 100.0
-            pips = abs(entry - float(sig.cand["sl"])) / spec.pip
-            lots = round(risk_usd / max(1e-9, pips * pip_value_usd(sym, entry)), 2)
+            execution_verdict = evaluate_risk(
+                sym, sig.signal, entry, float(sig.cand["sl"]), float(sig.cand["tp2"]),
+                entry, acct=acct, fx_timestamp=t_now[sym].isoformat(),
+            )
+            if not execution_verdict.approved or execution_verdict.sizing_result is None:
+                results[sym]["risk_approved"] = False
+                results[sym]["wait_reason"] = "رد تأیید مجدد ریسک در قیمت Fill: " + "; ".join(execution_verdict.rejection_reasons)
+                continue
+            lots = execution_verdict.lots
+            risk_usd = execution_verdict.risk_amount
+            execution_sizing = asdict(execution_verdict.sizing_result)
             new_signals.append({
                 "symbol": sym, "direction": sig.signal, "entry_time": str(t_now[sym]),
                 "entry": entry, "sl": float(sig.cand["sl"]), "tp1": float(sig.cand["tp1"]),
                 "tp2": float(sig.cand["tp2"]), "rr": float(sig.cand["rr"]),
                 "lots": lots, "risk_usd": round(risk_usd, 2),
+                "sizing_result": execution_sizing,
                 "risk_pct": round(risk_usd / state["equity"] * 100, 3),
                 "final_score": round(float(sig.final_score), 1),
                 "regime": sig.market_regime, "session": sig.session})
