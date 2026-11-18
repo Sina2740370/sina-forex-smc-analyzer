@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -64,12 +65,12 @@ class SQLiteLedger:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA synchronous = FULL")
         return conn
 
     def _initialize(self) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.execute("PRAGMA journal_mode = WAL")
-            conn.execute("PRAGMA synchronous = FULL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS ledger_events (
@@ -168,7 +169,7 @@ class SQLiteLedger:
             conn.close()
 
     def read_events(self, account_id: str, after_sequence: int = 0) -> list[LedgerEvent]:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             rows = conn.execute(
                 "SELECT * FROM ledger_events WHERE account_id=? AND sequence>? "
                 "ORDER BY sequence ASC",
