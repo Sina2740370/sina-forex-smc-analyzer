@@ -224,8 +224,8 @@ def test_adapter_persists_coherent_portfolio_mark(tmp_path):
         },
         timestamp=NOW, mark_id="portfolio-mark-1",
     )
-    assert result.unrealized_pnl_account == Decimal("98.000000")
-    assert adapter.ledger.equity == Decimal("10098.000000")
+    assert result.unrealized_pnl_account == Decimal("98.0000")
+    assert adapter.ledger.equity == Decimal("10098.0000")
     assert store.load("paper:portfolio").snapshot() == adapter.ledger.snapshot()
 
 
