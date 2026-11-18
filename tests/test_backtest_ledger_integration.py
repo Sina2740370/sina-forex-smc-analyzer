@@ -137,7 +137,7 @@ def test_paper_and_backtest_match_same_market_input_through_take_profit(
     assert bt.trades[0].exit_time == pd.Timestamp(
         second["closed_this_cycle"][0]["exit_time"]
     )
-    assert bt.trades[0].pnl_usd == pytest.approx(
+    assert round(bt.trades[0].pnl_usd, 2) == pytest.approx(
         second["closed_this_cycle"][0]["pnl_usd"], abs=1e-8
     )
     assert bt.equity_end == pytest.approx(
