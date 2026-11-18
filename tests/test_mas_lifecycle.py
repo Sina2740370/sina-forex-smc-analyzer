@@ -4,6 +4,8 @@ import pytest
 
 from engine.mas.execution import ExecutableQuote, ExecutionCostModel
 from engine.mas.ledger import RiskLedger
+from engine.mas.ledger_store import SQLiteLedgerStore
+from engine.mas.paper_adapter import PaperLedgerAdapter
 from engine.mas.lifecycle import (
     OHLCQuote,
     PositionMarketMark,
@@ -198,3 +200,109 @@ def test_rejects_naive_timestamp_and_binary_float_quote():
         )
     with pytest.raises(ValueError, match="exact Decimal"):
         ExecutableQuote(1.0, "1.1")
+
+
+
+def test_adapter_persists_coherent_portfolio_mark(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "portfolio-mark.sqlite")
+    adapter = PaperLedgerAdapter.create(
+        store=store, ledger_id="paper:portfolio",
+        initial_balance="10000", timestamp=NOW,
+    )
+    adapter.commit_open_position(
+        symbol="EURUSD", side="BUY", quantity="1",
+        entry="1.1000", stop="1.0900", approved_risk="100",
+        actual_risk="90", decision_timestamp=NOW,
+        candidate_identity="portfolio-mark",
+    )
+    result = adapter.mark_portfolio(
+        marks={
+            next(iter(adapter.ledger.snapshot()["open_positions"])): PositionMarketMark(
+                quote=ExecutableQuote("1.1010", "1.1012"),
+                quote_timestamp=NOW, model=_model(),
+            )
+        },
+        timestamp=NOW, mark_id="portfolio-mark-1",
+    )
+    assert result.unrealized_pnl_account == Decimal("98.000000")
+    assert adapter.ledger.equity == Decimal("10098.000000")
+    assert store.load("paper:portfolio").snapshot() == adapter.ledger.snapshot()
+
+
+def test_partial_close_recomputes_remaining_portfolio_mtm_atomically(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "partial-close.sqlite")
+    adapter = PaperLedgerAdapter.create(
+        store=store, ledger_id="paper:partial",
+        initial_balance="10000", timestamp=NOW,
+    )
+    position_id = adapter.commit_open_position(
+        symbol="EURUSD", side="BUY", quantity="1",
+        entry="1.1000", stop="1.0900", approved_risk="100",
+        actual_risk="90", decision_timestamp=NOW,
+        candidate_identity="partial-close",
+    )
+    execution = _model().round_trip(
+        side="BUY", lots="0.4",
+        entry_quote=ExecutableQuote("1.1000", "1.1002"),
+        exit_quote=ExecutableQuote("1.1020", "1.1022"),
+    )
+    events = adapter.build_execution_portfolio_settlement_events(
+        position_id=position_id, execution_identity="partial-fill-1",
+        execution_result=execution, timestamp="2026-11-18T12:30:00Z",
+        mark_id="after-partial-1",
+        remaining_position_marks={
+            position_id: PositionMarketMark(
+                quote=ExecutableQuote("1.1010", "1.1012"),
+                quote_timestamp="2026-11-18T12:30:00Z",
+                model=_model(),
+            )
+        },
+    )
+    assert [event["type"] for event in events] == [
+        "PositionPartiallyClosed", "MarkToMarketUpdated",
+    ]
+    assert adapter.commit_events(events) is True
+    snapshot = adapter.ledger.snapshot()
+    assert snapshot["open_positions"][position_id]["quantity"] == "0.6"
+    assert adapter.ledger.unrealized_pnl == Decimal("58.800000")
+    assert store.load("paper:partial").snapshot() == snapshot
+
+
+def test_partial_close_rejects_marks_that_omit_another_open_position(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "partial-missing-mark.sqlite")
+    adapter = PaperLedgerAdapter.create(
+        store=store, ledger_id="paper:partial-missing",
+        initial_balance="10000", timestamp=NOW,
+    )
+    first = adapter.commit_open_position(
+        symbol="EURUSD", side="BUY", quantity="1",
+        entry="1.1000", stop="1.0900", approved_risk="100",
+        actual_risk="90", decision_timestamp=NOW,
+        candidate_identity="partial-first",
+    )
+    adapter.commit_open_position(
+        symbol="GBPUSD", side="SELL", quantity="1",
+        entry="1.2500", stop="1.2600", approved_risk="100",
+        actual_risk="90", decision_timestamp=NOW,
+        candidate_identity="partial-second",
+    )
+    execution = _model().round_trip(
+        side="BUY", lots="0.5",
+        entry_quote=ExecutableQuote("1.1000", "1.1002"),
+        exit_quote=ExecutableQuote("1.1010", "1.1012"),
+    )
+    with pytest.raises(ValueError, match="missing"):
+        adapter.build_execution_portfolio_settlement_events(
+            position_id=first, execution_identity="partial-with-missing-mark",
+            execution_result=execution, timestamp="2026-11-18T12:30:00Z",
+            mark_id="missing-mark",
+            remaining_position_marks={
+                first: PositionMarketMark(
+                    quote=ExecutableQuote("1.1010", "1.1012"),
+                    quote_timestamp="2026-11-18T12:30:00Z",
+                    model=_model(),
+                )
+            },
+        )
+    assert adapter.ledger.sequence == 3
+    assert store.load("paper:partial-missing").snapshot() == adapter.ledger.snapshot()
