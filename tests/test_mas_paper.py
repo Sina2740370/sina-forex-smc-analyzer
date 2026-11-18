@@ -274,3 +274,22 @@ def test_paper_imports_legacy_journal_even_without_state_snapshot(env):
     result = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
     assert result["attribution"]["n_trades"] == 1
     assert result["attribution"]["total_pnl_usd"] == 25.0
+
+def test_paper_recovers_when_state_projection_is_corrupt(env):
+    root, d, _df = env
+    out = root / "out"
+    first = run_paper(str(d), ["EURUSD"], out_dir=str(out), feeds=None)
+    ledger_path = out / "ledger.sqlite3"
+    assert ledger_path.exists()
+    expected_equity = first["equity"]
+    expected_cycle = first["cycle"]
+
+    # Simulate a truncated/invalid projection after a crash or interrupted write.
+    (out / "state.json").write_text('{"equity":', encoding="utf-8")
+
+    recovered = run_paper(str(d), ["EURUSD"], out_dir=str(out), feeds=None)
+    restored = _state(out)
+    assert recovered["equity"] == expected_equity
+    assert restored["equity"] == expected_equity
+    assert restored["runs"] == expected_cycle
+    assert restored["open_positions"] == recovered["open_positions"]
