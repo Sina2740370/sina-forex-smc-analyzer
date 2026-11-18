@@ -83,19 +83,33 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     ledger = SQLiteLedger(os.path.join(out_dir, "ledger.sqlite3"))
     account_id = "paper"
 
+    # Ledger metadata/events are authoritative once initialized. Do not even
+    # parse state.json on the recovery path: a stale or truncated projection must
+    # never prevent rebuilding the account after a process crash.
+    existing_events = ledger.read_events(account_id)
+    stored_initial_balance = ledger.get_meta(f"initial_balance:{account_id}")
     legacy_state = {}
-    if os.path.exists(state_p):
-        with open(state_p, encoding="utf-8") as stream:
-            legacy_state = json.load(stream)
-
-    seed_equity = legacy_state.get("equity", equity or RISK_RULES["equity_default"])
-    initial_balance = ledger.set_meta_once(
-        f"initial_balance:{account_id}", str(seed_equity)
-    )
+    if stored_initial_balance is None:
+        if existing_events:
+            raise RuntimeError("Paper Ledger has events but immutable initial balance metadata is missing")
+        if os.path.exists(state_p):
+            try:
+                with open(state_p, encoding="utf-8") as stream:
+                    legacy_state = json.load(stream)
+            except (OSError, json.JSONDecodeError) as exc:
+                raise RuntimeError(
+                    "Cannot migrate legacy Paper state: state.json is unreadable and no Ledger baseline exists"
+                ) from exc
+        seed_equity = legacy_state.get("equity", equity or RISK_RULES["equity_default"])
+        initial_balance = ledger.set_meta_once(
+            f"initial_balance:{account_id}", str(seed_equity)
+        )
+    else:
+        initial_balance = stored_initial_balance
 
     # One-time import of the old JSON state/journal. After this point, state.json
     # and journal.jsonl are rebuildable projections, never the accounting authority.
-    if not ledger.read_events(account_id):
+    if not existing_events:
         seed_events = []
         if legacy_state:
             last_run = legacy_state.get("last_run_ts")
