@@ -188,7 +188,8 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             "payload": {"daily_risk_date": daily_risk_date},
         })
         projection = ledger.replay_account(account_id, initial_balance)
-        state = _projection_to_paper_state(projection)    analysis_date = pd.Timestamp(analysis_point).date()
+        state = _projection_to_paper_state(projection)
+    analysis_date = pd.Timestamp(analysis_point).date()
     weekly_risk_week = (analysis_date - timedelta(days=analysis_date.weekday())).isoformat()
     if state.get("weekly_risk_week") != weekly_risk_week:
         ledger.append_event({
