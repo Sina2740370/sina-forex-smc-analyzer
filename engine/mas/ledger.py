@@ -237,6 +237,8 @@ class SQLiteLedger:
                 closed_lots = dec(payload.get("lots_closed"), "lots_closed")
                 if closed_lots <= 0 or closed_lots > position["lots"]:
                     raise LedgerError("closed lots must be positive and <= remaining lots")
+                if event.event_type == "PositionClosed" and closed_lots != position["lots"]:
+                    raise LedgerError("PositionClosed must settle the full remaining quantity")
                 gross = dec(payload.get("pnl_gross"), "pnl_gross")
                 commission = dec(payload.get("commission", "0"), "commission")
                 slippage = dec(payload.get("slippage", "0"), "slippage")
