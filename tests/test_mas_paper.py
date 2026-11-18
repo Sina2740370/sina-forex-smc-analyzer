@@ -154,3 +154,33 @@ def test_paper_does_not_auto_release_persistent_lock_after_a_win(env, monkeypatc
     assert captured["risk_lock_active"] is True
     assert persisted["risk_lock_active"] is True
     assert persisted["consecutive_losses"] == 3
+
+
+def test_paper_uses_fill_price_risk_authorization_and_persists_snapshot(env, monkeypatch):
+    from types import SimpleNamespace
+    import engine.mas.paper as paper
+
+    root, data_dir, frame = env
+    out = root / "paper-fill-auth"
+
+    def fake_analyze(df, symbol, now, acct=None, **kwargs):
+        close = float(df["close"].iloc[-1])
+        candidate = {"entry": close, "sl": close - 0.0010,
+                     "tp1": close + 0.0015, "tp2": close + 0.0030, "rr": 3.0}
+        return SimpleNamespace(
+            signal="BUY", cand=candidate, final_score=75.0,
+            market_regime="range", session="London",
+            to_json=lambda **_kwargs: {"signal": "BUY", "risk_approved": True},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", fake_analyze)
+    result = paper.run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    assert len(result["opened_this_cycle"]) == 1
+    opened = result["opened_this_cycle"][0]
+    sizing = opened["sizing_result"]
+    assert sizing["entry_price"] == str(opened["entry"])
+    assert sizing["direction"] == "BUY"
+    assert float(sizing["actual_risk"]) <= float(sizing["requested_risk"])
+    persisted = _state(out)["open_positions"][0]
+    assert persisted["sizing_result"]["sizing_id"] == sizing["sizing_id"]
