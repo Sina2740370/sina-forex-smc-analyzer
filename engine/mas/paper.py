@@ -383,6 +383,49 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     }
 
 
+def release_paper_risk_lock(out_dir: str, reviewer: str, reason: str,
+                            request_id: str) -> dict:
+    """Release a Paper hard stop only through an explicit, auditable review event."""
+    for name, value in (("reviewer", reviewer), ("reason", reason), ("request_id", request_id)):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{name} must be a non-empty string")
+
+    ledger = SQLiteLedger(os.path.join(out_dir, "ledger.sqlite3"))
+    account_id = "paper"
+    initial_balance = ledger.get_meta(f"initial_balance:{account_id}")
+    if initial_balance is None:
+        raise ValueError("Paper Ledger has not been initialized")
+
+    idempotency_key = f"risk-lock-release:{request_id}"
+    prior_request = any(event.idempotency_key == idempotency_key
+                        for event in ledger.read_events(account_id))
+    current = ledger.replay_account(account_id, initial_balance)
+    if not current["risk_lock_active"] and not prior_request:
+        raise ValueError("No active Paper risk lock requires release")
+
+    ledger.append_event({
+        "account_id": account_id,
+        "event_type": "RiskLockReleased",
+        "idempotency_key": idempotency_key,
+        "occurred_at": pd.Timestamp.now(tz="UTC").isoformat(),
+        "payload": {
+            "reviewed_by": reviewer.strip(),
+            "reason": reason.strip(),
+            "consecutive_losses": 0,
+        },
+    })
+    projection = ledger.replay_account(account_id, initial_balance)
+    state = _projection_to_paper_state(projection)
+    state_path = os.path.join(out_dir, "state.json")
+    temporary_path = state_path + ".tmp"
+    with open(temporary_path, "w", encoding="utf-8") as stream:
+        json.dump(state, stream, ensure_ascii=False, indent=2, default=str)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary_path, state_path)
+    return state
+
+
 def _load_all_trades(journal_p: str) -> list:
     out = []
     if not os.path.exists(journal_p):
