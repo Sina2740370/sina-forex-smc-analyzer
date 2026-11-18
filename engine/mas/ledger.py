@@ -401,14 +401,10 @@ class SQLiteLedger:
                     raise LedgerError("close event has an invalid occurred_at date") from exc
                 close_day = close_date.isoformat()
                 close_week = (close_date - timedelta(days=close_date.weekday())).isoformat()
-                daily_loss_by_date[close_day] = (
-                    daily_loss_by_date.get(close_day, Decimal("0"))
-                    + dec(payload.get("daily_loss_pct_delta", "0"), "daily_loss_pct_delta")
-                )
-                weekly_loss_by_week[close_week] = (
-                    weekly_loss_by_week.get(close_week, Decimal("0"))
-                    + dec(payload.get("weekly_loss_pct_delta", "0"), "weekly_loss_pct_delta")
-                )
+                # Percentage risk is derived below from net financial events and
+                # historical opening equity. Caller-supplied deltas are retained in
+                # the event for audit/legacy compatibility, but must not be added:
+                # doing so counts the same realized loss twice.
                 closed_trades.append({
                     "trade_id": trade_id,
                     "symbol": position["symbol"],
