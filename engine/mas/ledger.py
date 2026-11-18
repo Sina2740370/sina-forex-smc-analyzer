@@ -498,6 +498,57 @@ class SQLiteLedger:
                 if opening_equity > 0 else Decimal("0")
             )
 
+        # Consecutive-loss state is a trade-level metric, not an append-order
+        # metric. Paper can append delayed settlements in a different order from
+        # their actual exit timestamps. Aggregate partial fills per trade and apply
+        # completed trades in exit-time order. Explicit lock release remains a
+        # separate, auditable event and never follows automatically from a win.
+        risk_timeline = [
+            event for event in events
+            if event.event_type in (
+                "RiskStateSnapshot", "RiskLockActivated", "RiskLockReleased",
+                "PositionPartiallyClosed", "PositionClosed",
+            )
+        ]
+        risk_timeline.sort(key=lambda item: (event_time(item), item.sequence))
+        chronological_streak = 0
+        chronological_lock = False
+        trade_net_totals: dict[str, Decimal] = {}
+        for risk_event in risk_timeline:
+            rp = risk_event.payload
+            if risk_event.event_type == "RiskStateSnapshot":
+                chronological_streak = int(rp.get("consecutive_losses", 0))
+                chronological_lock = bool(rp.get("risk_lock_active", False))
+            elif risk_event.event_type == "RiskLockActivated":
+                chronological_lock = True
+            elif risk_event.event_type == "RiskLockReleased":
+                chronological_lock = False
+                chronological_streak = int(rp.get("consecutive_losses", 0))
+            elif risk_event.event_type in ("PositionPartiallyClosed", "PositionClosed"):
+                trade_id = risk_event.trade_id or rp.get("trade_id")
+                if not trade_id:
+                    raise LedgerError("close event requires trade_id for risk replay")
+                net_piece = (
+                    dec(rp.get("pnl_gross"), "pnl_gross")
+                    - dec(rp.get("commission", "0"), "commission")
+                    - dec(rp.get("slippage", "0"), "slippage")
+                    - dec(rp.get("swap", "0"), "swap")
+                )
+                trade_net_totals[trade_id] = trade_net_totals.get(
+                    trade_id, Decimal("0")
+                ) + net_piece
+                if risk_event.event_type == "PositionClosed":
+                    total_trade_net = trade_net_totals.pop(trade_id)
+                    if total_trade_net < 0:
+                        chronological_streak += 1
+                    else:
+                        chronological_streak = 0
+                    if chronological_streak >= int(rp.get("consecutive_loss_stop", 3)):
+                        chronological_lock = True
+
+        consecutive_losses = chronological_streak
+        risk_lock_active = chronological_lock
+
         daily_loss_pct = daily_loss_by_date.get(
             daily_risk_date, daily_loss_pct if daily_risk_date is None else Decimal("0")
         )
