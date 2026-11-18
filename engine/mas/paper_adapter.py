@@ -17,7 +17,6 @@ from .accounting import (
     position_opened_event,
     position_closed_event,
     position_settlement_events,
-    mark_to_market_event,
     roll_account_period,
 )
 from .identity import stable_execution_id, stable_position_id
