@@ -213,3 +213,18 @@ def test_daily_risk_reset_changes_only_daily_loss_not_loss_streak(tmp_path):
     state = ledger.replay_account("paper-account", "10000")
     assert state["daily_loss_pct"] == "0"
     assert state["consecutive_losses"] == 2
+
+def test_ledger_initial_balance_metadata_is_set_once_and_immutable(tmp_path):
+    import sqlite3
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    assert ledger.set_meta_once("initial_balance:paper", "10000.00") == "10000.00"
+    assert ledger.set_meta_once("initial_balance:paper", "9000.00") == "10000.00"
+    assert ledger.get_meta("initial_balance:paper") == "10000.00"
+    conn = sqlite3.connect(ledger.path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError, match="immutable"):
+            conn.execute("UPDATE ledger_meta SET meta_value='1' WHERE meta_key='initial_balance:paper'")
+        with pytest.raises(sqlite3.IntegrityError, match="immutable"):
+            conn.execute("DELETE FROM ledger_meta WHERE meta_key='initial_balance:paper'")
+    finally:
+        conn.close()
