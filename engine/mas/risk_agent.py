@@ -33,6 +33,9 @@ class AccountState:
     daily_loss_pct: float = 0.0
     weekly_loss_pct: float = 0.0
     consecutive_losses: int = 0
+    # قفل سخت ریسک؛ فقط با بازبینی/ریست صریح قابل آزادسازی است.
+    # consecutive_losses نیز برای سازگاری با stateهای قدیمی همچنان قفل را فعال می‌کند.
+    risk_lock_active: bool = False
     per_symbol_open: dict = field(default_factory=dict)
     imminent_news_minutes: float = -1.0     # -1 = داده تقویم موجود نیست
 
@@ -93,8 +96,9 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
       f"ضرر هفتگی {acct.weekly_loss_pct:.1f}% ≥ سقف")
     g("R-SYM", acct.per_symbol_open.get(symbol, 0) < RISK_RULES["max_per_symbol"],
       "یک معامله باز در همین جفت‌ارز وجود دارد")
-    g("R-ADDTOLOSS", acct.consecutive_losses < RISK_RULES["consecutive_losses_stop"] or size_factor < 1.0,
-      "سه ضرر متوالی → توقف تا بازبینی")
+    loss_streak_locked = acct.risk_lock_active or acct.consecutive_losses >= RISK_RULES["consecutive_losses_stop"]
+    g("R-ADDTOLOSS", not loss_streak_locked,
+      "قفل سخت پس از سه ضرر متوالی فعال است؛ فقط بازبینی و ریست صریح مجاز است")
     g("R-SL", risk_dist > 0 and pips > 0, f"فاصله SL نامعتبر ({risk_dist:.6f})")
 
     if acct.imminent_news_minutes >= 0:
