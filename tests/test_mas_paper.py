@@ -293,3 +293,115 @@ def test_paper_recovers_when_state_projection_is_corrupt(env):
     assert restored["equity"] == expected_equity
     assert restored["runs"] == expected_cycle
     assert restored["open_positions"] == recovered["open_positions"]
+
+def test_paper_cycle_marker_is_idempotent_after_crash_before_projection(env, monkeypatch):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+    from types import SimpleNamespace
+
+    root, data_dir, _frame = env
+    out = root / "paper-cycle-crash"
+
+    def wait_signal(*_args, **_kwargs):
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="crash-test",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "crash-test"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", wait_signal)
+    original_replay = paper.SQLiteLedger.replay_account
+    crashed = {"done": False}
+
+    def crash_after_durable_cycle(self, account_id, initial_balance):
+        projection = original_replay(self, account_id, initial_balance)
+        if not crashed["done"] and any(
+            event.event_type == "PaperCycleCompleted"
+            for event in self.read_events(account_id)
+        ):
+            crashed["done"] = True
+            raise RuntimeError("simulated process crash after cycle batch commit")
+        return projection
+
+    monkeypatch.setattr(paper.SQLiteLedger, "replay_account", crash_after_durable_cycle)
+    with pytest.raises(RuntimeError, match="simulated process crash"):
+        run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    # Restart with the normal replay implementation. The committed cycle marker
+    # must be replayed once, not duplicated or counted again.
+    monkeypatch.setattr(paper.SQLiteLedger, "replay_account", original_replay)
+    recovered = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    events = ledger.read_events("paper")
+    cycles = [event for event in events if event.event_type == "PaperCycleCompleted"]
+
+    assert len(cycles) == 1
+    assert recovered["cycle"] == 1
+    assert _state(out)["runs"] == 1
+
+
+def test_paper_close_batch_recovers_once_after_crash_before_projection(env, monkeypatch):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+    from types import SimpleNamespace
+
+    root, data_dir, frame = env
+    out = root / "paper-close-crash"
+
+    def wait_signal(*_args, **_kwargs):
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="crash-test",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "crash-test"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", wait_signal)
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    entry_time = pd.Timestamp(frame["time"].iloc[0]).isoformat()
+    ledger.append_event({
+        "account_id": "paper", "trade_id": "crash-trade",
+        "event_type": "PositionOpened", "idempotency_key": "crash-open:crash-trade",
+        "occurred_at": entry_time,
+        "payload": {
+            "symbol": "EURUSD", "direction": "BUY", "lots": "0.01",
+            "entry_price": "2.0000", "sl": "1.9000", "tp2": "3.0000",
+            "entry_time": entry_time, "risk_usd": "1.00", "risk_pct": "0.01",
+            "final_score": 50.0, "regime": "test", "session": "test",
+        },
+    })
+
+    original_replay = paper.SQLiteLedger.replay_account
+    crashed = {"done": False}
+
+    def crash_after_durable_close(self, account_id, initial_balance):
+        projection = original_replay(self, account_id, initial_balance)
+        if not crashed["done"] and any(
+            event.event_type == "PositionClosed" and event.trade_id == "crash-trade"
+            for event in self.read_events(account_id)
+        ):
+            crashed["done"] = True
+            raise RuntimeError("simulated process crash after close batch commit")
+        return projection
+
+    monkeypatch.setattr(paper.SQLiteLedger, "replay_account", crash_after_durable_close)
+    with pytest.raises(RuntimeError, match="simulated process crash"):
+        run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    # The close is durable although its projection write never happened. A restart
+    # must reconstruct the closed trade without applying the close a second time.
+    monkeypatch.setattr(paper.SQLiteLedger, "replay_account", original_replay)
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    recovered_events = SQLiteLedger(out / "ledger.sqlite3").read_events("paper")
+    close_events = [
+        event for event in recovered_events
+        if event.event_type == "PositionClosed" and event.trade_id == "crash-trade"
+    ]
+    projection = SQLiteLedger(out / "ledger.sqlite3").replay_account(
+        "paper", SQLiteLedger(out / "ledger.sqlite3").get_meta("initial_balance:paper")
+    )
+
+    assert len(close_events) == 1
+    assert "crash-trade" not in projection["open_positions"]
+    assert len([trade for trade in projection["closed_trades"]
+                if trade["trade_id"] == "crash-trade"]) == 1
+
