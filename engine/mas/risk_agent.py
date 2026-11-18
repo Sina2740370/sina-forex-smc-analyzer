@@ -104,12 +104,13 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
     g("R-RR", rr >= RISK_RULES["min_rr"] - 1e-9, f"RR={rr:.2f} < {RISK_RULES['min_rr']}")
     g("R-OPEN", acct.open_trades < RISK_RULES["max_open_trades"],
       f"معاملات باز {acct.open_trades} ≥ {RISK_RULES['max_open_trades']}")
-    g("R-CONC", acct.open_risk_pct + RISK_RULES["risk_per_trade_pct"] <= RISK_RULES["max_concurrent_risk_pct"],
-      f"ریسک همزمان {acct.open_risk_pct:.1f}% > {RISK_RULES['max_concurrent_risk_pct']}%")
-    g("R-DAY", acct.daily_loss_pct < RISK_RULES["max_daily_loss_pct"],
-      f"ضرر روزانه {acct.daily_loss_pct:.1f}% ≥ سقف")
-    g("R-WK", acct.weekly_loss_pct < RISK_RULES["max_weekly_loss_pct"],
-      f"ضرر هفتگی {acct.weekly_loss_pct:.1f}% ≥ سقف")
+    new_risk_pct = (risk_amount / acct.equity * 100.0) if acct.equity > 0 else 0.0
+    g("R-CONC", acct.open_risk_pct + new_risk_pct <= RISK_RULES["max_concurrent_risk_pct"],
+      f"ریسک همزمان {acct.open_risk_pct:.2f}% + ریسک جدید {new_risk_pct:.2f}% از سقف عبور می‌کند")
+    g("R-DAY", acct.daily_loss_pct + new_risk_pct <= RISK_RULES["max_daily_loss_pct"],
+      f"ضرر روزانه {acct.daily_loss_pct:.2f}% + ریسک جدید {new_risk_pct:.2f}% از سقف عبور می‌کند")
+    g("R-WK", acct.weekly_loss_pct + new_risk_pct <= RISK_RULES["max_weekly_loss_pct"],
+      f"ضرر هفتگی {acct.weekly_loss_pct:.2f}% + ریسک جدید {new_risk_pct:.2f}% از سقف عبور می‌کند")
     g("R-SYM", acct.per_symbol_open.get(symbol, 0) < RISK_RULES["max_per_symbol"],
       "یک معامله باز در همین جفت‌ارز وجود دارد")
     loss_streak_locked = acct.risk_lock_active or acct.consecutive_losses >= RISK_RULES["consecutive_losses_stop"]
