@@ -395,3 +395,72 @@ def test_idempotent_retry_rejects_changed_financial_timestamp(tmp_path):
     stored = ledger.read_events("paper-account")
     assert len(stored) == 1
     assert stored[0].occurred_at == event["occurred_at"]
+
+def test_shared_paper_backtest_accounting_contract_is_deterministic(tmp_path):
+    """Identical Paper/Backtest event streams must replay to identical accounting."""
+    ledger = SQLiteLedger(tmp_path / "parity.db")
+    common = [
+        {
+            "event_type": "RiskStateSnapshot",
+            "idempotency_key": "seed-risk",
+            "occurred_at": "2026-11-16T08:00:00+00:00",
+            "payload": {
+                "consecutive_losses": 1, "daily_loss_pct": "0",
+                "weekly_loss_pct": "0", "risk_lock_active": False,
+                "runs": 0, "daily_risk_date": "2026-11-16",
+                "weekly_risk_week": "2026-11-16",
+            },
+        },
+        {
+            "trade_id": "parity-trade", "event_type": "PositionOpened",
+            "idempotency_key": "open-parity-trade",
+            "occurred_at": "2026-11-16T09:00:00+00:00",
+            "payload": {
+                "symbol": "EURUSD", "direction": "BUY", "lots": "0.10",
+                "entry_price": "1.10000", "sl": "1.09500", "tp2": "1.11000",
+                "entry_time": "2026-11-16T09:00:00+00:00", "risk_usd": "5.00",
+                "risk_pct": "0.5", "regime": "range", "session": "London",
+            },
+        },
+        {
+            "trade_id": "parity-trade", "event_type": "PositionClosed",
+            "idempotency_key": "close-parity-trade",
+            "occurred_at": "2026-11-16T10:00:00+00:00",
+            "payload": {
+                "lots_closed": "0.10", "pnl_gross": "-25.00",
+                "commission": "1.00", "slippage": "0.50", "swap": "0.25",
+                "daily_loss_pct_delta": "2.675",
+                "weekly_loss_pct_delta": "2.675",
+                "consecutive_loss_stop": 3, "exit_price": "1.09750",
+                "exit_time": "2026-11-16T10:00:00+00:00", "outcome": "SL",
+            },
+        },
+    ]
+
+    for account in ("paper", "backtest"):
+        ledger.append_events([
+            {
+                "account_id": account,
+                **event,
+                "idempotency_key": f"{account}:{event['idempotency_key']}",
+            }
+            for event in common
+        ])
+
+    paper_state = ledger.replay_account("paper", "1000.00")
+    backtest_state = ledger.replay_account("backtest", "1000.00")
+
+    accounting_fields = (
+        "cash_balance", "realized_pnl", "unrealized_pnl", "equity",
+        "open_positions", "closed_trades", "risk_lock_active",
+        "consecutive_losses", "daily_loss_pct", "weekly_loss_pct",
+    )
+    assert {key: paper_state[key] for key in accounting_fields} == {
+        key: backtest_state[key] for key in accounting_fields
+    }
+    assert paper_state["realized_pnl"] == "-26.75"
+    assert paper_state["equity"] == "973.25"
+    assert paper_state["consecutive_losses"] == 2
+    assert paper_state["daily_loss_pct"] == "2.675"
+    assert paper_state["weekly_loss_pct"] == "2.675"
+
