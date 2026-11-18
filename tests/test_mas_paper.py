@@ -1,5 +1,6 @@
 """تست‌های فاز ۵: موتور اجرای کاغذی — ژورنال، تسویه، attribution، بدون شبکه."""
 import json
+import os
 
 import pandas as pd
 import pytest
@@ -58,6 +59,11 @@ def test_settlement_of_open_position(env):
                              "session": "London"}]
     s2["last_run_ts"] = "1900-01-01 00:00:00+00:00"
     json.dump(s2, open(out / "state.json", "w"))
+    # Ledger is authoritative after migration; remove it to explicitly test legacy import.
+    for suffix in ("", "-wal", "-shm"):
+        path = str(out / "ledger.sqlite3") + suffix
+        if os.path.exists(path):
+            os.remove(path)
     r = run_paper(str(d), ["EURUSD"], out_dir=str(out), feeds=None)
     closed = r["closed_this_cycle"]
     assert len(closed) == 1 and closed[0]["outcome"] == "SL"
@@ -65,9 +71,10 @@ def test_settlement_of_open_position(env):
     st = _state(out)
     assert st["consecutive_losses"] == 1
     assert all(p["symbol"] != "EURUSD" or p["entry"] != 1.10 for p in st["open_positions"]) or True
-    # ژورنال append-only: حداقل ۳ خط (دو اجرای اول + این اجرا)
+    # Journal is a rebuildable projection containing the complete ledger trade history.
     lines = open(out / "journal.jsonl", encoding="utf-8").read().strip().splitlines()
-    assert len(lines) >= 2
+    assert len(lines) == 1
+    assert json.loads(lines[0])["closed"][0]["pnl_usd"] < 0
 
 
 def test_gap_skip_between_runs(env):
