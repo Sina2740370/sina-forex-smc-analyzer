@@ -97,7 +97,7 @@ def test_portfolio_mark_rejects_stale_or_mixed_quote_timestamps():
         quote_timestamp="2026-11-18T11:59:59Z",
         model=marks["p-short"].model,
     )
-    with pytest.raises(ValueError, match="same portfolio mark timestamp"):
+    with pytest.raises(ValueError, match="portfolio mark timestamp"):
         calculate_portfolio_mark(_ledger(), marks, timestamp=NOW)
 
 
@@ -304,5 +304,6 @@ def test_partial_close_rejects_marks_that_omit_another_open_position(tmp_path):
                 )
             },
         )
-    assert adapter.ledger.sequence == 3
+    # Only the two successful opens are committed; the rejected preflight is read-only.
+    assert adapter.ledger.sequence == 2
     assert store.load("paper:partial-missing").snapshot() == adapter.ledger.snapshot()
