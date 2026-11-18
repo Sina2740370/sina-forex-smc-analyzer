@@ -464,3 +464,94 @@ def test_shared_paper_backtest_accounting_contract_is_deterministic(tmp_path):
     assert paper_state["daily_loss_pct"] == "2.675"
     assert paper_state["weekly_loss_pct"] == "2.675"
 
+
+
+
+def test_three_chronological_losses_lock_risk_gate_until_audited_release(tmp_path):
+    from engine.mas.risk_agent import AccountState, evaluate_risk
+
+    ledger = SQLiteLedger(tmp_path / "loss-streak.db")
+    account = "paper-account"
+    closes = [
+        ("loss-1", "2026-11-18T10:00:00+00:00", "-10"),
+        ("loss-2", "2026-11-18T11:00:00+00:00", "-12"),
+        ("loss-3", "2026-11-18T12:00:00+00:00", "-8"),
+    ]
+
+    for trade_id, _closed_at, _pnl in closes:
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionOpened", "idempotency_key": f"open:{trade_id}",
+            "occurred_at": "2026-11-18T09:00:00+00:00",
+            "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                        "entry_price": "1.1000"},
+        })
+
+    # Intentionally append in reverse order; replay must use actual close timestamps.
+    for trade_id, closed_at, pnl in reversed(closes):
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionClosed", "idempotency_key": f"close:{trade_id}",
+            "occurred_at": closed_at,
+            "payload": {"lots_closed": "1", "pnl_gross": pnl,
+                        "commission": "0", "slippage": "0", "swap": "0",
+                        "consecutive_loss_stop": 3, "exit_time": closed_at},
+        })
+
+    locked_state = ledger.replay_account(account, "10000")
+    assert locked_state["consecutive_losses"] == 3
+    assert locked_state["risk_lock_active"] is True
+
+    locked_account = AccountState(
+        equity=float(locked_state["equity"]),
+        consecutive_losses=locked_state["consecutive_losses"],
+        risk_lock_active=locked_state["risk_lock_active"],
+    )
+    blocked = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000,
+        acct=locked_account,
+    )
+    assert blocked.approved is False
+    assert any(g.gate == "R-ADDTOLOSS" and not g.passed for g in blocked.gates)
+
+    # A later winning close must not silently clear a hard lock.
+    ledger.append_event({
+        "account_id": account, "trade_id": "win-after-lock",
+        "event_type": "PositionOpened", "idempotency_key": "open:win-after-lock",
+        "occurred_at": "2026-11-18T13:00:00+00:00",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "win-after-lock",
+        "event_type": "PositionClosed", "idempotency_key": "close:win-after-lock",
+        "occurred_at": "2026-11-18T14:00:00+00:00",
+        "payload": {"lots_closed": "1", "pnl_gross": "15",
+                    "commission": "0", "slippage": "0", "swap": "0",
+                    "consecutive_loss_stop": 3},
+    })
+    still_locked = ledger.replay_account(account, "10000")
+    assert still_locked["consecutive_losses"] == 3
+    assert still_locked["risk_lock_active"] is True
+
+    ledger.append_event({
+        "account_id": account, "event_type": "RiskLockReleased",
+        "idempotency_key": "review:release-after-loss-streak",
+        "occurred_at": "2026-11-18T15:00:00+00:00",
+        "payload": {"consecutive_losses": 0, "reviewer": "independent-review",
+                    "reason": "audited test release"},
+    })
+    released = ledger.replay_account(account, "10000")
+    assert released["consecutive_losses"] == 0
+    assert released["risk_lock_active"] is False
+
+    unlocked_account = AccountState(
+        equity=float(released["equity"]),
+        consecutive_losses=released["consecutive_losses"],
+        risk_lock_active=released["risk_lock_active"],
+    )
+    approved = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000,
+        acct=unlocked_account,
+    )
+    assert approved.approved is True
