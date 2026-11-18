@@ -487,13 +487,13 @@ class SQLiteLedger:
 
         for key, loss_usd in day_loss_usd.items():
             opening_equity = day_open_equity[key]
-            daily_loss_by_date[key] = (
+            daily_loss_by_date[key] = daily_loss_by_date.get(key, Decimal("0")) + (
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
             )
         for key, loss_usd in week_loss_usd.items():
             opening_equity = week_open_equity[key]
-            weekly_loss_by_week[key] = (
+            weekly_loss_by_week[key] = weekly_loss_by_week.get(key, Decimal("0")) + (
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
             )
