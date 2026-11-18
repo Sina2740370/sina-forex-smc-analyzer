@@ -137,6 +137,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         {"symbol": s["symbol"], "direction": s["direction"], "entry_time": s["entry_time"],
          "entry": s["entry"], "sl": s["sl"], "tp2": s["tp2"], "lots": s["lots"],
          "risk_usd": s["risk_usd"], "risk_pct": s["risk_pct"],
+         "sizing_result": s["sizing_result"],
          "final_score": s["final_score"], "regime": s["regime"], "session": s["session"]}
         for s in new_signals]
     state["runs"] = state.get("runs", 0) + 1
