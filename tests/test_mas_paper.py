@@ -131,8 +131,8 @@ def test_paper_does_not_auto_release_persistent_lock_after_a_win(env, monkeypatc
         "last_run_ts": "1900-01-01T00:00:00+00:00",
         "open_positions": [{
             "symbol": "EURUSD", "direction": "BUY",
-            "entry_time": str(df["time"].iloc[0]), "entry": 1.10,
-            "sl": 0.50, "tp2": 0.50, "lots": 0.01,
+            "entry_time": str(df["time"].iloc[0]), "entry": 1.00,
+            "sl": 0.95, "tp2": 1.05, "lots": 0.01,
             "risk_usd": 1.0, "risk_pct": 0.01,
             "final_score": 70.0, "regime": "range", "session": "London",
         }],
