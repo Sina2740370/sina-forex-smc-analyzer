@@ -72,6 +72,10 @@ def calculate_portfolio_mark(
         market = marks[position_id]
         if not isinstance(market, PositionMarketMark):
             raise ValueError(f"invalid mark for position {position_id}")
+        if not isinstance(market.quote, ExecutableQuote):
+            raise ValueError(f"invalid executable quote for position {position_id}")
+        if not isinstance(market.model, ExecutionCostModel):
+            raise ValueError(f"invalid execution model for position {position_id}")
         if _aware_utc(market.quote_timestamp, "quote_timestamp") != mark_time:
             raise ValueError("all position quotes must match the portfolio mark timestamp")
         position = positions[position_id]
