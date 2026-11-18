@@ -189,6 +189,7 @@ def test_paper_uses_fill_price_risk_authorization_and_persists_snapshot(env, mon
     assert sizing["entry_price"] == str(opened["entry"])
     assert sizing["direction"] == "BUY"
     assert float(sizing["actual_risk"]) <= float(sizing["requested_risk"])
+    assert result["results"]["EURUSD"]["sizing_result"]["sizing_id"] == sizing["sizing_id"]
     persisted = _state(out)["open_positions"][0]
     assert persisted["sizing_result"]["sizing_id"] == sizing["sizing_id"]
 
