@@ -159,9 +159,9 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
         "account_id": "paper-account", "event_type": "RiskStateSnapshot",
         "idempotency_key": "seed-state",
         "payload": {"consecutive_losses": 2, "daily_loss_pct": "0.5",
-                    "risk_lock_active": False, "runs": 4,
+                    "weekly_loss_pct": "1.25", "risk_lock_active": False, "runs": 4,
                     "last_run_ts": "2026-11-17T20:00:00+00:00",
-                    "daily_risk_date": "2026-11-17"},
+                    "daily_risk_date": "2026-11-17", "weekly_risk_week": "2026-11-16"},
     })
     ledger.append_event({
         "account_id": "paper-account", "trade_id": "trade-1",
@@ -176,7 +176,8 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
         "event_type": "PositionClosed", "idempotency_key": "close-trade-1",
         "payload": {"lots_closed": "1.0", "pnl_gross": "-50",
                     "commission": "0", "slippage": "0", "swap": "0",
-                    "daily_loss_pct_delta": "0.5", "consecutive_loss_stop": 3,
+                    "daily_loss_pct_delta": "0.5", "weekly_loss_pct_delta": "0.5",
+                    "consecutive_loss_stop": 3,
                     "exit_price": "1.0995", "outcome": "SL"},
     })
     ledger.append_event({
@@ -191,6 +192,7 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     assert state["consecutive_losses"] == 3
     assert state["risk_lock_active"] is True
     assert state["daily_loss_pct"] == "1.0"
+    assert state["weekly_loss_pct"] == "1.75"
     assert state["runs"] == 5
     assert state["last_run_ts"] == "2026-11-18T00:00:00+00:00"
     assert state["open_positions"] == {}
@@ -228,3 +230,21 @@ def test_ledger_initial_balance_metadata_is_set_once_and_immutable(tmp_path):
             conn.execute("DELETE FROM ledger_meta WHERE meta_key='initial_balance:paper'")
     finally:
         conn.close()
+
+def test_weekly_risk_reset_does_not_clear_daily_or_consecutive_loss(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    ledger.append_event({
+        "account_id": "paper-account", "event_type": "RiskStateSnapshot",
+        "idempotency_key": "seed-state",
+        "payload": {"consecutive_losses": 2, "daily_loss_pct": "1.5",
+                    "weekly_loss_pct": "5.5", "risk_lock_active": False},
+    })
+    ledger.append_event({
+        "account_id": "paper-account", "event_type": "WeeklyRiskReset",
+        "idempotency_key": "weekly-reset-1",
+        "payload": {"weekly_risk_week": "2026-11-16"},
+    })
+    state = ledger.replay_account("paper-account", "10000")
+    assert state["weekly_loss_pct"] == "0"
+    assert state["daily_loss_pct"] == "1.5"
+    assert state["consecutive_losses"] == 2
