@@ -15,12 +15,15 @@ from .accounting import (
     apply_ledger_events,
     mark_to_market_event,
     position_opened_event,
+    position_closed_event,
     position_settlement_events,
+    mark_to_market_event,
     roll_account_period,
 )
 from .identity import stable_execution_id, stable_position_id
 from .ledger import RiskLedger
 from .ledger_store import SQLiteLedgerStore
+from .lifecycle import PositionMarketMark, PortfolioMark, calculate_portfolio_mark
 from .periods import trading_periods
 
 
@@ -180,8 +183,8 @@ class PaperLedgerAdapter:
             raise ValueError("cannot settle an unknown position")
         if execution_result.side != position["side"]:
             raise ValueError("execution side does not match the open position")
-        if _exact_decimal_text(execution_result.lots, "execution lots") != position["quantity"]:
-            raise ValueError("execution lots must equal the settlement quantity")
+        if Decimal(_exact_decimal_text(execution_result.lots, "execution lots")) > Decimal(position["quantity"]):
+            raise ValueError("execution lots exceed the remaining position quantity")
         return self.build_settlement_events(
             position_id=position_id, execution_identity=execution_identity,
             quantity=execution_result.lots,
@@ -193,6 +196,61 @@ class PaperLedgerAdapter:
             swap=execution_result.swap_account,
             other_fees=execution_result.other_fees_account,
         )
+
+    def build_execution_portfolio_settlement_events(
+        self, *, position_id: str, execution_identity: str,
+        execution_result: Any, timestamp: str, mark_id: str,
+        remaining_position_marks: dict[str, PositionMarketMark],
+    ) -> list[dict]:
+        """Build a partial/full close plus coherent post-close portfolio MTM batch."""
+        if not all(hasattr(execution_result, name) for name in (
+            "side", "lots", "gross_pnl_account", "commission_account",
+            "swap_account", "other_fees_account",
+        )):
+            raise ValueError("execution_result does not satisfy the execution contract")
+        position = self.ledger.snapshot()["open_positions"].get(position_id)
+        if position is None:
+            raise ValueError("cannot settle an unknown position")
+        if execution_result.side != position["side"]:
+            raise ValueError("execution side does not match the open position")
+        quantity = Decimal(_exact_decimal_text(execution_result.lots, "execution lots"))
+        if quantity > Decimal(position["quantity"]):
+            raise ValueError("execution lots exceed the remaining position quantity")
+
+        candidate = RiskLedger.from_snapshot(self.ledger.snapshot())
+        execution_id = stable_execution_id(
+            position_id=position_id, execution_identity=execution_identity,
+        )
+        close_event = position_closed_event(
+            candidate, position_id=position_id, execution_id=execution_id,
+            quantity=quantity, gross_pnl=execution_result.gross_pnl_account,
+            timestamp=timestamp,
+            commission=execution_result.commission_account,
+            swap=execution_result.swap_account,
+            other_fees=execution_result.other_fees_account,
+        )
+        candidate.apply(close_event)
+        portfolio_mark = calculate_portfolio_mark(
+            candidate, remaining_position_marks, timestamp=timestamp,
+        )
+        mark_event = mark_to_market_event(
+            candidate, mark_id=mark_id,
+            unrealized_pnl=portfolio_mark.unrealized_pnl_account,
+            timestamp=timestamp,
+        )
+        return [close_event, mark_event]
+
+    def mark_portfolio(
+        self, *, marks: dict[str, PositionMarketMark],
+        timestamp: str, mark_id: str,
+    ) -> PortfolioMark:
+        """Calculate and persist a single aggregate MTM for the whole portfolio."""
+        result = calculate_portfolio_mark(self.ledger, marks, timestamp=timestamp)
+        self.update_mark(
+            mark_id=mark_id, unrealized_pnl=result.unrealized_pnl_account,
+            timestamp=timestamp,
+        )
+        return result
 
     def commit_events(self, events: list[dict]) -> bool:
         stable_events = [self._reuse_exact_event(event) for event in events]
