@@ -544,7 +544,9 @@ class SQLiteLedger:
                     total_trade_net = trade_net_totals.pop(trade_id)
                     if total_trade_net < 0:
                         chronological_streak += 1
-                    else:
+                    elif not chronological_lock:
+                        # A winning trade resets an ordinary loss streak, but it
+                        # cannot clear a hard lock. Only RiskLockReleased may do that.
                         chronological_streak = 0
                     if chronological_streak >= int(rp.get("consecutive_loss_stop", 3)):
                         chronological_lock = True
@@ -569,6 +571,10 @@ class SQLiteLedger:
             }
             for trade_id, position in positions.items()
         }
+        def decimal_text(value: Decimal) -> str:
+            # Stable non-exponent representation without insignificant trailing zeros.
+            return format(value.normalize(), "f")
+
         return {
             "account_id": account_id,
             "cash_balance": str(cash),
@@ -579,9 +585,9 @@ class SQLiteLedger:
             "closed_trades": closed_trades,
             "risk_lock_active": risk_lock_active,
             "consecutive_losses": consecutive_losses,
-            "daily_loss_pct": str(daily_loss_pct),
+            "daily_loss_pct": decimal_text(daily_loss_pct),
             "daily_risk_date": daily_risk_date,
-            "weekly_loss_pct": str(weekly_loss_pct),
+            "weekly_loss_pct": decimal_text(weekly_loss_pct),
             "weekly_risk_week": weekly_risk_week,
             "runs": runs,
             "last_run_ts": last_run_ts,
