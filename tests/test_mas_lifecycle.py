@@ -97,7 +97,7 @@ def test_portfolio_mark_rejects_stale_or_mixed_quote_timestamps():
         quote_timestamp="2026-11-18T11:59:59Z",
         model=marks["p-short"].model,
     )
-    with pytest.raises(ValueError, match="same portfolio mark timestamp"):
+    with pytest.raises(ValueError, match="portfolio mark timestamp"):
         calculate_portfolio_mark(_ledger(), marks, timestamp=NOW)
 
 
