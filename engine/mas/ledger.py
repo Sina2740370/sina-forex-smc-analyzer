@@ -57,12 +57,20 @@ class SQLiteLedger:
 
     def __init__(self, path: str | Path):
         self.path = str(path)
-        if self.path != ":memory:":
+        self._uri = False
+        self._keeper = None
+        if self.path == ":memory:":
+            self.path = f"file:mas-ledger-{uuid.uuid4().hex}?mode=memory&cache=shared"
+            self._uri = True
+            self._keeper = sqlite3.connect(self.path, uri=True, timeout=30.0,
+                                           isolation_level=None)
+        else:
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.path, timeout=30.0, isolation_level=None)
+        conn = sqlite3.connect(self.path, timeout=30.0, isolation_level=None,
+                               uri=self._uri)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA busy_timeout = 30000")
@@ -94,6 +102,24 @@ class SQLiteLedger:
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_ledger_account_time "
                 "ON ledger_events(account_id, occurred_at, sequence)"
+            )
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS ledger_events_no_update
+                BEFORE UPDATE ON ledger_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'ledger_events is append-only');
+                END
+                """
+            )
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS ledger_events_no_delete
+                BEFORE DELETE ON ledger_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'ledger_events is append-only');
+                END
+                """
             )
 
     @staticmethod
@@ -133,7 +159,9 @@ class SQLiteLedger:
                     (item["account_id"], item["idempotency_key"]),
                 ).fetchone()
                 if existing is not None:
-                    if existing["event_type"] != item["event_type"] or existing["payload_json"] != item["payload_json"]:
+                    identity_fields = ("event_type", "trade_id", "order_id",
+                                        "schema_version", "payload_json")
+                    if any(existing[field] != item.get(field) for field in identity_fields):
                         raise LedgerConflictError(
                             "idempotency_key already exists with a different event body"
                         )
@@ -168,6 +196,12 @@ class SQLiteLedger:
             raise
         finally:
             conn.close()
+
+    def close(self) -> None:
+        """Release the keeper connection used by an in-memory ledger."""
+        if self._keeper is not None:
+            self._keeper.close()
+            self._keeper = None
 
     def read_events(self, account_id: str, after_sequence: int = 0) -> list[LedgerEvent]:
         with closing(self._connect()) as conn:
