@@ -3,6 +3,8 @@
 Bid/ask spread is represented by executable quotes. Slippage is applied
 adversely to each fill. Quote-currency PnL is converted with an explicit,
 caller-supplied quote-to-account FX rate; no market data is fetched here.
+Swap follows the canonical ledger convention: positive is a financing debit,
+negative is a financing credit.
 """
 from __future__ import annotations
 
@@ -91,9 +93,11 @@ class ExecutionCostModel:
         stop = decimal_value(stop_price, "stop_price", positive=True)
         if side == "BUY":
             raw_fill = min(stop, quote.bid)
-            return raw_fill - self.slippage_price_per_fill
+            return decimal_value(raw_fill - self.slippage_price_per_fill,
+                                 "stop_exit_fill", positive=True)
         raw_fill = max(stop, quote.ask)
-        return raw_fill + self.slippage_price_per_fill
+        return decimal_value(raw_fill + self.slippage_price_per_fill,
+                             "stop_exit_fill", positive=True)
 
     def round_trip(
         self, *, side: str, lots: Any, entry_quote: ExecutableQuote,
@@ -110,7 +114,7 @@ class ExecutionCostModel:
         pnl_quote = (exit_price - entry) * direction * self.contract_size * size
         gross = pnl_quote * self.quote_to_account_rate
         commission = self.commission_per_lot_per_side * size * Decimal("2")
-        net = gross - commission + swap - other
+        net = gross - commission - swap - other
         return ExecutionResult(
             side=side, lots=size, entry_fill=entry, exit_fill=exit_price,
             gross_pnl_quote=pnl_quote, gross_pnl_account=gross,
