@@ -8,8 +8,8 @@
 - اگر معامله باز باشد، در همان نماد ورود جدید انجام نمی‌شود (قانون R-SYM).
 - آمار تفکیکی بر اساس رژیم بازار و سشن (برای attribution).
 
-هشدار صادقانه: داده M15 Dukascopy است؛ اسپرد لحظه‌ای/سلیپیج/سواپ شبیه‌سازی نشده‌اند.
-نتایج «توان تاریخی ستاپ‌ها» را نشان می‌دهند، نه تضمین آینده.
+تسویه و Equity از SQLite Ledger مشترک با Paper بازسازی می‌شوند؛ خروج اجباری TIME_EXIT است.
+هشدار صادقانه: داده M15 Dukascopy است؛ سلیپیج/سواپ/کمیسیون هنوز شبیه‌سازی نشده‌اند.
 """
 from __future__ import annotations
 
@@ -301,7 +301,7 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
                       spec, force_exit: bool = False):
     """معامله باز را روی کندل‌های M15 جلو می‌برد.
 
-    خروجی None = هنوز باز است؛ در غیر این صورت (exit_px, exit_time, last_idx, was_loss).
+    خروجی None = هنوز باز است؛ در غیر این صورت (exit_px, exit_time, last_idx, was_loss)، که was_loss=None یعنی TIME_EXIT.
     برخورد هر دو سطح در یک کندل = SL (بدبینانه). force_exit = کلوز با آخرین کندل موجود.
     """
     d = 1 if pos["direction"] == BUY else -1
