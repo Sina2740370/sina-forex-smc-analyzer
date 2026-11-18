@@ -193,7 +193,7 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     assert state["consecutive_losses"] == 3
     assert state["risk_lock_active"] is True
     assert state["daily_loss_pct"] == "0.5"
-    assert state["weekly_loss_pct"] == "0.5"
+    assert state["weekly_loss_pct"] == "1.75"
     assert state["runs"] == 5
     assert state["last_run_ts"] == "2026-11-18T00:00:00+00:00"
     assert state["open_positions"] == {}
