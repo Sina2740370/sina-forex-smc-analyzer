@@ -38,6 +38,33 @@ def test_create_open_and_reload_recover_identical_ledger(tmp_path):
     assert position_id in restored.ledger.snapshot()["open_positions"]
 
 
+def test_commit_open_position_wrapper_is_idempotent_after_retry(tmp_path):
+    store, adapter = _adapter(tmp_path)
+    facts = {
+        "symbol": "EURUSD", "side": "BUY", "quantity": "1",
+        "entry": "1.1", "stop": "1.09", "approved_risk": "50",
+        "actual_risk": "48", "decision_timestamp": NOW,
+        "candidate_identity": "signal-repeat",
+    }
+    first = adapter.commit_open_position(**facts)
+    second = adapter.commit_open_position(**facts)
+    assert first == second
+    assert adapter.ledger.sequence == 1
+    assert store.load("paper:test-account").snapshot() == adapter.ledger.snapshot()
+
+
+def test_mark_update_is_idempotent_by_mark_identity(tmp_path):
+    store, adapter = _adapter(tmp_path)
+    assert adapter.update_mark(
+        mark_id="mark-1", unrealized_pnl="-12.50", timestamp=NOW
+    ) is True
+    assert adapter.update_mark(
+        mark_id="mark-1", unrealized_pnl="-12.50", timestamp=NOW
+    ) is False
+    assert adapter.ledger.sequence == 1
+    assert store.load("paper:test-account").snapshot() == adapter.ledger.snapshot()
+
+
 def test_open_identity_is_deterministic_and_duplicate_safe(tmp_path):
     store, adapter = _adapter(tmp_path)
     position_id, event = adapter.build_open_event(
