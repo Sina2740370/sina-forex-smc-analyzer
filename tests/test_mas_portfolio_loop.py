@@ -1,6 +1,4 @@
 from copy import deepcopy
-from decimal import Decimal
-
 import pytest
 
 from engine.mas.ledger import RiskLedger
@@ -161,3 +159,12 @@ def test_commit_adapter_exact_retry_is_idempotent(tmp_path):
     assert commit_portfolio_events(adapter, events) is False
     assert adapter.ledger.snapshot() == before
     assert store.load("paper:retry").snapshot() == before
+
+
+
+def test_multiple_aggregate_marks_at_same_timestamp_are_rejected():
+    with pytest.raises(ValueError, match="one aggregate MTM"):
+        order_portfolio_events(
+            _ledger(),
+            [_mark("mark-a", timestamp=T0), _mark("mark-b", timestamp=T0)],
+        )
