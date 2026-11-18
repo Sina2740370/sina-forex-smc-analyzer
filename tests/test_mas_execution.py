@@ -194,3 +194,18 @@ def test_execution_result_cannot_settle_opposite_side(tmp_path):
             execution_result=execution, timestamp="2026-11-18T11:00:00Z",
             remaining_unrealized_pnl="0", mark_id="mark-invalid",
         )
+
+
+
+def test_rejects_non_positive_fill_after_extreme_slippage():
+    model = _model(slippage_price_per_fill="1.2")
+    with pytest.raises(ValueError, match="positive"):
+        model.entry_fill(
+            side="SELL", quote=ExecutableQuote("1.1", "1.1002")
+        )
+
+
+def test_rejects_untyped_quote_objects():
+    model = _model()
+    with pytest.raises(ValueError, match="ExecutableQuote"):
+        model.entry_fill(side="BUY", quote={"bid": "1.1", "ask": "1.2"})
