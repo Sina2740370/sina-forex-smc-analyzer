@@ -374,3 +374,24 @@ def test_partial_closes_count_once_using_aggregate_trade_result(tmp_path):
     assert state["consecutive_losses"] == 0
     assert state["risk_lock_active"] is False
     assert state["realized_pnl"] == "10"
+
+
+def test_idempotent_retry_rejects_changed_financial_timestamp(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    event = {
+        "account_id": "paper-account",
+        "trade_id": "trade-1",
+        "event_type": "PositionClosed",
+        "idempotency_key": "close:trade-1",
+        "occurred_at": "2026-11-18T10:00:00+00:00",
+        "payload": {"lots_closed": "1", "pnl_gross": "-10",
+                    "commission": "0", "slippage": "0", "swap": "0"},
+    }
+    ledger.append_event(event)
+    changed_time = {**event, "occurred_at": "2026-11-19T10:00:00+00:00"}
+    with pytest.raises(LedgerConflictError, match="different event body"):
+        ledger.append_event(changed_time)
+
+    stored = ledger.read_events("paper-account")
+    assert len(stored) == 1
+    assert stored[0].occurred_at == event["occurred_at"]
