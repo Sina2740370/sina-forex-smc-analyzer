@@ -163,6 +163,7 @@ class SQLiteLedger:
         normalized["schema_version"] = int(normalized.get("schema_version", 1))
         if normalized["schema_version"] < 1:
             raise ValueError("schema_version must be >= 1")
+        normalized["_occurred_at_explicit"] = bool(normalized.get("occurred_at"))
         normalized["occurred_at"] = normalized.get("occurred_at") or _utc_now()
         normalized["recorded_at"] = _utc_now()
         return normalized
@@ -220,7 +221,13 @@ class SQLiteLedger:
                 if existing is not None:
                     identity_fields = ("event_type", "trade_id", "order_id",
                                         "schema_version", "payload_json")
-                    if any(existing[field] != item.get(field) for field in identity_fields):
+                    timestamp_conflict = (
+                        item.get("_occurred_at_explicit")
+                        and existing["occurred_at"] != item["occurred_at"]
+                    )
+                    if timestamp_conflict or any(
+                        existing[field] != item.get(field) for field in identity_fields
+                    ):
                         raise LedgerConflictError(
                             "idempotency_key already exists with a different event body"
                         )
