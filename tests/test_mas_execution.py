@@ -111,7 +111,7 @@ def test_stop_gap_executes_at_worse_executable_quote():
 @pytest.mark.parametrize("side", ["BUY", "SELL"])
 def test_stop_without_gap_uses_stop_price_then_slippage(side):
     model = _model(slippage_price_per_fill="0.0001")
-    quote = ExecutableQuote("1.0990", "1.0992") if side == "BUY" else ExecutableQuote("1.1008", "1.1010")
+    quote = ExecutableQuote("1.1000", "1.1002") if side == "BUY" else ExecutableQuote("1.0998", "1.1000")
     fill = model.stop_exit_fill(side=side, stop_price="1.1000", quote=quote)
     assert fill == (Decimal("1.0999") if side == "BUY" else Decimal("1.1001"))
 
