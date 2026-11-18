@@ -68,20 +68,26 @@ class ExecutionCostModel:
 
     def entry_fill(self, *, side: str, quote: ExecutableQuote) -> Decimal:
         side = _side(side)
-        if side == "BUY":
-            return quote.ask + self.slippage_price_per_fill
-        return quote.bid - self.slippage_price_per_fill
+        if not isinstance(quote, ExecutableQuote):
+            raise ValueError("quote must be an ExecutableQuote")
+        fill = (quote.ask + self.slippage_price_per_fill if side == "BUY"
+                else quote.bid - self.slippage_price_per_fill)
+        return decimal_value(fill, "entry_fill", positive=True)
 
     def exit_fill(self, *, side: str, quote: ExecutableQuote) -> Decimal:
         side = _side(side)
-        if side == "BUY":
-            return quote.bid - self.slippage_price_per_fill
-        return quote.ask + self.slippage_price_per_fill
+        if not isinstance(quote, ExecutableQuote):
+            raise ValueError("quote must be an ExecutableQuote")
+        fill = (quote.bid - self.slippage_price_per_fill if side == "BUY"
+                else quote.ask + self.slippage_price_per_fill)
+        return decimal_value(fill, "exit_fill", positive=True)
 
     def stop_exit_fill(self, *, side: str, stop_price: Any,
                        quote: ExecutableQuote) -> Decimal:
         """Conservative stop fill: a gap through the stop executes at the worse quote."""
         side = _side(side)
+        if not isinstance(quote, ExecutableQuote):
+            raise ValueError("quote must be an ExecutableQuote")
         stop = decimal_value(stop_price, "stop_price", positive=True)
         if side == "BUY":
             raw_fill = min(stop, quote.bid)
