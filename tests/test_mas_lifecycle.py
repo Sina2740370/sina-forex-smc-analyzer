@@ -304,5 +304,6 @@ def test_partial_close_rejects_marks_that_omit_another_open_position(tmp_path):
                 )
             },
         )
-    assert adapter.ledger.sequence == 3
+    # Only the two successful opens are committed; the rejected preflight is read-only.
+    assert adapter.ledger.sequence == 2
     assert store.load("paper:partial-missing").snapshot() == adapter.ledger.snapshot()
