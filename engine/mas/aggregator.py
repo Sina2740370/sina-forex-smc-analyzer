@@ -149,10 +149,12 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
 
     # G5: Risk Agent
     verdict = evaluate_risk(symbol, direction, cand["entry"], cand["sl"], cand["tp2"],
-                            float(df["close"].iloc[-1]), acct or AccountState())
+                            float(df["close"].iloc[-1]), acct or AccountState(),
+                            fx_timestamp=now.isoformat())
     sig.gate_results.append(GateResult("G5", verdict.approved,
                                        "تأیید ریسک" if verdict.approved else "; ".join(verdict.rejection_reasons)))
     sig.risk_approved = verdict.approved
+    sig.sizing_result = verdict.sizing_result
     if not verdict.approved:
         return _finish_wait(sig, "G5: رد توسط ایجنت ریسک — " + "; ".join(verdict.rejection_reasons),
                             reports, warnings, missing)
