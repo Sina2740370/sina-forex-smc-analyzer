@@ -296,6 +296,10 @@ class SQLiteLedger:
                 runs = int(payload.get("runs", runs + 1))
                 last_run_ts = payload.get("last_run_ts", last_run_ts)
                 daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
+            elif event.event_type == "HistoricalTradeImported":
+                trade = dict(payload.get("trade", {}))
+                if trade:
+                    closed_trades.append(trade)
             elif event.event_type == "PositionOpened":
                 trade_id = event.trade_id or payload.get("trade_id")
                 if not trade_id or trade_id in positions:
