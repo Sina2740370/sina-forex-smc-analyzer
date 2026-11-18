@@ -439,6 +439,65 @@ class SQLiteLedger:
                 if "consecutive_losses" in payload:
                     consecutive_losses = int(payload["consecutive_losses"])
 
+        # Rebuild loss percentages from the immutable financial timeline. A delayed
+        # Paper cycle may append a historical close today; its denominator must be the
+        # account equity at the start of that close's actual day/week, not today's equity
+        # and not a caller-supplied percentage computed from a stale cycle snapshot.
+        financial_events = [
+            event for event in events
+            if event.event_type in ("CashAdjustment", "PositionPartiallyClosed", "PositionClosed")
+        ]
+
+        def event_time(event: LedgerEvent) -> datetime:
+            raw = event.occurred_at or event.recorded_at
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except (AttributeError, TypeError, ValueError) as exc:
+                raise LedgerError("financial event has an invalid occurred_at timestamp") from exc
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+
+        financial_events.sort(key=lambda item: (event_time(item), item.sequence))
+        timeline_equity = dec(initial_balance, "initial_balance")
+        day_open_equity: dict[str, Decimal] = {}
+        week_open_equity: dict[str, Decimal] = {}
+        day_loss_usd: dict[str, Decimal] = {}
+        week_loss_usd: dict[str, Decimal] = {}
+        for financial_event in financial_events:
+            moment = event_time(financial_event)
+            day_key = moment.date().isoformat()
+            week_key = (moment.date() - timedelta(days=moment.date().weekday())).isoformat()
+            day_open_equity.setdefault(day_key, timeline_equity)
+            week_open_equity.setdefault(week_key, timeline_equity)
+            if financial_event.event_type == "CashAdjustment":
+                timeline_equity += dec(financial_event.payload.get("amount"), "amount")
+                continue
+            fp = financial_event.payload
+            net_pnl = (
+                dec(fp.get("pnl_gross"), "pnl_gross")
+                - dec(fp.get("commission", "0"), "commission")
+                - dec(fp.get("slippage", "0"), "slippage")
+                - dec(fp.get("swap", "0"), "swap")
+            )
+            if net_pnl < 0:
+                day_loss_usd[day_key] = day_loss_usd.get(day_key, Decimal("0")) - net_pnl
+                week_loss_usd[week_key] = week_loss_usd.get(week_key, Decimal("0")) - net_pnl
+            timeline_equity += net_pnl
+
+        for key, loss_usd in day_loss_usd.items():
+            opening_equity = day_open_equity[key]
+            daily_loss_by_date[key] = (
+                loss_usd / opening_equity * Decimal("100")
+                if opening_equity > 0 else Decimal("0")
+            )
+        for key, loss_usd in week_loss_usd.items():
+            opening_equity = week_open_equity[key]
+            weekly_loss_by_week[key] = (
+                loss_usd / opening_equity * Decimal("100")
+                if opening_equity > 0 else Decimal("0")
+            )
+
         daily_loss_pct = daily_loss_by_date.get(
             daily_risk_date, daily_loss_pct if daily_risk_date is None else Decimal("0")
         )
