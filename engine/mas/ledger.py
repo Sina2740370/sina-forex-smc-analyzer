@@ -129,6 +129,24 @@ class SQLiteLedger:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS ledger_meta_no_update
+                BEFORE UPDATE ON ledger_meta
+                BEGIN
+                    SELECT RAISE(ABORT, 'ledger_meta is immutable');
+                END
+                """
+            )
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS ledger_meta_no_delete
+                BEFORE DELETE ON ledger_meta
+                BEGIN
+                    SELECT RAISE(ABORT, 'ledger_meta is immutable');
+                END
+                """
+            )
 
     @staticmethod
     def _validate_input(event: Mapping[str, Any]) -> dict[str, Any]:
