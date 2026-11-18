@@ -117,9 +117,23 @@ class PaperLedgerAdapter:
         )
         return position_id, event
 
+    def _reuse_exact_event(self, event: dict) -> dict:
+        if not isinstance(event, dict):
+            raise ValueError("event must be a mapping")
+        event_id = event.get("event_id")
+        for prior in self.ledger.snapshot()["applied_events"]:
+            if prior.get("event_id") == event_id:
+                comparable = dict(event)
+                comparable["sequence"] = prior["sequence"]
+                if comparable != prior:
+                    raise ValueError("event_id was reused with different execution facts")
+                return prior
+        return event
+
     def commit_event(self, event: dict) -> bool:
+        stable_event = self._reuse_exact_event(event)
         return apply_ledger_event(
-            self.ledger, event, store=self.store, ledger_id=self.ledger_id,
+            self.ledger, stable_event, store=self.store, ledger_id=self.ledger_id,
         )
 
     def commit_open_position(self, **facts: Any) -> str:
@@ -151,8 +165,9 @@ class PaperLedgerAdapter:
         )
 
     def commit_events(self, events: list[dict]) -> bool:
+        stable_events = [self._reuse_exact_event(event) for event in events]
         return apply_ledger_events(
-            self.ledger, events, store=self.store, ledger_id=self.ledger_id,
+            self.ledger, stable_events, store=self.store, ledger_id=self.ledger_id,
         )
 
     def update_mark(self, *, mark_id: str, unrealized_pnl: Any, timestamp: str) -> bool:
