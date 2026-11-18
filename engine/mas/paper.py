@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from datetime import timedelta
 from dataclasses import asdict
 
 import pandas as pd
@@ -48,6 +49,8 @@ def _projection_to_paper_state(projection: dict) -> dict:
         "risk_lock_active": bool(projection["risk_lock_active"]),
         "daily_loss_pct": float(projection["daily_loss_pct"]),
         "daily_risk_date": projection.get("daily_risk_date"),
+        "weekly_loss_pct": float(projection["weekly_loss_pct"]),
+        "weekly_risk_week": projection.get("weekly_risk_week"),
         "open_positions": open_positions,
         "runs": int(projection["runs"]),
         "last_run_ts": projection.get("last_run_ts"),
@@ -110,10 +113,12 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 "payload": {
                     "consecutive_losses": int(legacy_state.get("consecutive_losses", 0)),
                     "daily_loss_pct": str(legacy_state.get("daily_loss_pct", 0)),
+                    "weekly_loss_pct": str(legacy_state.get("weekly_loss_pct", 0)),
                     "risk_lock_active": legacy_lock,
                     "runs": int(legacy_state.get("runs", 0)),
                     "last_run_ts": last_run,
                     "daily_risk_date": legacy_state.get("daily_risk_date") or legacy_day,
+                    "weekly_risk_week": legacy_state.get("weekly_risk_week"),
                 },
             })
             for index, position in enumerate(legacy_state.get("open_positions", [])):
@@ -183,6 +188,17 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             "payload": {"daily_risk_date": daily_risk_date},
         })
         projection = ledger.replay_account(account_id, initial_balance)
+        state = _projection_to_paper_state(projection)    analysis_date = pd.Timestamp(analysis_point).date()
+    weekly_risk_week = (analysis_date - timedelta(days=analysis_date.weekday())).isoformat()
+    if state.get("weekly_risk_week") != weekly_risk_week:
+        ledger.append_event({
+            "account_id": account_id,
+            "event_type": "WeeklyRiskReset",
+            "idempotency_key": f"weekly-reset:{weekly_risk_week}",
+            "occurred_at": analysis_point,
+            "payload": {"weekly_risk_week": weekly_risk_week},
+        })
+        projection = ledger.replay_account(account_id, initial_balance)
         state = _projection_to_paper_state(projection)
 
     # 1. Settle all positions whose SL/TP was reached. The batch commit is atomic.
@@ -219,6 +235,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 "slippage": "0",
                 "swap": "0",
                 "daily_loss_pct_delta": str(loss_delta),
+                "weekly_loss_pct_delta": str(loss_delta),
                 "consecutive_loss_stop": RISK_RULES["consecutive_losses_stop"],
                 "exit_price": str(exit_price),
                 "exit_time": exit_ts,
@@ -240,6 +257,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         open_trades=len(state["open_positions"]),
         open_risk_pct=sum(p.get("risk_pct", 0.0) for p in state["open_positions"]),
         daily_loss_pct=state["daily_loss_pct"],
+        weekly_loss_pct=state["weekly_loss_pct"],
         consecutive_losses=state["consecutive_losses"],
         risk_lock_active=state["risk_lock_active"],
         per_symbol_open={p["symbol"]: 1 for p in state["open_positions"]},
