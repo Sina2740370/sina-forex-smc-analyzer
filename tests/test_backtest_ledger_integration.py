@@ -56,6 +56,21 @@ def test_paper_and_backtest_match_same_market_input_through_take_profit(
     import engine.mas.paper as paper
     from engine.mas.ledger import SQLiteLedger
 
+    captured_events = {"paper": [], "backtest": []}
+    original_append_events = SQLiteLedger.append_events
+
+    def capture_append_events(self, events):
+        batch = list(events)
+        for event in batch:
+            account = event.get("account_id")
+            if account == "paper":
+                captured_events["paper"].append(dict(event))
+            elif account == "backtest:EURUSD":
+                captured_events["backtest"].append(dict(event))
+        return original_append_events(self, batch)
+
+    monkeypatch.setattr(SQLiteLedger, "append_events", capture_append_events)
+
     start = pd.Timestamp("2026-01-05T00:00:00Z")
     times = [start + pd.Timedelta(minutes=15 * i) for i in range(5)]
     frame = pd.DataFrame({
@@ -149,6 +164,31 @@ def test_paper_and_backtest_match_same_market_input_through_take_profit(
     )
     assert captured_backtest_projection["value"]["risk_lock_active"] is False
     assert _paper_state_for_test(paper_out)["risk_lock_active"] is False
+
+    def lifecycle(events):
+        return [
+            event for event in events
+            if event["event_type"] in ("PositionOpened", "PositionClosed")
+        ]
+
+    paper_lifecycle = lifecycle(captured_events["paper"])
+    backtest_lifecycle = lifecycle(captured_events["backtest"])
+    assert [event["event_type"] for event in paper_lifecycle] == [
+        "PositionOpened", "PositionClosed"
+    ]
+    assert [event["event_type"] for event in backtest_lifecycle] == [
+        "PositionOpened", "PositionClosed"
+    ]
+    assert [event["trade_id"] for event in paper_lifecycle] == [
+        event["trade_id"] for event in backtest_lifecycle
+    ]
+    for paper_event, backtest_event in zip(paper_lifecycle, backtest_lifecycle):
+        assert paper_event["occurred_at"] == backtest_event["occurred_at"]
+        for field in ("lots", "entry_price", "exit_price", "pnl_gross"):
+            if field in paper_event["payload"] or field in backtest_event["payload"]:
+                assert float(paper_event["payload"][field]) == pytest.approx(
+                    float(backtest_event["payload"][field]), abs=1e-10
+                )
 
 
 def _paper_state_for_test(out_dir):
