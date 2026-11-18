@@ -122,3 +122,33 @@ def test_risk_lock_state_is_replayed_from_events(tmp_path):
     ledger.append_event({**base, "event_type": "RiskLockReleased",
                          "idempotency_key": "unlock-1"})
     assert ledger.replay_account("paper-account", "1000")["risk_lock_active"] is False
+
+
+def test_in_memory_ledger_persists_across_internal_connections():
+    ledger = SQLiteLedger(":memory:")
+    ledger.append_event(_event())
+    assert len(ledger.read_events("paper-account")) == 1
+    ledger.close()
+
+
+def test_event_store_rejects_update_and_delete(tmp_path):
+    import sqlite3
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    event, _ = ledger.append_event(_event())
+    conn = sqlite3.connect(ledger.path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            conn.execute("UPDATE ledger_events SET event_type='Tampered' WHERE event_id=?",
+                         (event.event_id,))
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            conn.execute("DELETE FROM ledger_events WHERE event_id=?", (event.event_id,))
+    finally:
+        conn.close()
+
+
+def test_idempotency_key_cannot_be_reused_for_another_trade(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    ledger.append_event(_event())
+    changed = {**_event(), "trade_id": "different-trade"}
+    with pytest.raises(LedgerConflictError):
+        ledger.append_event(changed)
