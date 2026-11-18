@@ -86,3 +86,71 @@ def test_attribution_math():
     assert a["n_trades"] == 3 and a["win_rate_pct"] == 66.7
     assert a["total_pnl_usd"] == 40 and a["return_pct"] == 4.0
     assert a["by_symbol"]["A"]["n"] == 2 and a["by_session"]["London"]["pnl"] == 70
+
+
+def test_paper_migrates_legacy_three_loss_state_to_persistent_lock(env, monkeypatch):
+    from types import SimpleNamespace
+    import engine.mas.paper as paper
+
+    root, d, df = env
+    out = root / "out"
+    out.mkdir()
+    # Legacy state has no risk_lock_active field, but already reached the stop threshold.
+    json.dump({
+        "equity": 10_000.0, "consecutive_losses": 3, "daily_loss_pct": 0.0,
+        "open_positions": [], "runs": 0, "last_run_ts": "1900-01-01T00:00:00+00:00",
+    }, open(out / "state.json", "w"))
+
+    captured = {}
+    def fake_analyze(_df, _symbol, _now, acct=None, **_kwargs):
+        captured["risk_lock_active"] = acct.risk_lock_active
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="test",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "test"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", fake_analyze)
+    paper.run_paper(str(d), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    persisted = _state(out)
+    assert captured["risk_lock_active"] is True
+    assert persisted["risk_lock_active"] is True
+    assert persisted["consecutive_losses"] == 3
+
+
+def test_paper_does_not_auto_release_persistent_lock_after_a_win(env, monkeypatch):
+    from types import SimpleNamespace
+    import engine.mas.paper as paper
+
+    root, d, df = env
+    out = root / "out"
+    out.mkdir()
+    state = {
+        "equity": 10_000.0, "consecutive_losses": 3, "risk_lock_active": True,
+        "daily_loss_pct": 0.0, "runs": 0,
+        "last_run_ts": "1900-01-01T00:00:00+00:00",
+        "open_positions": [{
+            "symbol": "EURUSD", "direction": "BUY",
+            "entry_time": str(df["time"].iloc[0]), "entry": 1.10,
+            "sl": 0.50, "tp2": 0.50, "lots": 0.01,
+            "risk_usd": 1.0, "risk_pct": 0.01,
+            "final_score": 70.0, "regime": "range", "session": "London",
+        }],
+    }
+    json.dump(state, open(out / "state.json", "w"))
+
+    captured = {}
+    def fake_analyze(_df, _symbol, _now, acct=None, **_kwargs):
+        captured["risk_lock_active"] = acct.risk_lock_active
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="test",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "test"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", fake_analyze)
+    paper.run_paper(str(d), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    persisted = _state(out)
+    assert captured["risk_lock_active"] is True
+    assert persisted["risk_lock_active"] is True
+    assert persisted["consecutive_losses"] == 3
