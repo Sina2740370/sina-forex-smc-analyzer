@@ -121,6 +121,14 @@ class SQLiteLedger:
                 END
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ledger_meta (
+                    meta_key TEXT PRIMARY KEY,
+                    meta_value TEXT NOT NULL
+                )
+                """
+            )
 
     @staticmethod
     def _validate_input(event: Mapping[str, Any]) -> dict[str, Any]:
@@ -140,6 +148,39 @@ class SQLiteLedger:
         normalized["occurred_at"] = normalized.get("occurred_at") or _utc_now()
         normalized["recorded_at"] = _utc_now()
         return normalized
+
+    def get_meta(self, key: str) -> str | None:
+        with closing(self._connect()) as conn:
+            row = conn.execute(
+                "SELECT meta_value FROM ledger_meta WHERE meta_key=?", (key,)
+            ).fetchone()
+        return row["meta_value"] if row else None
+
+    def set_meta_once(self, key: str, value: str) -> str:
+        """Set immutable metadata once; return the authoritative stored value."""
+        if not isinstance(key, str) or not key.strip() or not isinstance(value, str):
+            raise ValueError("metadata key and value must be non-empty strings")
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT meta_value FROM ledger_meta WHERE meta_key=?", (key,)
+            ).fetchone()
+            if row is None:
+                conn.execute(
+                    "INSERT INTO ledger_meta(meta_key, meta_value) VALUES (?, ?)",
+                    (key, value),
+                )
+                stored = value
+            else:
+                stored = row["meta_value"]
+            conn.commit()
+            return stored
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def append_event(self, event: Mapping[str, Any]) -> tuple[LedgerEvent, bool]:
         events = self.append_events([event])
