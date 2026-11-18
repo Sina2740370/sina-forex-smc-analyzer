@@ -22,7 +22,7 @@ def test_backtest_settles_final_trade_through_ledger_and_marks_time_exit(monkeyp
     def fake_analyze(_df, symbol, now, **kwargs):
         calls["count"] += 1
         if calls["count"] == 1:
-            close = float(_df["close"].iloc[-1])
+            close = float(_df.loc[_df["time"] <= now, "close"].iloc[-1])
             return SimpleNamespace(
                 signal="BUY",
                 cand={"entry": close, "sl": close - 0.0010,
