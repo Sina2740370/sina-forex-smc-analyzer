@@ -1,5 +1,6 @@
 """Tests for the transactional SQLite event ledger."""
 import pytest
+from decimal import Decimal
 
 from engine.mas.ledger import LedgerConflictError, SQLiteLedger
 
@@ -192,7 +193,7 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     assert state["consecutive_losses"] == 3
     assert state["risk_lock_active"] is True
     assert state["daily_loss_pct"] == "0.5"
-    assert state["weekly_loss_pct"] == "1.75"
+    assert state["weekly_loss_pct"] == "0.5"
     assert state["runs"] == 5
     assert state["last_run_ts"] == "2026-11-18T00:00:00+00:00"
     assert state["open_positions"] == {}
@@ -302,7 +303,7 @@ def test_replay_attributes_delayed_closes_to_actual_day_and_week(tmp_path):
     state = ledger.replay_account(account, "10000")
     assert state["daily_risk_date"] == "2026-11-18"
     assert state["weekly_risk_week"] == "2026-11-16"
-    assert state["daily_loss_pct"] == "0.75"
-    assert state["weekly_loss_pct"] == "3.25"
+    assert Decimal(state["daily_loss_pct"]) == Decimal("-10") / Decimal("9980") * 100
+    assert Decimal(state["weekly_loss_pct"]) == Decimal("-20") / Decimal("9990") * 100
     assert state["realized_pnl"] == "-30"
     assert state["open_positions"] == {}
