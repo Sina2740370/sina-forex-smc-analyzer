@@ -227,3 +227,35 @@ def test_paper_rebuilds_tampered_state_projection_from_ledger(env):
     assert restored["equity"] == expected["equity"]
     assert restored["open_positions"] == expected["open_positions"]
     assert restored["runs"] == first["cycle"]
+
+def test_paper_risk_lock_release_requires_audited_idempotent_review(env):
+    from engine.mas.paper import release_paper_risk_lock
+    from engine.mas.ledger import SQLiteLedger
+
+    root, data_dir, frame = env
+    out = root / "paper-risk-release"
+    out.mkdir()
+    json.dump({
+        "equity": 10_000.0, "consecutive_losses": 3, "risk_lock_active": True,
+        "daily_loss_pct": 0.0, "open_positions": [], "runs": 0,
+        "last_run_ts": "1900-01-01T00:00:00+00:00",
+    }, open(out / "state.json", "w"))
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    assert _state(out)["risk_lock_active"] is True
+
+    released = release_paper_risk_lock(
+        str(out), reviewer="senior-reviewer", reason="manual risk review completed",
+        request_id="review-2026-001",
+    )
+    assert released["risk_lock_active"] is False
+    assert released["consecutive_losses"] == 0
+
+    repeated = release_paper_risk_lock(
+        str(out), reviewer="senior-reviewer", reason="manual risk review completed",
+        request_id="review-2026-001",
+    )
+    assert repeated["risk_lock_active"] is False
+    events = SQLiteLedger(out / "ledger.sqlite3").read_events("paper")
+    releases = [event for event in events if event.event_type == "RiskLockReleased"]
+    assert len(releases) == 1
+    assert releases[0].payload["reviewed_by"] == "senior-reviewer"
