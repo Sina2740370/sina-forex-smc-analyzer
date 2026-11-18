@@ -49,7 +49,7 @@ class RiskLedger:
     explicit PeriodRolled events; the core never infers local-time rollovers.
     """
 
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     def __init__(self, initial_balance: Any, base_currency: str = "USD",
                  daily_period_id: str = "initial",
@@ -62,8 +62,10 @@ class RiskLedger:
         self.balance = balance
         self.daily_start_balance = balance
         self.weekly_start_balance = balance
-        self.daily_period_id = str(daily_period_id)
-        self.weekly_period_id = str(weekly_period_id)
+        self.initial_daily_period_id = str(daily_period_id)
+        self.initial_weekly_period_id = str(weekly_period_id)
+        self.daily_period_id = self.initial_daily_period_id
+        self.weekly_period_id = self.initial_weekly_period_id
         self.daily_realized_net_pnl = ZERO
         self.weekly_realized_net_pnl = ZERO
         self.realized_pnl_lifetime = ZERO
@@ -134,8 +136,14 @@ class RiskLedger:
         initial_balance = _decimal(snapshot.get("initial_balance"),
                                     "initial_balance", positive=True)
 
+        initial_daily_period_id = snapshot.get("initial_daily_period_id")
+        initial_weekly_period_id = snapshot.get("initial_weekly_period_id")
         daily_period_id = snapshot.get("daily_period_id")
         weekly_period_id = snapshot.get("weekly_period_id")
+        if not isinstance(initial_daily_period_id, str) or not initial_daily_period_id:
+            raise ValueError("snapshot initial_daily_period_id is required")
+        if not isinstance(initial_weekly_period_id, str) or not initial_weekly_period_id:
+            raise ValueError("snapshot initial_weekly_period_id is required")
         if not isinstance(daily_period_id, str) or not daily_period_id:
             raise ValueError("snapshot daily_period_id is required")
         if not isinstance(weekly_period_id, str) or not weekly_period_id:
@@ -144,8 +152,8 @@ class RiskLedger:
         ledger = cls(
             initial_balance,
             base_currency=base_currency,
-            daily_period_id="initial",
-            weekly_period_id="initial",
+            daily_period_id=initial_daily_period_id,
+            weekly_period_id=initial_weekly_period_id,
         )
         for expected_sequence, event in enumerate(applied, start=1):
             if not isinstance(event, dict):
@@ -339,6 +347,8 @@ class RiskLedger:
             "fees_lifetime": money(self.fees_lifetime),
             "open_risk_amount": money(self.open_risk_amount),
             "open_risk_pct": money(self.open_risk_pct),
+            "initial_daily_period_id": self.initial_daily_period_id,
+            "initial_weekly_period_id": self.initial_weekly_period_id,
             "daily_period_id": self.daily_period_id,
             "daily_start_balance": money(self.daily_start_balance),
             "daily_realized_net_pnl": money(self.daily_realized_net_pnl),
