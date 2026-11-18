@@ -6,6 +6,8 @@ from engine.mas.execution import (
     ExecutableQuote,
     ExecutionCostModel,
 )
+from engine.mas.ledger_store import SQLiteLedgerStore
+from engine.mas.paper_adapter import PaperLedgerAdapter
 
 
 def _model(**overrides):
@@ -135,4 +137,60 @@ def test_rejects_unknown_side_and_float_trade_size():
     with pytest.raises(ValueError, match="exact Decimal"):
         model.round_trip(
             side="BUY", lots=1.0, entry_quote=quote, exit_quote=quote
+        )
+
+
+
+def test_execution_result_flows_into_atomic_paper_settlement(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "execution-settlement.sqlite")
+    adapter = PaperLedgerAdapter.create(
+        store=store, ledger_id="paper:execution",
+        initial_balance="10000", timestamp="2026-11-18T10:15:00Z",
+    )
+    position_id = adapter.commit_open_position(
+        symbol="EURUSD", side="BUY", quantity="1",
+        entry="1.1002", stop="1.0950",
+        approved_risk="50", actual_risk="48",
+        decision_timestamp="2026-11-18T10:15:00Z",
+        candidate_identity="execution-test",
+    )
+    execution = _model().round_trip(
+        side="BUY", lots="1",
+        entry_quote=ExecutableQuote("1.1000", "1.1002"),
+        exit_quote=ExecutableQuote("1.1010", "1.1012"),
+        swap_account="-1",
+    )
+    events = adapter.build_execution_settlement_events(
+        position_id=position_id, execution_identity="fill-close-1",
+        execution_result=execution, timestamp="2026-11-18T11:00:00Z",
+        remaining_unrealized_pnl="0", mark_id="mark-after-close",
+    )
+    assert adapter.commit_events(events) is True
+    assert adapter.ledger.balance == Decimal("10072.0000")
+    assert store.load("paper:execution").snapshot() == adapter.ledger.snapshot()
+
+
+def test_execution_result_cannot_settle_opposite_side(tmp_path):
+    store = SQLiteLedgerStore(tmp_path / "execution-side.sqlite")
+    adapter = PaperLedgerAdapter.create(
+        store=store, ledger_id="paper:side",
+        initial_balance="10000", timestamp="2026-11-18T10:15:00Z",
+    )
+    position_id = adapter.commit_open_position(
+        symbol="EURUSD", side="BUY", quantity="1",
+        entry="1.1002", stop="1.0950",
+        approved_risk="50", actual_risk="48",
+        decision_timestamp="2026-11-18T10:15:00Z",
+        candidate_identity="side-test",
+    )
+    execution = _model().round_trip(
+        side="SELL", lots="1",
+        entry_quote=ExecutableQuote("1.1", "1.1002"),
+        exit_quote=ExecutableQuote("1.101", "1.1012"),
+    )
+    with pytest.raises(ValueError, match="side"):
+        adapter.build_execution_settlement_events(
+            position_id=position_id, execution_identity="wrong-side",
+            execution_result=execution, timestamp="2026-11-18T11:00:00Z",
+            remaining_unrealized_pnl="0", mark_id="mark-invalid",
         )
