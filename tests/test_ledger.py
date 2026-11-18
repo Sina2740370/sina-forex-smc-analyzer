@@ -623,3 +623,69 @@ def test_daily_and_weekly_resets_never_release_hard_loss_lock(tmp_path):
     )
     assert verdict.approved is False
     assert any(g.gate == "R-ADDTOLOSS" and not g.passed for g in verdict.gates)
+
+
+
+def test_concurrent_distinct_appends_allocate_unique_contiguous_sequences(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    ledger = SQLiteLedger(tmp_path / "concurrent-sequence.db")
+    account = "paper-account"
+    workers = 8
+    barrier = Barrier(workers)
+
+    def append_one(index):
+        barrier.wait(timeout=10)
+        return ledger.append_event({
+            "account_id": account,
+            "event_type": "AuditMarker",
+            "idempotency_key": f"concurrent:{index}",
+            "occurred_at": f"2026-11-19T10:00:{index:02d}+00:00",
+            "payload": {"worker": str(index)},
+        })
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(append_one, range(workers)))
+
+    assert all(inserted is True for _event, inserted in results)
+    events = ledger.read_events(account)
+    assert len(events) == workers
+    assert [event.sequence for event in events] == list(range(1, workers + 1))
+    assert len({event.idempotency_key for event in events}) == workers
+
+
+def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    ledger = SQLiteLedger(tmp_path / "concurrent-idempotency.db")
+    account = "paper-account"
+    workers = 8
+    barrier = Barrier(workers)
+    event = {
+        "account_id": account,
+        "trade_id": "single-close",
+        "event_type": "PositionClosed",
+        "idempotency_key": "close:single-close",
+        "occurred_at": "2026-11-19T10:00:00+00:00",
+        "payload": {
+            "lots_closed": "1", "pnl_gross": "-12.50",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    }
+
+    def retry_same_event(_index):
+        barrier.wait(timeout=10)
+        return ledger.append_event(event)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(retry_same_event, range(workers)))
+
+    assert sum(1 for _stored, inserted in results if inserted) == 1
+    assert sum(1 for _stored, inserted in results if not inserted) == workers - 1
+    events = ledger.read_events(account)
+    assert len(events) == 1
+    assert events[0].sequence == 1
+    assert events[0].idempotency_key == event["idempotency_key"]
+    assert events[0].payload == event["payload"]
