@@ -259,3 +259,18 @@ def test_paper_risk_lock_release_requires_audited_idempotent_review(env):
     releases = [event for event in events if event.event_type == "RiskLockReleased"]
     assert len(releases) == 1
     assert releases[0].payload["reviewed_by"] == "senior-reviewer"
+
+def test_paper_imports_legacy_journal_even_without_state_snapshot(env):
+    root, data_dir, frame = env
+    out = root / "paper-journal-migration"
+    out.mkdir()
+    legacy_trade = {
+        "trade_id": "old-trade-1", "symbol": "EURUSD", "direction": "BUY",
+        "session": "London", "regime": "range", "pnl_usd": 25.0,
+    }
+    with open(out / "journal.jsonl", "w", encoding="utf-8") as stream:
+        stream.write(json.dumps({"cycle": 1, "closed": [legacy_trade]}) + "\n")
+
+    result = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    assert result["attribution"]["n_trades"] == 1
+    assert result["attribution"]["total_pnl_usd"] == 25.0
