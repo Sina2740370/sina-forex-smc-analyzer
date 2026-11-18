@@ -38,7 +38,7 @@ def test_non_usd_quote_sizing_records_conversion_price_and_timestamp():
 def test_execution_price_reauthorization_produces_fill_specific_sizing():
     account = AccountState(equity=10_000)
     at_signal = evaluate_risk("USDJPY", "SELL", 155.0, 155.2, 154.6, 155.0, acct=account)
-    at_fill = evaluate_risk("USDJPY", "SELL", 156.0, 155.2, 154.6, 156.0, acct=account)
+    at_fill = evaluate_risk("USDJPY", "SELL", 156.0, 156.2, 155.4, 156.0, acct=account)
 
     assert at_signal.approved and at_fill.approved
     assert at_signal.sizing_result is not None and at_fill.sizing_result is not None
