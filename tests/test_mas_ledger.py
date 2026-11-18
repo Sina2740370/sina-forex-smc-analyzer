@@ -536,3 +536,31 @@ def test_sqlite_store_rolls_back_event_when_snapshot_update_fails(tmp_path):
     restored = store.load("account")
     assert restored.sequence == 0
     assert restored.unrealized_pnl == Decimal("0")
+
+
+
+def test_snapshot_recovery_preserves_genesis_period_ids_after_rollover():
+    ledger = RiskLedger(
+        "10000", daily_period_id="daily-genesis",
+        weekly_period_id="weekly-genesis",
+    )
+    assert RiskLedger.from_snapshot(ledger.snapshot()).snapshot() == ledger.snapshot()
+
+    ledger.apply(event(
+        1, "PeriodRolled", daily_period_id="daily-next",
+        weekly_period_id="weekly-next",
+    ))
+    restored = RiskLedger.from_snapshot(ledger.snapshot())
+    assert restored.snapshot() == ledger.snapshot()
+    assert restored.initial_daily_period_id == "daily-genesis"
+    assert restored.initial_weekly_period_id == "weekly-genesis"
+
+
+def test_snapshot_recovery_rejects_missing_genesis_period_metadata():
+    snapshot = RiskLedger(
+        "10000", daily_period_id="daily-genesis",
+        weekly_period_id="weekly-genesis",
+    ).snapshot()
+    del snapshot["initial_daily_period_id"]
+    with pytest.raises(ValueError, match="initial_daily_period_id is required"):
+        RiskLedger.from_snapshot(snapshot)
