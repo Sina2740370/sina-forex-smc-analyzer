@@ -70,7 +70,7 @@ def test_settlement_of_open_position(env):
     assert closed[0]["pnl_usd"] < 0                       # ضرر مثبت بودنش منطقی
     st = _state(out)
     assert st["consecutive_losses"] == 1
-    assert all(p["symbol"] != "EURUSD" or p["entry"] != 1.10 for p in st["open_positions"]) or True
+    assert all(p.get("trade_id") != closed[0]["trade_id"] for p in st["open_positions"])
     # Journal is a rebuildable projection containing the complete ledger trade history.
     lines = open(out / "journal.jsonl", encoding="utf-8").read().strip().splitlines()
     assert len(lines) == 1
@@ -210,3 +210,19 @@ def test_paper_rebuilds_deleted_state_and_journal_from_ledger(env):
     assert recovered["open_positions"] == first_state["open_positions"]
     assert second["cycle"] == first["cycle"]
     assert (out / "journal.jsonl").exists()
+
+def test_paper_rebuilds_tampered_state_projection_from_ledger(env):
+    root, data_dir, frame = env
+    out = root / "paper-authority"
+    first = run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    expected = _state(out)
+    tampered = dict(expected)
+    tampered["equity"] = 1.0
+    tampered["open_positions"] = []
+    json.dump(tampered, open(out / "state.json", "w"))
+
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+    restored = _state(out)
+    assert restored["equity"] == expected["equity"]
+    assert restored["open_positions"] == expected["open_positions"]
+    assert restored["runs"] == first["cycle"]
