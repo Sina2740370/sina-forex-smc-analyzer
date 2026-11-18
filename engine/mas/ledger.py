@@ -254,16 +254,7 @@ class SQLiteLedger:
         return [self._row_to_event(row) for row in rows]
 
     def replay_account(self, account_id: str, initial_balance: str) -> dict[str, Any]:
-        """Rebuild deterministic cash/equity/positions from immutable events.
-
-        Supported accounting events:
-        - CashAdjustment: payload.amount (signed decimal string)
-        - PositionOpened: payload.lots, symbol, direction, entry_price
-        - PositionMarked: payload.unrealized_pnl
-        - PositionPartiallyClosed / PositionClosed: payload.lots_closed,
-          pnl_gross, commission, slippage, swap (decimal strings)
-        - RiskLockActivated / RiskLockReleased: no financial payload required
-        """
+        """Rebuild Paper/Backtest accounting and risk state from immutable events."""
         def dec(value: Any, field: str) -> Decimal:
             if not isinstance(value, str):
                 raise LedgerError(f"{field} must be encoded as a decimal string")
@@ -277,14 +268,34 @@ class SQLiteLedger:
 
         balance = dec(initial_balance, "initial_balance")
         realized = Decimal("0")
-        unrealized = Decimal("0")
         positions: dict[str, dict[str, Any]] = {}
+        closed_trades: list[dict[str, Any]] = []
         risk_lock_active = False
+        consecutive_losses = 0
+        daily_loss_pct = Decimal("0")
+        daily_risk_date = None
+        runs = 0
+        last_run_ts = None
+        events = self.read_events(account_id)
 
-        for event in self.read_events(account_id):
+        for event in events:
             payload = event.payload
             if event.event_type == "CashAdjustment":
                 balance += dec(payload.get("amount"), "amount")
+            elif event.event_type == "RiskStateSnapshot":
+                consecutive_losses = int(payload.get("consecutive_losses", 0))
+                daily_loss_pct = dec(str(payload.get("daily_loss_pct", "0")), "daily_loss_pct")
+                risk_lock_active = bool(payload.get("risk_lock_active", False))
+                runs = int(payload.get("runs", runs))
+                last_run_ts = payload.get("last_run_ts", last_run_ts)
+                daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
+            elif event.event_type == "DailyRiskReset":
+                daily_loss_pct = Decimal("0")
+                daily_risk_date = payload.get("daily_risk_date")
+            elif event.event_type == "PaperCycleCompleted":
+                runs = int(payload.get("runs", runs + 1))
+                last_run_ts = payload.get("last_run_ts", last_run_ts)
+                daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
             elif event.event_type == "PositionOpened":
                 trade_id = event.trade_id or payload.get("trade_id")
                 if not trade_id or trade_id in positions:
@@ -293,17 +304,29 @@ class SQLiteLedger:
                 if lots <= 0:
                     raise LedgerError("opened lots must be positive")
                 positions[trade_id] = {
-                    "trade_id": trade_id, "symbol": payload.get("symbol"),
-                    "direction": payload.get("direction"), "lots": lots,
+                    "trade_id": trade_id,
+                    "symbol": payload.get("symbol"),
+                    "direction": payload.get("direction"),
+                    "lots": lots,
                     "entry_price": dec(payload.get("entry_price"), "entry_price"),
+                    "sl": payload.get("sl"),
+                    "tp2": payload.get("tp2"),
+                    "entry_time": payload.get("entry_time") or event.occurred_at,
+                    "risk_usd": payload.get("risk_usd", "0"),
+                    "risk_pct": payload.get("risk_pct", "0"),
+                    "final_score": payload.get("final_score", 0.0),
+                    "regime": payload.get("regime", ""),
+                    "session": payload.get("session", ""),
+                    "sizing_result": payload.get("sizing_result"),
                     "unrealized_pnl": Decimal("0"),
                 }
             elif event.event_type == "PositionMarked":
                 trade_id = event.trade_id or payload.get("trade_id")
                 if trade_id not in positions:
                     raise LedgerError("PositionMarked references an unknown position")
-                mark = dec(payload.get("unrealized_pnl"), "unrealized_pnl")
-                positions[trade_id]["unrealized_pnl"] = mark
+                positions[trade_id]["unrealized_pnl"] = dec(
+                    payload.get("unrealized_pnl"), "unrealized_pnl"
+                )
             elif event.event_type in ("PositionPartiallyClosed", "PositionClosed"):
                 trade_id = event.trade_id or payload.get("trade_id")
                 if trade_id not in positions:
@@ -320,32 +343,70 @@ class SQLiteLedger:
                 swap = dec(payload.get("swap", "0"), "swap")
                 net = gross - commission - slippage - swap
                 realized += net
+                daily_loss_pct += dec(payload.get("daily_loss_pct_delta", "0"), "daily_loss_pct_delta")
+                closed_trades.append({
+                    "trade_id": trade_id,
+                    "symbol": position["symbol"],
+                    "direction": position["direction"],
+                    "entry_time": position["entry_time"],
+                    "exit_time": payload.get("exit_time") or event.occurred_at,
+                    "entry": str(position["entry_price"]),
+                    "exit": payload.get("exit_price", ""),
+                    "lots": str(closed_lots),
+                    "pnl_usd": str(net),
+                    "pnl_gross": str(gross),
+                    "commission": str(commission),
+                    "slippage": str(slippage),
+                    "swap": str(swap),
+                    "outcome": payload.get("outcome", "CLOSED"),
+                    "session": position["session"],
+                    "regime": position["regime"],
+                    "final_score": position["final_score"],
+                })
                 position["lots"] -= closed_lots
                 if position["lots"] == 0:
                     positions.pop(trade_id)
                 else:
                     position["unrealized_pnl"] = Decimal("0")
+                if net < 0:
+                    consecutive_losses += 1
+                elif not risk_lock_active:
+                    consecutive_losses = 0
+                if consecutive_losses >= int(payload.get("consecutive_loss_stop", 3)):
+                    risk_lock_active = True
             elif event.event_type == "RiskLockActivated":
                 risk_lock_active = True
             elif event.event_type == "RiskLockReleased":
                 risk_lock_active = False
+                if "consecutive_losses" in payload:
+                    consecutive_losses = int(payload["consecutive_losses"])
 
         unrealized = sum((p["unrealized_pnl"] for p in positions.values()), Decimal("0"))
         cash = balance + realized
+        open_positions = {
+            trade_id: {
+                **position,
+                "lots": str(position["lots"]),
+                "entry_price": str(position["entry_price"]),
+                "unrealized_pnl": str(position["unrealized_pnl"]),
+            }
+            for trade_id, position in positions.items()
+        }
         return {
             "account_id": account_id,
             "cash_balance": str(cash),
             "realized_pnl": str(realized),
             "unrealized_pnl": str(unrealized),
             "equity": str(cash + unrealized),
-            "open_positions": {
-                trade_id: {**position, "lots": str(position["lots"]),
-                           "entry_price": str(position["entry_price"]),
-                           "unrealized_pnl": str(position["unrealized_pnl"])}
-                for trade_id, position in positions.items()
-            },
+            "open_positions": open_positions,
+            "closed_trades": closed_trades,
             "risk_lock_active": risk_lock_active,
-            "last_sequence": len(self.read_events(account_id)),
+            "consecutive_losses": consecutive_losses,
+            "daily_loss_pct": str(daily_loss_pct),
+            "daily_risk_date": daily_risk_date,
+            "runs": runs,
+            "last_run_ts": last_run_ts,
+            "last_sequence": events[-1].sequence if events else 0,
         }
 
     def _row_to_event(self, row: sqlite3.Row) -> LedgerEvent:
