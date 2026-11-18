@@ -71,17 +71,17 @@ def test_signed_swap_and_other_fees_are_accounted_separately():
     assert result.commission_account == Decimal("7.0")
     assert result.swap_account == Decimal("-2.5")
     assert result.other_fees_account == Decimal("1")
-    assert result.net_pnl_account == Decimal("-10.5")
+    assert result.net_pnl_account == Decimal("-5.5")
 
 
-def test_positive_swap_is_a_credit_not_a_fee():
+def test_positive_swap_is_a_financing_debit_under_ledger_convention():
     result = _model(commission_per_lot_per_side="0").round_trip(
         side="SELL", lots="1",
         entry_quote=ExecutableQuote("1.1", "1.1"),
         exit_quote=ExecutableQuote("1.1", "1.1"),
         swap_account="4.25",
     )
-    assert result.net_pnl_account == Decimal("4.25")
+    assert result.net_pnl_account == Decimal("-4.25")
 
 
 def test_quote_to_account_conversion_is_explicit():
@@ -166,7 +166,7 @@ def test_execution_result_flows_into_atomic_paper_settlement(tmp_path):
         remaining_unrealized_pnl="0", mark_id="mark-after-close",
     )
     assert adapter.commit_events(events) is True
-    assert adapter.ledger.balance == Decimal("10072.0000")
+    assert adapter.ledger.balance == Decimal("10074.0000")
     assert store.load("paper:execution").snapshot() == adapter.ledger.snapshot()
 
 
@@ -209,3 +209,23 @@ def test_rejects_untyped_quote_objects():
     model = _model()
     with pytest.raises(ValueError, match="ExecutableQuote"):
         model.entry_fill(side="BUY", quote={"bid": "1.1", "ask": "1.2"})
+
+
+
+def test_negative_swap_is_a_financing_credit_under_ledger_convention():
+    result = _model(commission_per_lot_per_side="0").round_trip(
+        side="BUY", lots="1",
+        entry_quote=ExecutableQuote("1.1", "1.1"),
+        exit_quote=ExecutableQuote("1.1", "1.1"),
+        swap_account="-3.0",
+    )
+    assert result.net_pnl_account == Decimal("3.0")
+
+
+def test_stop_fill_rejects_non_positive_result_after_slippage():
+    model = _model(slippage_price_per_fill="2")
+    with pytest.raises(ValueError, match="positive"):
+        model.stop_exit_fill(
+            side="BUY", stop_price="1.0",
+            quote=ExecutableQuote("0.5", "0.6"),
+        )
