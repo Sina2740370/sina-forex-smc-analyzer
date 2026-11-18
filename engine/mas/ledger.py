@@ -439,8 +439,12 @@ class SQLiteLedger:
                 if "consecutive_losses" in payload:
                     consecutive_losses = int(payload["consecutive_losses"])
 
-        daily_loss_pct = daily_loss_by_date.get(daily_risk_date, Decimal("0"))
-        weekly_loss_pct = weekly_loss_by_week.get(weekly_risk_week, Decimal("0"))
+        daily_loss_pct = daily_loss_by_date.get(
+            daily_risk_date, daily_loss_pct if daily_risk_date is None else Decimal("0")
+        )
+        weekly_loss_pct = weekly_loss_by_week.get(
+            weekly_risk_week, weekly_loss_pct if weekly_risk_week is None else Decimal("0")
+        )
         unrealized = sum((p["unrealized_pnl"] for p in positions.values()), Decimal("0"))
         cash = balance + realized
         open_positions = {
