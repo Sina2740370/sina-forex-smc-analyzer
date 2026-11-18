@@ -555,3 +555,71 @@ def test_three_chronological_losses_lock_risk_gate_until_audited_release(tmp_pat
         acct=unlocked_account,
     )
     assert approved.approved is True
+
+
+
+def test_daily_and_weekly_resets_never_release_hard_loss_lock(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "period-lock.db")
+    account = "paper-account"
+    losses = (
+        ("loss-1", "2026-11-20T20:00:00+00:00"),
+        ("loss-2", "2026-11-20T21:00:00+00:00"),
+        ("loss-3", "2026-11-20T22:00:00+00:00"),
+    )
+    for trade_id, closed_at in losses:
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionOpened", "idempotency_key": f"open:{trade_id}",
+            "occurred_at": "2026-11-20T19:00:00+00:00",
+            "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                        "entry_price": "1.1000"},
+        })
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionClosed", "idempotency_key": f"close:{trade_id}",
+            "occurred_at": closed_at,
+            "payload": {"lots_closed": "1", "pnl_gross": "-10",
+                        "commission": "0", "slippage": "0", "swap": "0",
+                        "consecutive_loss_stop": 3},
+        })
+
+    locked = ledger.replay_account(account, "10000")
+    assert locked["consecutive_losses"] == 3
+    assert locked["risk_lock_active"] is True
+
+    # Cross both the calendar-day and ISO-week boundaries. These are budget
+    # resets only; neither event is an authorization to clear the hard lock.
+    ledger.append_events([
+        {
+            "account_id": account, "event_type": "DailyRiskReset",
+            "idempotency_key": "daily-reset:2026-11-23",
+            "occurred_at": "2026-11-23T00:00:00+00:00",
+            "payload": {"daily_risk_date": "2026-11-23"},
+        },
+        {
+            "account_id": account, "event_type": "WeeklyRiskReset",
+            "idempotency_key": "weekly-reset:2026-11-23",
+            "occurred_at": "2026-11-23T00:00:00+00:00",
+            "payload": {"weekly_risk_week": "2026-11-23"},
+        },
+    ])
+
+    after_resets = ledger.replay_account(account, "10000")
+    assert after_resets["daily_risk_date"] == "2026-11-23"
+    assert after_resets["weekly_risk_week"] == "2026-11-23"
+    assert after_resets["daily_loss_pct"] == "0"
+    assert after_resets["weekly_loss_pct"] == "0"
+    assert after_resets["consecutive_losses"] == 3
+    assert after_resets["risk_lock_active"] is True
+
+    from engine.mas.risk_agent import AccountState, evaluate_risk
+    verdict = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000,
+        acct=AccountState(
+            equity=float(after_resets["equity"]),
+            consecutive_losses=after_resets["consecutive_losses"],
+            risk_lock_active=after_resets["risk_lock_active"],
+        ),
+    )
+    assert verdict.approved is False
+    assert any(g.gate == "R-ADDTOLOSS" and not g.passed for g in verdict.gates)
