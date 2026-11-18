@@ -64,3 +64,19 @@ def test_hard_risk_lock_remains_independent_of_size_factor():
     assert not verdict.approved
     assert verdict.sizing_result is None
     assert any(g.gate == "R-ADDTOLOSS" and not g.passed for g in verdict.gates)
+
+@pytest.mark.parametrize(
+    "account_kwargs,failed_gate",
+    [
+        ({"open_risk_pct": 2.1}, "R-CONC"),
+        ({"daily_loss_pct": 2.1}, "R-DAY"),
+        ({"weekly_loss_pct": 5.1}, "R-WK"),
+    ],
+)
+def test_risk_authority_includes_new_trade_risk_in_exposure_budgets(account_kwargs, failed_gate):
+    account = AccountState(equity=10_000, **account_kwargs)
+    verdict = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, acct=account
+    )
+    assert not verdict.approved
+    assert any(g.gate == failed_gate and not g.passed for g in verdict.gates)
