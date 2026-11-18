@@ -159,7 +159,7 @@ def test_paper_and_backtest_match_same_market_input_through_take_profit(
     assert bt.equity_end == pytest.approx(
         _paper_state_for_test(paper_out)["equity"], abs=1e-8
     )
-    assert captured_backtest_projection["value"]["equity"] == pytest.approx(
+    assert float(captured_backtest_projection["value"]["equity"]) == pytest.approx(
         _paper_state_for_test(paper_out)["equity"], abs=1e-8
     )
     assert captured_backtest_projection["value"]["risk_lock_active"] is False
