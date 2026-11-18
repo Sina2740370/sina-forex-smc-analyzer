@@ -124,6 +124,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 "account_id": account_id,
                 "event_type": "RiskStateSnapshot",
                 "idempotency_key": "legacy-paper-state-v1",
+                **({"occurred_at": str(last_run)} if legacy_day else {}),
                 "payload": {
                     "consecutive_losses": int(legacy_state.get("consecutive_losses", 0)),
                     "daily_loss_pct": str(legacy_state.get("daily_loss_pct", 0)),
@@ -430,17 +431,24 @@ def release_paper_risk_lock(out_dir: str, reviewer: str, reason: str,
         raise ValueError("Paper Ledger has not been initialized")
 
     idempotency_key = f"risk-lock-release:{request_id}"
-    prior_request = any(event.idempotency_key == idempotency_key
-                        for event in ledger.read_events(account_id))
+    prior_event = next(
+        (event for event in ledger.read_events(account_id)
+         if event.idempotency_key == idempotency_key),
+        None,
+    )
     current = ledger.replay_account(account_id, initial_balance)
-    if not current["risk_lock_active"] and not prior_request:
+    if not current["risk_lock_active"] and prior_event is None:
         raise ValueError("No active Paper risk lock requires release")
 
+    # Reuse the original event timestamp on retries. The Ledger then accepts an
+    # identical request as idempotent and rejects a changed reviewer/reason payload.
     ledger.append_event({
         "account_id": account_id,
         "event_type": "RiskLockReleased",
         "idempotency_key": idempotency_key,
-        "occurred_at": pd.Timestamp.now(tz="UTC").isoformat(),
+        **({"occurred_at": prior_event.occurred_at} if prior_event else {
+            "occurred_at": pd.Timestamp.now(tz="UTC").isoformat()
+        }),
         "payload": {
             "reviewed_by": reviewer.strip(),
             "reason": reason.strip(),
