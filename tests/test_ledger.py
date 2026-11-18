@@ -62,3 +62,63 @@ def test_money_values_must_not_be_encoded_as_non_finite_numbers(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
     with pytest.raises(ValueError):
         ledger.append_event(_event(payload={"lots": float("nan")}))
+
+
+
+def test_replay_accounts_for_partial_close_costs_and_unrealized_pnl(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionOpened", "idempotency_key": "open-1",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1.00",
+                    "entry_price": "1.10000"},
+    })
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionPartiallyClosed", "idempotency_key": "partial-1",
+        "payload": {"lots_closed": "0.40", "pnl_gross": "20.00",
+                    "commission": "1.00", "slippage": "0.50", "swap": "0.00"},
+    })
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionMarked", "idempotency_key": "mark-1",
+        "payload": {"unrealized_pnl": "3.25"},
+    })
+
+    state = ledger.replay_account("paper-account", "1000.00")
+    assert state["realized_pnl"] == "18.50"
+    assert state["unrealized_pnl"] == "3.25"
+    assert state["equity"] == "1021.75"
+    assert state["open_positions"]["trade-1"]["lots"] == "0.60"
+
+
+def test_replay_rejects_over_close_and_incomplete_final_close(tmp_path):
+    from engine.mas.ledger import LedgerError
+
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionOpened", "idempotency_key": "open-1",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1.00",
+                    "entry_price": "1.10000"},
+    })
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionClosed", "idempotency_key": "close-1",
+        "payload": {"lots_closed": "0.50", "pnl_gross": "1.00",
+                    "commission": "0", "slippage": "0", "swap": "0"},
+    })
+
+    with pytest.raises(LedgerError):
+        ledger.replay_account("paper-account", "1000.00")
+
+
+def test_risk_lock_state_is_replayed_from_events(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    base = {"account_id": "paper-account", "payload": {}}
+    ledger.append_event({**base, "event_type": "RiskLockActivated",
+                         "idempotency_key": "lock-1"})
+    assert ledger.replay_account("paper-account", "1000")["risk_lock_active"] is True
+    ledger.append_event({**base, "event_type": "RiskLockReleased",
+                         "idempotency_key": "unlock-1"})
+    assert ledger.replay_account("paper-account", "1000")["risk_lock_active"] is False
