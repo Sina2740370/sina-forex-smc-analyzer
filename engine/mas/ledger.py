@@ -11,7 +11,7 @@ from contextlib import closing
 from decimal import Decimal, InvalidOperation
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -294,6 +294,10 @@ class SQLiteLedger:
         daily_risk_date = None
         weekly_loss_pct = Decimal("0")
         weekly_risk_week = None
+        # Risk usage is attributed to the period in which the close actually occurred,
+        # not the sequence in which a delayed Paper cycle happened to append it.
+        daily_loss_by_date: dict[str, Decimal] = {}
+        weekly_loss_by_week: dict[str, Decimal] = {}
         runs = 0
         last_run_ts = None
         events = self.read_events(account_id)
@@ -311,16 +315,25 @@ class SQLiteLedger:
                 last_run_ts = payload.get("last_run_ts", last_run_ts)
                 daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
                 weekly_risk_week = payload.get("weekly_risk_week", weekly_risk_week)
+                if daily_risk_date:
+                    daily_loss_by_date[daily_risk_date] = daily_loss_pct
+                if weekly_risk_week:
+                    weekly_loss_by_week[weekly_risk_week] = weekly_loss_pct
             elif event.event_type == "DailyRiskReset":
-                daily_loss_pct = Decimal("0")
                 daily_risk_date = payload.get("daily_risk_date")
+                if daily_risk_date:
+                    daily_loss_by_date.setdefault(daily_risk_date, Decimal("0"))
             elif event.event_type == "WeeklyRiskReset":
-                weekly_loss_pct = Decimal("0")
                 weekly_risk_week = payload.get("weekly_risk_week")
+                if weekly_risk_week:
+                    weekly_loss_by_week.setdefault(weekly_risk_week, Decimal("0"))
             elif event.event_type == "PaperCycleCompleted":
                 runs = int(payload.get("runs", runs + 1))
                 last_run_ts = payload.get("last_run_ts", last_run_ts)
-                daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
+                cycle_date = payload.get("daily_risk_date")
+                if cycle_date and (daily_risk_date is None or cycle_date > daily_risk_date):
+                    daily_risk_date = cycle_date
+                    daily_loss_by_date.setdefault(cycle_date, Decimal("0"))
             elif event.event_type == "HistoricalTradeImported":
                 trade = dict(payload.get("trade", {}))
                 if trade:
@@ -372,8 +385,23 @@ class SQLiteLedger:
                 swap = dec(payload.get("swap", "0"), "swap")
                 net = gross - commission - slippage - swap
                 realized += net
-                daily_loss_pct += dec(payload.get("daily_loss_pct_delta", "0"), "daily_loss_pct_delta")
-                weekly_loss_pct += dec(payload.get("weekly_loss_pct_delta", "0"), "weekly_loss_pct_delta")
+                # Position lifecycle remains sequence-ordered, but period risk is
+                # projected by occurred_at so delayed historical settlements cannot
+                # contaminate the current day/week budget.
+                try:
+                    close_date = date.fromisoformat(event.occurred_at[:10])
+                except (TypeError, ValueError) as exc:
+                    raise LedgerError("close event has an invalid occurred_at date") from exc
+                close_day = close_date.isoformat()
+                close_week = (close_date - timedelta(days=close_date.weekday())).isoformat()
+                daily_loss_by_date[close_day] = (
+                    daily_loss_by_date.get(close_day, Decimal("0"))
+                    + dec(payload.get("daily_loss_pct_delta", "0"), "daily_loss_pct_delta")
+                )
+                weekly_loss_by_week[close_week] = (
+                    weekly_loss_by_week.get(close_week, Decimal("0"))
+                    + dec(payload.get("weekly_loss_pct_delta", "0"), "weekly_loss_pct_delta")
+                )
                 closed_trades.append({
                     "trade_id": trade_id,
                     "symbol": position["symbol"],
@@ -411,6 +439,8 @@ class SQLiteLedger:
                 if "consecutive_losses" in payload:
                     consecutive_losses = int(payload["consecutive_losses"])
 
+        daily_loss_pct = daily_loss_by_date.get(daily_risk_date, Decimal("0"))
+        weekly_loss_pct = weekly_loss_by_week.get(weekly_risk_week, Decimal("0"))
         unrealized = sum((p["unrealized_pnl"] for p in positions.values()), Decimal("0"))
         cash = balance + realized
         open_positions = {
