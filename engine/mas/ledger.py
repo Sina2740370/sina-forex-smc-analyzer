@@ -292,6 +292,8 @@ class SQLiteLedger:
         consecutive_losses = 0
         daily_loss_pct = Decimal("0")
         daily_risk_date = None
+        weekly_loss_pct = Decimal("0")
+        weekly_risk_week = None
         runs = 0
         last_run_ts = None
         events = self.read_events(account_id)
@@ -303,13 +305,18 @@ class SQLiteLedger:
             elif event.event_type == "RiskStateSnapshot":
                 consecutive_losses = int(payload.get("consecutive_losses", 0))
                 daily_loss_pct = dec(str(payload.get("daily_loss_pct", "0")), "daily_loss_pct")
+                weekly_loss_pct = dec(str(payload.get("weekly_loss_pct", "0")), "weekly_loss_pct")
                 risk_lock_active = bool(payload.get("risk_lock_active", False))
                 runs = int(payload.get("runs", runs))
                 last_run_ts = payload.get("last_run_ts", last_run_ts)
                 daily_risk_date = payload.get("daily_risk_date", daily_risk_date)
+                weekly_risk_week = payload.get("weekly_risk_week", weekly_risk_week)
             elif event.event_type == "DailyRiskReset":
                 daily_loss_pct = Decimal("0")
                 daily_risk_date = payload.get("daily_risk_date")
+            elif event.event_type == "WeeklyRiskReset":
+                weekly_loss_pct = Decimal("0")
+                weekly_risk_week = payload.get("weekly_risk_week")
             elif event.event_type == "PaperCycleCompleted":
                 runs = int(payload.get("runs", runs + 1))
                 last_run_ts = payload.get("last_run_ts", last_run_ts)
@@ -366,6 +373,7 @@ class SQLiteLedger:
                 net = gross - commission - slippage - swap
                 realized += net
                 daily_loss_pct += dec(payload.get("daily_loss_pct_delta", "0"), "daily_loss_pct_delta")
+                weekly_loss_pct += dec(payload.get("weekly_loss_pct_delta", "0"), "weekly_loss_pct_delta")
                 closed_trades.append({
                     "trade_id": trade_id,
                     "symbol": position["symbol"],
@@ -426,6 +434,8 @@ class SQLiteLedger:
             "consecutive_losses": consecutive_losses,
             "daily_loss_pct": str(daily_loss_pct),
             "daily_risk_date": daily_risk_date,
+            "weekly_loss_pct": str(weekly_loss_pct),
+            "weekly_risk_week": weekly_risk_week,
             "runs": runs,
             "last_run_ts": last_run_ts,
             "last_sequence": events[-1].sequence if events else 0,
