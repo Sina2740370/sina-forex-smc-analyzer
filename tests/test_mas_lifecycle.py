@@ -64,7 +64,7 @@ def test_portfolio_mark_uses_bid_for_long_and_ask_for_short():
     # Long: (1.1010 - 1.1000) * 100000 - 2 = 98.
     # Short: (1.2500 - 1.2492) * 200000 * .9 - 4 - 1.5 = 138.5.
     assert mark.position_pnl_account == {
-        "p-long": Decimal("98.000000"),
+        "p-long": Decimal("98.0000"),
         "p-short": Decimal("138.500000"),
     }
     assert mark.unrealized_pnl_account == Decimal("236.500000")
@@ -264,7 +264,7 @@ def test_partial_close_recomputes_remaining_portfolio_mtm_atomically(tmp_path):
     assert adapter.commit_events(events) is True
     snapshot = adapter.ledger.snapshot()
     assert snapshot["open_positions"][position_id]["quantity"] == "0.6"
-    assert adapter.ledger.unrealized_pnl == Decimal("58.800000")
+    assert adapter.ledger.unrealized_pnl == Decimal("58.8000")
     assert store.load("paper:partial").snapshot() == snapshot
 
 
