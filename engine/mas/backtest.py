@@ -276,7 +276,8 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                     "idempotency_key": f"bt-daily-reset:{exit_day}",
                     "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
                 })
-                current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)            exit_date = pd.Timestamp(exit_time).date()
+                current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
+            exit_date = pd.Timestamp(exit_time).date()
             exit_week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
             if current_projection["weekly_risk_week"] != exit_week:
                 ledger.append_event({
