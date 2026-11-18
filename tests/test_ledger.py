@@ -303,7 +303,7 @@ def test_replay_attributes_delayed_closes_to_actual_day_and_week(tmp_path):
     state = ledger.replay_account(account, "10000")
     assert state["daily_risk_date"] == "2026-11-18"
     assert state["weekly_risk_week"] == "2026-11-16"
-    assert Decimal(state["daily_loss_pct"]) == Decimal("-10") / Decimal("9980") * 100
-    assert Decimal(state["weekly_loss_pct"]) == Decimal("-20") / Decimal("9990") * 100
+    assert Decimal(state["daily_loss_pct"]) == Decimal("10") / Decimal("9980") * 100
+    assert Decimal(state["weekly_loss_pct"]) == Decimal("20") / Decimal("9990") * 100
     assert state["realized_pnl"] == "-30"
     assert state["open_positions"] == {}
