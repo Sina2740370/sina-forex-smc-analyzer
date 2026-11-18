@@ -176,7 +176,7 @@ class SQLiteLedger:
 
     def set_meta_once(self, key: str, value: str) -> str:
         """Set immutable metadata once; return the authoritative stored value."""
-        if not isinstance(key, str) or not key.strip() or not isinstance(value, str):
+        if not isinstance(key, str) or not key.strip() or not isinstance(value, str) or not value.strip():
             raise ValueError("metadata key and value must be non-empty strings")
         conn = self._connect()
         try:
