@@ -248,3 +248,61 @@ def test_weekly_risk_reset_does_not_clear_daily_or_consecutive_loss(tmp_path):
     assert state["weekly_loss_pct"] == "0"
     assert state["daily_loss_pct"] == "1.5"
     assert state["consecutive_losses"] == 2
+
+
+def test_replay_attributes_delayed_closes_to_actual_day_and_week(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger.db")
+    account = "paper-account"
+
+    for trade_id, opened_at in (
+        ("old-week", "2026-11-10T10:00:00+00:00"),
+        ("current-week-old-day", "2026-11-17T10:00:00+00:00"),
+        ("current-day", "2026-11-18T10:00:00+00:00"),
+    ):
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionOpened", "idempotency_key": f"open:{trade_id}",
+            "occurred_at": opened_at,
+            "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                        "entry_price": "1.1000"},
+        })
+
+    # The Paper cycle records current-period resets before it discovers and
+    # settles positions whose actual exits span earlier days and weeks.
+    ledger.append_event({
+        "account_id": account, "event_type": "DailyRiskReset",
+        "idempotency_key": "reset:day:2026-11-18",
+        "occurred_at": "2026-11-18T12:00:00+00:00",
+        "payload": {"daily_risk_date": "2026-11-18"},
+    })
+    ledger.append_event({
+        "account_id": account, "event_type": "WeeklyRiskReset",
+        "idempotency_key": "reset:week:2026-11-16",
+        "occurred_at": "2026-11-18T12:00:00+00:00",
+        "payload": {"weekly_risk_week": "2026-11-16"},
+    })
+
+    for trade_id, closed_at, loss_delta in (
+        ("old-week", "2026-11-10T11:00:00+00:00", "1.25"),
+        ("current-week-old-day", "2026-11-17T11:00:00+00:00", "2.50"),
+        ("current-day", "2026-11-18T13:00:00+00:00", "0.75"),
+    ):
+        ledger.append_event({
+            "account_id": account, "trade_id": trade_id,
+            "event_type": "PositionClosed", "idempotency_key": f"close:{trade_id}",
+            "occurred_at": closed_at,
+            "payload": {"lots_closed": "1", "pnl_gross": "-10",
+                        "commission": "0", "slippage": "0", "swap": "0",
+                        "daily_loss_pct_delta": loss_delta,
+                        "weekly_loss_pct_delta": loss_delta,
+                        "consecutive_loss_stop": 10, "exit_time": closed_at,
+                        "outcome": "SL"},
+        })
+
+    state = ledger.replay_account(account, "10000")
+    assert state["daily_risk_date"] == "2026-11-18"
+    assert state["weekly_risk_week"] == "2026-11-16"
+    assert state["daily_loss_pct"] == "0.75"
+    assert state["weekly_loss_pct"] == "3.25"
+    assert state["realized_pnl"] == "-30"
+    assert state["open_positions"] == {}
