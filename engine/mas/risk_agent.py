@@ -5,8 +5,11 @@ A8 — ایجنت ریسک: حق وتوی مطلق. هر قاعده یک گیت 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import hashlib
+import json
+import uuid
 
-from .contracts import GateResult
+from .contracts import GateResult, SizingResult
 
 RISK_RULES = {
     "risk_per_trade_pct": 1.0,
@@ -47,11 +50,12 @@ class RiskVerdict:
     risk_amount: float = 0.0
     gates: list = field(default_factory=list)
     rejection_reasons: list = field(default_factory=list)
+    sizing_result: SizingResult | None = None
 
 
 # مشخصات نمادها به engine/mas/symbols.py منتقل شد (تک منبع حقیقت برای چندارزی).
 # SYM_SPEC اینجا برای سازگاری قبلی به شکل دیکشنری ساده نگه داشته می‌شود.
-from .symbols import SYM_SPECS as _SYM_SPECS
+from .symbols import SYM_SPECS as _SYM_SPECS, size_lots_for_risk
 
 SYM_SPEC = {sym: {"pip": s.pip, "pip_value_quote_per_lot": s.pip_value_quote_per_lot,
                   "quote_is_usd": s.quote_is_usd} for sym, s in _SYM_SPECS.items()}
@@ -65,7 +69,7 @@ def _pip_value_usd(symbol: str, price: float) -> float:
 
 def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: float,
                   price: float, acct: AccountState | None = None,
-                  size_factor: float = 1.0) -> RiskVerdict:
+                  size_factor: float = 1.0, fx_timestamp: str | None = None) -> RiskVerdict:
     """سیگنال کاندید را مستقل می‌سنجد؛ خروجی تأیید/رد + حجم لات."""
     acct = acct or AccountState()
     gates, rej = [], []
@@ -76,14 +80,26 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
             rej.append(f"{name}: {detail}")
         return ok
 
-    risk_dist = abs(entry - sl)
+    import math
+    valid_numbers = all(math.isfinite(float(v)) for v in (entry, sl, tp2, price, acct.equity, size_factor))
+    inputs_valid = valid_numbers and entry > 0 and sl > 0 and tp2 > 0 and price > 0 and acct.equity > 0
+    direction_valid = direction in ("BUY", "SELL")
+    risk_dist = abs(entry - sl) if inputs_valid else 0.0
+    stop_valid = direction_valid and ((sl < entry) if direction == "BUY" else (sl > entry))
+    target_valid = direction_valid and ((tp2 > entry) if direction == "BUY" else (tp2 < entry))
     rr = abs(tp2 - entry) / risk_dist if risk_dist > 0 else 0.0
-    risk_usd_full = acct.equity * RISK_RULES["risk_per_trade_pct"] / 100.0
-    pip_val = _pip_value_usd(symbol, price)
-    pips = risk_dist / SYM_SPEC[symbol]["pip"]
-    lots_raw = (risk_usd_full / max(1e-9, pips * pip_val)) * max(0.1, size_factor)
-    lots = round(min(lots_raw, 50.0), 2)
-    risk_amount = lots * pips * pip_val
+    risk_usd_full = acct.equity * RISK_RULES["risk_per_trade_pct"] / 100.0 if inputs_valid else 0.0
+    requested_risk = risk_usd_full * max(0.1, size_factor) if inputs_valid else 0.0
+    pips = risk_dist / SYM_SPEC[symbol]["pip"] if symbol in SYM_SPEC else 0.0
+    lots, risk_amount = 0.0, 0.0
+    sizing_error = ""
+    if inputs_valid and direction_valid and stop_valid and target_valid and symbol in SYM_SPEC and 0.1 <= size_factor <= 1.0:
+        try:
+            lots, risk_amount = size_lots_for_risk(symbol, entry, sl, requested_risk)
+        except (KeyError, ValueError, ArithmeticError) as exc:
+            sizing_error = str(exc)
+    else:
+        sizing_error = "ورودی، نماد، جهت، SL، TP یا ضریب حجم نامعتبر است"
 
     g("R-RR", rr >= RISK_RULES["min_rr"] - 1e-9, f"RR={rr:.2f} < {RISK_RULES['min_rr']}")
     g("R-OPEN", acct.open_trades < RISK_RULES["max_open_trades"],
@@ -99,7 +115,11 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
     loss_streak_locked = acct.risk_lock_active or acct.consecutive_losses >= RISK_RULES["consecutive_losses_stop"]
     g("R-ADDTOLOSS", not loss_streak_locked,
       "قفل سخت پس از سه ضرر متوالی فعال است؛ فقط بازبینی و ریست صریح مجاز است")
-    g("R-SL", risk_dist > 0 and pips > 0, f"فاصله SL نامعتبر ({risk_dist:.6f})")
+    g("R-DIR", direction_valid and stop_valid and target_valid,
+      "جهت معامله یا سمت SL/TP با BUY/SELL سازگار نیست")
+    g("R-SL", inputs_valid and risk_dist > 0 and pips > 0, f"فاصله SL نامعتبر ({risk_dist:.6f})")
+    g("R-SIZE", lots > 0 and risk_amount > 0,
+      sizing_error or "حجم پس از گرد کردن محافظه‌کارانه کمتر از حداقل لات است")
 
     if acct.imminent_news_minutes >= 0:
         g("R-NEWS", acct.imminent_news_minutes > RISK_RULES["news_buffer_minutes"],
@@ -109,5 +129,25 @@ def evaluate_risk(symbol: str, direction: str, entry: float, sl: float, tp2: flo
         gates.append(GateResult("R-NEWS", True, "تقویم خبری در دسترس نیست — کنترل در G6 با هشدار"))
 
     approved = not rej
+    sizing_result = None
+    if approved:
+        from decimal import Decimal
+        from .symbols import get_spec
+        spec = get_spec(symbol)
+        spec_payload = {"pip": str(spec.pip), "pip_value_quote_per_lot": str(spec.pip_value_quote_per_lot),
+                        "quote_is_usd": spec.quote_is_usd, "spread": str(spec.typical_spread_pips),
+                        "digits": spec.digits}
+        spec_version = hashlib.sha256(json.dumps(spec_payload, sort_keys=True).encode()).hexdigest()[:16]
+        per_lot_risk = Decimal(str(risk_amount)) / Decimal(str(lots))
+        fx_rate = "" if spec.quote_is_usd else str(price)
+        sizing_result = SizingResult(
+            sizing_id=str(uuid.uuid4()), approved=True, symbol=symbol, direction=direction,
+            entry_price=str(Decimal(str(entry))), stop_loss=str(Decimal(str(sl))),
+            lots=str(Decimal(str(lots))), requested_risk=str(Decimal(str(requested_risk))),
+            actual_risk=str(Decimal(str(risk_amount))), per_lot_risk=str(per_lot_risk),
+            lot_step="0.01", min_lot="0.01", max_lot="50", spec_version=spec_version,
+            fx_rate=fx_rate, fx_timestamp=(fx_timestamp or "") if fx_rate else "",
+            risk_config_hash=hashlib.sha256(json.dumps(RISK_RULES, sort_keys=True).encode()).hexdigest()[:16],
+        )
     return RiskVerdict(approved, lots if approved else 0.0, risk_amount if approved else 0.0,
-                       gates, rej)
+                       gates, rej, sizing_result)
