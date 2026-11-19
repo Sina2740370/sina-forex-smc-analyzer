@@ -175,6 +175,7 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     ledger.append_event({
         "account_id": "paper-account", "trade_id": "trade-1",
         "event_type": "PositionClosed", "idempotency_key": "close-trade-1",
+        "occurred_at": "2026-11-18T00:30:00+00:00",
         "payload": {"lots_closed": "1.0", "pnl_gross": "-50",
                     "commission": "0", "slippage": "0", "swap": "0",
                     "daily_loss_pct_delta": "0.5", "weekly_loss_pct_delta": "0.5",
