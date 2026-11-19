@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_DOWN
+from decimal import Decimal, ROUND_DOWN, localcontext
 import math
 
 
@@ -47,6 +47,42 @@ def pip_value_usd(symbol: str, price: float) -> float:
     spec = get_spec(symbol)
     return spec.pip_value_quote_per_lot if spec.quote_is_usd else spec.pip_value_quote_per_lot / price
 
+
+
+
+def realized_pnl_usd(symbol: str, entry_price: float, exit_price: float,
+                     direction: str, lots: float) -> float:
+    """Calculate realized PnL in USD using the quote-to-USD rate at exit.
+
+    For non-USD quote currencies, the quote-currency pip value is converted
+    at the closing price, not the entry price. This keeps Paper and Backtest
+    on one settlement formula.
+    """
+    try:
+        entry_d, exit_d, lots_d = (
+            Decimal(str(value)) for value in (entry_price, exit_price, lots)
+        )
+    except Exception as exc:
+        raise ValueError("realized PnL inputs must be decimal-compatible") from exc
+    if not all(value.is_finite() for value in (entry_d, exit_d, lots_d)):
+        raise ValueError("realized PnL inputs must be finite")
+    if entry_d <= 0 or exit_d <= 0 or lots_d <= 0:
+        raise ValueError("entry, exit and lots must be positive")
+    if direction == "BUY":
+        sign = Decimal("1")
+    elif direction == "SELL":
+        sign = Decimal("-1")
+    else:
+        raise ValueError("direction must be BUY or SELL")
+
+    spec = get_spec(symbol)
+    with localcontext() as ctx:
+        ctx.prec = 40
+        pips = (exit_d - entry_d) / Decimal(str(spec.pip)) * sign
+        pip_value_usd = Decimal(str(spec.pip_value_quote_per_lot))
+        if not spec.quote_is_usd:
+            pip_value_usd /= exit_d
+        return float(pips * pip_value_usd * lots_d)
 
 
 def size_lots_for_risk(symbol: str, entry: float, sl: float, risk_usd: float,
