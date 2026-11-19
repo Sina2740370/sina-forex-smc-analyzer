@@ -746,7 +746,7 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
 
 
 @pytest.mark.parametrize(
-    "overrides, message",
+    "overrides, message, payload_overrides",
     [
         ({"approved": False}, "explicitly approved", None),
         ({"symbol": "GBPUSD"}, "identity does not match", None),
