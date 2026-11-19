@@ -2,7 +2,7 @@
 import pandas as pd
 
 from engine.mas.backtest import _advance_position
-from engine.mas.symbols import get_spec
+from engine.mas.symbols import get_spec, realized_pnl_usd
 
 
 def test_forced_end_of_data_close_is_classified_as_time_exit_not_take_profit():
@@ -83,3 +83,48 @@ def test_position_advance_does_not_consume_candles_after_decision_time():
 
     assert result is None
     assert position["last_idx"] == 0
+
+
+def test_buy_stop_gap_fills_at_worse_bar_open():
+    frame = pd.DataFrame({
+        "time": pd.to_datetime(["2026-01-01T00:00:00Z", "2026-01-01T00:15:00Z"]),
+        "open": [1.1000, 1.0850],
+        "high": [1.1010, 1.0950],
+        "low": [1.0990, 1.0800],
+        "close": [1.1000, 1.0900],
+    })
+    position = {
+        "direction": "BUY", "last_idx": 0, "sl": 1.0900, "tp2": 1.1100,
+        "entry": 1.1000,
+    }
+    result = _advance_position(
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        get_spec("EURUSD"),
+    )
+    assert result == (1.0850, frame["time"].iloc[1], 1, True)
+
+
+def test_sell_stop_gap_fills_at_worse_bar_open():
+    frame = pd.DataFrame({
+        "time": pd.to_datetime(["2026-01-01T00:00:00Z", "2026-01-01T00:15:00Z"]),
+        "open": [1.1000, 1.1050],
+        "high": [1.1005, 1.1100],
+        "low": [1.0995, 1.1000],
+        "close": [1.1000, 1.1055],
+    })
+    position = {
+        "direction": "SELL", "last_idx": 0, "sl": 1.1010, "tp2": 1.0900,
+        "entry": 1.1000,
+    }
+    result = _advance_position(
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        get_spec("EURUSD"),
+    )
+    assert result == (1.1050, frame["time"].iloc[1], 1, True)
+
+
+def test_non_usd_quote_currency_pnl_uses_exit_conversion_rate():
+    buy = realized_pnl_usd("USDCAD", 1.25, 1.20, "BUY", 1.0)
+    sell = realized_pnl_usd("USDCAD", 1.20, 1.25, "SELL", 1.0)
+    assert abs(buy - (-4166.666666666667)) < 1e-8
+    assert abs(sell - (-4000.0)) < 1e-8
