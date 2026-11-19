@@ -27,7 +27,7 @@ from .contracts import BUY
 from .ledger import SQLiteLedger
 from .portfolio import _csv_path
 from .risk_agent import AccountState, RISK_RULES, evaluate_risk
-from .symbols import get_spec, pip_value_usd
+from .symbols import get_spec, realized_pnl_usd
 
 
 def _projection_to_paper_state(projection: dict) -> dict:
@@ -232,9 +232,9 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         if outcome is None:
             continue
         exit_price, exit_time, _idx, was_loss = outcome
-        direction_sign = 1 if position["direction"] == BUY else -1
-        pnl = (exit_price - position["entry"]) / spec.pip * direction_sign * \
-            pip_value_usd(symbol, position["entry"]) * position["lots"]
+        pnl = realized_pnl_usd(
+            symbol, position["entry"], exit_price, position["direction"], position["lots"]
+        )
         trade_id = position["trade_id"]
         exit_ts = pd.Timestamp(exit_time).isoformat()
         loss_delta = max(0.0, -pnl) / max(equity_cursor, 1e-9) * 100.0
