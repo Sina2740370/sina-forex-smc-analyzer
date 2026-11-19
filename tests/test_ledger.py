@@ -755,7 +755,7 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
         ({"lots": "0.51"}, "lots/entry/stop do not match", None),
         ({"actual_risk": "51.00"}, "risk arithmetic is inconsistent", None),
         (
-            {"lots": "0.505", "actual_risk": "50.500"},
+            {"lots": "0.505", "actual_risk": "50.500", "requested_risk": "51.000"},
             "lot_step",
             {"lots": "0.505"},
         ),
