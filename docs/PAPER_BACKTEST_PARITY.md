@@ -57,3 +57,15 @@ No partial-close behavior should be invented or enabled until these strategy sem
 ## Scope and safety
 
 This document changes no runtime behavior, strategy rules, or risk settings. It does not authorize broker connections, Live execution, or trades. PR #49 remains Draft until full acceptance gates and independent review are complete.
+
+## TP1 / TP2 execution semantics audit
+
+Source inspection on the feature branch confirms the following current contract:
+
+- The technical agent derives TP1 at 1.5R and TP2 at 2.2R from the candidate entry and stop distance.
+- The signal response exposes both target prices, but the aggregator authorizes risk against TP2.
+- Backtest position state persists TP2 as its active target; the shared `_advance_position` resolver tests only SL and TP2.
+- Paper's settlement path uses that same resolver. The Ledger's `PositionPartiallyClosed` replay support is exercised by Ledger unit tests, but neither Paper nor Backtest settlement loop inspected here emits that event.
+- The Paper open-position projection/event contract retains TP2, not a durable TP1 execution instruction. Therefore TP1 is currently an informational signal level, not an executable scale-out trigger.
+
+This is an implementation fact, not a recommendation that TP1 should be ignored by all strategies. Enabling TP1 scale-out requires a separately approved strategy contract defining the fraction, fill-price model, remaining-position stop policy, risk reservation, cost allocation, and final-close loss-streak semantics. Until then, do not report TP1 as a realized partial exit or count it as an executed trade-management action.
