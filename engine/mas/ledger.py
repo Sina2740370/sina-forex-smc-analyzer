@@ -149,6 +149,78 @@ class SQLiteLedger:
             )
 
     @staticmethod
+    def _validate_position_opened_v2(payload: Mapping[str, Any], trade_id: str | None) -> None:
+        """Validate a version-2 Risk Agent snapshot against its immutable open event."""
+        if not isinstance(payload, Mapping):
+            raise LedgerError("PositionOpened payload must be a mapping")
+        snapshot = payload.get("sizing_result")
+        if not isinstance(snapshot, Mapping):
+            raise LedgerError("PositionOpened schema v2 requires sizing_result")
+
+        required_text = (
+            "sizing_id", "symbol", "direction", "entry_price", "stop_loss", "lots",
+            "requested_risk", "actual_risk", "per_lot_risk", "lot_step",
+            "min_lot", "max_lot", "spec_version", "risk_config_hash",
+        )
+        missing = [key for key in required_text if key not in snapshot]
+        if missing:
+            raise LedgerError("sizing_result missing fields: " + ", ".join(missing))
+        if snapshot.get("approved") is not True:
+            raise LedgerError("sizing_result must be explicitly approved")
+        for key in ("sizing_id", "symbol", "direction", "spec_version", "risk_config_hash"):
+            value = snapshot.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise LedgerError(f"sizing_result.{key} must be a non-empty string")
+
+        symbol = payload.get("symbol")
+        direction = payload.get("direction")
+        if not isinstance(symbol, str) or not symbol.strip():
+            raise LedgerError("PositionOpened schema v2 requires symbol")
+        if not isinstance(direction, str) or direction not in ("BUY", "SELL"):
+            raise LedgerError("PositionOpened schema v2 direction must be BUY or SELL")
+        if snapshot["symbol"] != symbol or snapshot["direction"] != direction:
+            raise LedgerError("sizing_result identity does not match PositionOpened")
+
+        def decimal_value(value: Any, field: str) -> Decimal:
+            if not isinstance(value, str):
+                raise LedgerError(f"{field} must be encoded as a decimal string")
+            try:
+                number = Decimal(value)
+            except (InvalidOperation, ValueError):
+                raise LedgerError(f"{field} is not a valid decimal") from None
+            if not number.is_finite() or number <= 0:
+                raise LedgerError(f"{field} must be finite and positive")
+            return number
+
+        position_lots = decimal_value(payload.get("lots"), "lots")
+        position_entry = decimal_value(payload.get("entry_price"), "entry_price")
+        position_stop = decimal_value(payload.get("sl"), "sl")
+        snap_lots = decimal_value(snapshot.get("lots"), "sizing_result.lots")
+        snap_entry = decimal_value(snapshot.get("entry_price"), "sizing_result.entry_price")
+        snap_stop = decimal_value(snapshot.get("stop_loss"), "sizing_result.stop_loss")
+        requested = decimal_value(snapshot.get("requested_risk"), "sizing_result.requested_risk")
+        actual = decimal_value(snapshot.get("actual_risk"), "sizing_result.actual_risk")
+        per_lot = decimal_value(snapshot.get("per_lot_risk"), "sizing_result.per_lot_risk")
+        lot_step = decimal_value(snapshot.get("lot_step"), "sizing_result.lot_step")
+        min_lot = decimal_value(snapshot.get("min_lot"), "sizing_result.min_lot")
+        max_lot = decimal_value(snapshot.get("max_lot"), "sizing_result.max_lot")
+
+        if (snap_lots, snap_entry, snap_stop) != (position_lots, position_entry, position_stop):
+            raise LedgerError("sizing_result lots/entry/stop do not match PositionOpened")
+        if actual > requested or actual != per_lot * snap_lots:
+            raise LedgerError("sizing_result risk arithmetic is inconsistent")
+        if min_lot > max_lot or not min_lot <= snap_lots <= max_lot:
+            raise LedgerError("sizing_result lots are outside min/max bounds")
+        if (snap_lots - min_lot) % lot_step != 0:
+            raise LedgerError("sizing_result lots are not aligned to lot_step")
+        if direction == "BUY" and not snap_stop < snap_entry:
+            raise LedgerError("BUY stop_loss must be below entry_price")
+        if direction == "SELL" and not snap_stop > snap_entry:
+            raise LedgerError("SELL stop_loss must be above entry_price")
+        if trade_id is not None and not isinstance(trade_id, str):
+            raise LedgerError("PositionOpened trade_id must be a string")
+
+    @staticmethod
     def _validate_input(event: Mapping[str, Any]) -> dict[str, Any]:
         required = ("account_id", "event_type", "idempotency_key", "payload")
         missing = [key for key in required if key not in event]
@@ -163,6 +235,10 @@ class SQLiteLedger:
         normalized["schema_version"] = int(normalized.get("schema_version", 1))
         if normalized["schema_version"] < 1:
             raise ValueError("schema_version must be >= 1")
+        if normalized["schema_version"] == 2 and normalized["event_type"] == "PositionOpened":
+            SQLiteLedger._validate_position_opened_v2(
+                normalized["payload"], normalized.get("trade_id") or normalized["payload"].get("trade_id")
+            )
         normalized["_occurred_at_explicit"] = bool(normalized.get("occurred_at"))
         normalized["occurred_at"] = normalized.get("occurred_at") or _utc_now()
         normalized["recorded_at"] = _utc_now()
@@ -346,6 +422,8 @@ class SQLiteLedger:
                 if trade:
                     closed_trades.append(trade)
             elif event.event_type == "PositionOpened":
+                if event.schema_version == 2:
+                    self._validate_position_opened_v2(payload, event.trade_id or payload.get("trade_id"))
                 trade_id = event.trade_id or payload.get("trade_id")
                 if not trade_id or trade_id in positions:
                     raise LedgerError("PositionOpened requires a unique trade_id")
