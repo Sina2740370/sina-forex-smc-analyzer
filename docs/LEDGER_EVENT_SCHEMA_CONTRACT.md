@@ -72,3 +72,7 @@ Do not add a freshness rejection gate until the source and policy are defined an
 ## Exit criteria
 
 Implementation is eligible for review only after the versioned contract, legacy policy, append/replay validators, negative tests, and exact-head CI evidence are all present. Independent review and all other PR #49 acceptance gates remain mandatory.
+
+## Version-2 PositionOpened identity and validation order
+
+A schema-version-2 `PositionOpened` event must carry a non-empty event-level `trade_id`. The Risk Agent sizing snapshot must agree exactly with the immutable position payload for symbol, direction, lots, entry price, and stop loss before the ledger accepts the event. After identity consistency is established, the ledger validates risk arithmetic, lot bounds and step alignment, and directional stop placement. Negative tests that target a later invariant must keep the corresponding outer position fields aligned with the snapshot so they exercise that invariant rather than failing the earlier identity check.
