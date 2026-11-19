@@ -798,3 +798,42 @@ def test_v1_legacy_position_open_without_sizing_snapshot_remains_accepted(tmp_pa
     ledger.append_event(legacy)
     projection = ledger.replay_account("paper-account", "1000")
     assert projection["open_positions"]["legacy-trade"]["sizing_result"] is None
+
+
+
+def test_v2_replay_rejects_corrupted_persisted_sizing_snapshot(tmp_path):
+    import json
+
+    ledger = SQLiteLedger(tmp_path / "ledger-v2-corruption.db")
+    ledger.append_event(_v2_open_event())
+
+    # Simulate out-of-band database tampering, not a supported Ledger write.
+    # Temporarily remove the append-only UPDATE trigger only in this isolated
+    # test database, corrupt one financial field, then restore the trigger.
+    conn = ledger._connect()
+    try:
+        conn.execute("DROP TRIGGER ledger_events_no_update")
+        row = conn.execute(
+            "SELECT payload_json FROM ledger_events WHERE account_id=?",
+            ("paper-account",),
+        ).fetchone()
+        payload = json.loads(row["payload_json"])
+        payload["sizing_result"]["actual_risk"] = "49.00"
+        conn.execute(
+            "UPDATE ledger_events SET payload_json=? WHERE account_id=?",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")), "paper-account"),
+        )
+        conn.execute(
+            """
+            CREATE TRIGGER ledger_events_no_update
+            BEFORE UPDATE ON ledger_events
+            BEGIN
+                SELECT RAISE(ABORT, 'ledger_events is append-only');
+            END
+            """
+        )
+    finally:
+        conn.close()
+
+    with pytest.raises(LedgerError, match="risk arithmetic is inconsistent"):
+        ledger.replay_account("paper-account", "10000.00")
