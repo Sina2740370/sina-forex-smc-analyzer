@@ -693,7 +693,7 @@ def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
     assert events[0].payload == event["payload"]
 
 
-def _v2_open_event(key="v2-open-1", **snapshot_overrides):
+def _v2_open_event(key="v2-open-1", payload_overrides=None, **snapshot_overrides):
     sizing = {
         "sizing_id": "size-001",
         "approved": True,
@@ -716,21 +716,24 @@ def _v2_open_event(key="v2-open-1", **snapshot_overrides):
         "reason": "",
     }
     sizing.update(snapshot_overrides)
+    payload = {
+        "symbol": "EURUSD",
+        "direction": "BUY",
+        "lots": "0.50",
+        "entry_price": "1.10000",
+        "sl": "1.09900",
+        "tp2": "1.10200",
+        "sizing_result": sizing,
+    }
+    if payload_overrides:
+        payload.update(payload_overrides)
     return {
         "account_id": "paper-account",
         "trade_id": "trade-v2",
         "event_type": "PositionOpened",
         "idempotency_key": key,
         "schema_version": 2,
-        "payload": {
-            "symbol": "EURUSD",
-            "direction": "BUY",
-            "lots": "0.50",
-            "entry_price": "1.10000",
-            "sl": "1.09900",
-            "tp2": "1.10200",
-            "sizing_result": sizing,
-        },
+        "payload": payload,
     }
 
 
@@ -745,20 +748,24 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
 @pytest.mark.parametrize(
     "overrides, message",
     [
-        ({"approved": False}, "explicitly approved"),
-        ({"symbol": "GBPUSD"}, "identity does not match"),
-        ({"lots": "0.51"}, "lots/entry/stop do not match"),
-        ({"actual_risk": "51.00"}, "risk arithmetic is inconsistent"),
-        ({"lots": "0.505"}, "lot_step"),
-        ({"max_lot": "0.40"}, "outside min/max"),
-        ({"stop_loss": "1.10100"}, "BUY stop_loss"),
-        ({"requested_risk": "NaN"}, "finite and positive"),
+        ({"approved": False}, "explicitly approved", None),
+        ({"symbol": "GBPUSD"}, "identity does not match", None),
+        ({"lots": "0.51"}, "lots/entry/stop do not match", None),
+        ({"actual_risk": "51.00"}, "risk arithmetic is inconsistent", None),
+        ({"lots": "0.505"}, "lot_step", {"lots": "0.505"}),
+        ({"max_lot": "0.40"}, "outside min/max", None),
+        ({"stop_loss": "1.10100"}, "BUY stop_loss", {"sl": "1.10100"}),
+        ({"requested_risk": "NaN"}, "finite and positive", None),
     ],
 )
-def test_v2_position_open_rejects_invalid_sizing_snapshot(tmp_path, overrides, message):
+def test_v2_position_open_rejects_invalid_sizing_snapshot(
+    tmp_path, overrides, message, payload_overrides=None
+):
     ledger = SQLiteLedger(tmp_path / "ledger-v2.db")
     with pytest.raises(LedgerError, match=message):
-        ledger.append_event(_v2_open_event(**overrides))
+        ledger.append_event(
+            _v2_open_event(payload_overrides=payload_overrides, **overrides)
+        )
     assert ledger.read_events("paper-account") == []
 
 
