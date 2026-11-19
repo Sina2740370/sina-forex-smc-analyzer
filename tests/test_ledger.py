@@ -691,3 +691,90 @@ def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
     assert events[0].sequence == 1
     assert events[0].idempotency_key == event["idempotency_key"]
     assert events[0].payload == event["payload"]
+
+
+def _v2_open_event(key="v2-open-1", **snapshot_overrides):
+    sizing = {
+        "sizing_id": "size-001",
+        "approved": True,
+        "symbol": "EURUSD",
+        "direction": "BUY",
+        "entry_price": "1.10000",
+        "stop_loss": "1.09900",
+        "lots": "0.50",
+        "requested_risk": "50.00",
+        "actual_risk": "50.00",
+        "per_lot_risk": "100.00",
+        "lot_step": "0.01",
+        "min_lot": "0.01",
+        "max_lot": "50.00",
+        "spec_version": "spec-v1",
+        "fx_rate": "",
+        "fx_timestamp": "",
+        "rounding_mode": "ROUND_DOWN",
+        "risk_config_hash": "risk-hash-v1",
+        "reason": "",
+    }
+    sizing.update(snapshot_overrides)
+    return {
+        "account_id": "paper-account",
+        "trade_id": "trade-v2",
+        "event_type": "PositionOpened",
+        "idempotency_key": key,
+        "schema_version": 2,
+        "payload": {
+            "symbol": "EURUSD",
+            "direction": "BUY",
+            "lots": "0.50",
+            "entry_price": "1.10000",
+            "sl": "1.09900",
+            "tp2": "1.10200",
+            "sizing_result": sizing,
+        },
+    }
+
+
+def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2.db")
+    event, created = ledger.append_event(_v2_open_event())
+    assert created is True
+    projection = ledger.replay_account("paper-account", "10000.00")
+    assert projection["open_positions"]["trade-v2"]["sizing_result"]["sizing_id"] == "size-001"
+
+
+@pytest.mark.parametrize(
+    "overrides, message",
+    [
+        ({"approved": False}, "explicitly approved"),
+        ({"symbol": "GBPUSD"}, "identity does not match"),
+        ({"lots": "0.51"}, "lots/entry/stop do not match"),
+        ({"actual_risk": "51.00"}, "risk arithmetic is inconsistent"),
+        ({"lots": "0.505"}, "lot_step"),
+        ({"max_lot": "0.40"}, "outside min/max"),
+        ({"stop_loss": "1.10100"}, "BUY stop_loss"),
+        ({"requested_risk": "NaN"}, "finite and positive"),
+    ],
+)
+def test_v2_position_open_rejects_invalid_sizing_snapshot(tmp_path, overrides, message):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2.db")
+    with pytest.raises(Exception, match=message):
+        ledger.append_event(_v2_open_event(**overrides))
+    assert ledger.read_events("paper-account") == []
+
+
+def test_v1_legacy_position_open_without_sizing_snapshot_remains_accepted(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v1.db")
+    legacy = {
+        "account_id": "paper-account",
+        "trade_id": "legacy-trade",
+        "event_type": "PositionOpened",
+        "idempotency_key": "legacy-open",
+        "schema_version": 1,
+        "payload": {
+            "symbol": "EURUSD", "direction": "BUY", "lots": "1",
+            "entry_price": "1.1000",
+        },
+    }
+    ledger.append_event(legacy)
+    projection = ledger.replay_account("paper-account", "1000")
+    assert projection["open_positions"]["legacy-trade"]["sizing_result"] is None
