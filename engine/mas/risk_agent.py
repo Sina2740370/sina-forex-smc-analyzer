@@ -12,9 +12,9 @@ import uuid
 from .contracts import GateResult, SizingResult
 
 RISK_RULES = {
-    "risk_per_trade_pct": 1.0,
+    "risk_per_trade_pct": 0.5,
     "max_concurrent_risk_pct": 3.0,
-    "max_daily_loss_pct": 3.0,
+    "max_daily_loss_pct": 2.0,
     "max_weekly_loss_pct": 6.0,
     "max_open_trades": 3,
     "max_per_symbol": 1,
