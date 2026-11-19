@@ -69,3 +69,14 @@ Source inspection on the feature branch confirms the following current contract:
 - The Paper open-position projection/event contract retains TP2, not a durable TP1 execution instruction. Therefore TP1 is currently an informational signal level, not an executable scale-out trigger.
 
 This is an implementation fact, not a recommendation that TP1 should be ignored by all strategies. Enabling TP1 scale-out requires a separately approved strategy contract defining the fraction, fill-price model, remaining-position stop policy, risk reservation, cost allocation, and final-close loss-streak semantics. Until then, do not report TP1 as a realized partial exit or count it as an executed trade-management action.
+
+## Shared Risk Agent defaults
+
+The Paper and Backtest engines both use the same Risk Agent authorization at the signal and modeled-fill stages. The current approved defaults on this branch are:
+
+- Maximum requested risk per trade: **0.5% of current equity**.
+- Maximum daily loss budget: **2.0%**.
+- Maximum concurrent open risk: **3.0%** (unchanged).
+- Maximum weekly loss budget: **6.0%** (unchanged).
+
+For a USD 10,000 account, a full-size authorization therefore requests USD 50 risk before conservative lot-step rounding. A daily loss state of 1.6% plus a new 0.5% risk request must be rejected by the 2.0% daily budget. These are code-level defaults, not broker guarantees; any future configuration override must be immutable and included in the risk configuration fingerprint.
