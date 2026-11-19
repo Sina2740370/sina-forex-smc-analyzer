@@ -217,8 +217,8 @@ class SQLiteLedger:
             raise LedgerError("BUY stop_loss must be below entry_price")
         if direction == "SELL" and not snap_stop > snap_entry:
             raise LedgerError("SELL stop_loss must be above entry_price")
-        if trade_id is not None and not isinstance(trade_id, str):
-            raise LedgerError("PositionOpened trade_id must be a string")
+        if not isinstance(trade_id, str) or not trade_id.strip():
+            raise LedgerError("schema v2 PositionOpened requires a non-empty trade_id")
 
     @staticmethod
     def _validate_input(event: Mapping[str, Any]) -> dict[str, Any]:
