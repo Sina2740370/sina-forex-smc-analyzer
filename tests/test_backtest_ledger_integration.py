@@ -307,11 +307,11 @@ def test_paper_and_backtest_match_same_market_input_through_stop_loss(
     assert bt.equity_end == pytest.approx(paper_state["equity"], abs=0.01)
     assert backtest_state["consecutive_losses"] == paper_state["consecutive_losses"] == 1
     assert backtest_state["risk_lock_active"] is paper_state["risk_lock_active"]
-    assert backtest_state["daily_loss_pct"] == pytest.approx(
-        paper_state["daily_loss_pct"], abs=1e-10
+    assert float(backtest_state["daily_loss_pct"]) == pytest.approx(
+        float(paper_state["daily_loss_pct"]), abs=1e-10
     )
-    assert backtest_state["weekly_loss_pct"] == pytest.approx(
-        paper_state["weekly_loss_pct"], abs=1e-10
+    assert float(backtest_state["weekly_loss_pct"]) == pytest.approx(
+        float(paper_state["weekly_loss_pct"]), abs=1e-10
     )
 
     def lifecycle(events):
