@@ -84,3 +84,22 @@ def test_risk_authority_includes_new_trade_risk_in_exposure_budgets(account_kwar
     )
     assert not verdict.approved
     assert any(g.gate == failed_gate and not g.passed for g in verdict.gates)
+
+@pytest.mark.parametrize(
+    "account_kwargs,passed_gate",
+    [
+        ({"open_risk_pct": 2.5}, "R-CONC"),
+        ({"daily_loss_pct": 1.5}, "R-DAY"),
+        ({"weekly_loss_pct": 5.5}, "R-WK"),
+    ],
+)
+def test_risk_authority_accepts_exact_exposure_budget_boundaries(account_kwargs, passed_gate):
+    """The inclusive <= policy permits a new 0.5% risk exactly at each configured cap."""
+    account = AccountState(equity=10_000, **account_kwargs)
+    verdict = evaluate_risk(
+        "EURUSD", "BUY", 1.1000, 1.0990, 1.1020, 1.1000, acct=account
+    )
+    assert verdict.approved
+    assert verdict.sizing_result is not None
+    gate = next(g for g in verdict.gates if g.gate == passed_gate)
+    assert gate.passed
