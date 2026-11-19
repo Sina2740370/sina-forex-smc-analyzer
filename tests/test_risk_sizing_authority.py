@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from engine.mas.risk_agent import AccountState, evaluate_risk
+from engine.mas.risk_agent import AccountState, RISK_RULES, evaluate_risk
 
 
 def test_risk_agent_returns_immutable_auditable_sizing_result():
@@ -17,7 +17,10 @@ def test_risk_agent_returns_immutable_auditable_sizing_result():
     assert sizing is not None and sizing.approved
     assert sizing.symbol == "EURUSD" and sizing.direction == "BUY"
     assert Decimal(sizing.actual_risk) <= Decimal(sizing.requested_risk)
-    assert Decimal(sizing.lots) == Decimal("1.0")
+    assert Decimal(sizing.lots) == Decimal("0.5")
+    assert Decimal(sizing.requested_risk) == Decimal("50.0")
+    assert RISK_RULES["risk_per_trade_pct"] == 0.5
+    assert RISK_RULES["max_daily_loss_pct"] == 2.0
     assert sizing.spec_version and sizing.risk_config_hash
     assert sizing.fx_rate == "" and sizing.fx_timestamp == ""
     with pytest.raises(FrozenInstanceError):
@@ -69,6 +72,7 @@ def test_hard_risk_lock_remains_independent_of_size_factor():
     "account_kwargs,failed_gate",
     [
         ({"open_risk_pct": 2.1}, "R-CONC"),
+        ({"daily_loss_pct": 1.6}, "R-DAY"),
         ({"daily_loss_pct": 2.1}, "R-DAY"),
         ({"weekly_loss_pct": 5.1}, "R-WK"),
     ],
