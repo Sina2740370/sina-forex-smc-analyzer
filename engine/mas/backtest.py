@@ -23,7 +23,7 @@ from .aggregator import analyze_mas
 from .contracts import BUY
 from .ledger import SQLiteLedger
 from .risk_agent import AccountState, RISK_RULES, evaluate_risk
-from .symbols import get_spec, pip_value_usd
+from .symbols import get_spec, realized_pnl_usd
 
 
 @dataclass
@@ -145,9 +145,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
             outcome = _advance_position(pos, df, t_arr, now, spec)
             if outcome is not None:
                 exit_px, exit_time, last_idx, was_loss = outcome
-                d = 1 if pos["direction"] == BUY else -1
-                pips = (exit_px - pos["entry"]) / spec.pip * d
-                gross_pnl = pips * pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+                gross_pnl = realized_pnl_usd(
+                    symbol, pos["entry"], exit_px, pos["direction"], pos["lots"]
+                )
                 exit_ts = pd.Timestamp(exit_time).isoformat()
                 exit_day = pd.Timestamp(exit_time).date().isoformat()
                 current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
@@ -264,9 +264,9 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                     force_exit=True)
         if outcome is not None:
             exit_px, exit_time, last_idx, _ = outcome
-            d = 1 if pos["direction"] == BUY else -1
-            gross_pnl = (exit_px - pos["entry"]) / spec.pip * d * \
-                pip_value_usd(symbol, pos["entry"]) * pos["lots"]
+            gross_pnl = realized_pnl_usd(
+                symbol, pos["entry"], exit_px, pos["direction"], pos["lots"]
+            )
             exit_ts = pd.Timestamp(exit_time).isoformat()
             exit_day = pd.Timestamp(exit_time).date().isoformat()
             current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
@@ -335,7 +335,16 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
         hit_sl = (lo <= pos["sl"]) if d > 0 else (hi >= pos["sl"])
         hit_tp = (hi >= pos["tp2"]) if d > 0 else (lo <= pos["tp2"])
         if hit_sl:
-            return pos["sl"], df["time"].iloc[last_idx], last_idx, True
+            # A stop crossed by the candle open is filled at the worse opening
+            # price; otherwise the modeled stop price is used. This is a
+            # conservative OHLC gap model and deliberately keeps SL priority
+            # when both stop and target are touched in the same candle.
+            exit_price = pos["sl"]
+            if "open" in df.columns:
+                bar_open = float(df["open"].iloc[last_idx])
+                if (d > 0 and bar_open < pos["sl"]) or (d < 0 and bar_open > pos["sl"]):
+                    exit_price = bar_open
+            return exit_price, df["time"].iloc[last_idx], last_idx, True
         if hit_tp:
             return pos["tp2"], df["time"].iloc[last_idx], last_idx, False
     if force_exit and last_idx >= len(df) - 1:
