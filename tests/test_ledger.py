@@ -159,6 +159,7 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     ledger.append_event({
         "account_id": "paper-account", "event_type": "RiskStateSnapshot",
         "idempotency_key": "seed-state",
+        "occurred_at": "2026-11-17T19:00:00+00:00",
         "payload": {"consecutive_losses": 2, "daily_loss_pct": "0.5",
                     "weekly_loss_pct": "1.25", "risk_lock_active": False, "runs": 4,
                     "last_run_ts": "2026-11-17T20:00:00+00:00",
