@@ -761,7 +761,7 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
     ],
 )
 def test_v2_position_open_rejects_invalid_sizing_snapshot(
-    tmp_path, overrides, message, payload_overrides=None
+    tmp_path, overrides, message, payload_overrides
 ):
     ledger = SQLiteLedger(tmp_path / "ledger-v2.db")
     with pytest.raises(LedgerError, match=message):
