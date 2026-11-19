@@ -196,3 +196,125 @@ def _paper_state_for_test(out_dir):
 
     with open(out_dir / "state.json", encoding="utf-8") as stream:
         return json.load(stream)
+
+
+
+def test_paper_and_backtest_match_same_market_input_through_stop_loss(
+    tmp_path, monkeypatch
+):
+    """The same deterministic SL candle must produce matching Paper/BT settlement."""
+    from types import SimpleNamespace
+
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+
+    captured_events = {"paper": [], "backtest": []}
+    original_append_events = SQLiteLedger.append_events
+
+    def capture_append_events(self, events):
+        batch = list(events)
+        for event in batch:
+            account = event.get("account_id")
+            if account == "paper":
+                captured_events["paper"].append(dict(event))
+            elif account == "backtest:EURUSD":
+                captured_events["backtest"].append(dict(event))
+        return original_append_events(self, batch)
+
+    monkeypatch.setattr(SQLiteLedger, "append_events", capture_append_events)
+
+    start = pd.Timestamp("2026-01-05T00:00:00Z")
+    times = [start + pd.Timedelta(minutes=15 * i) for i in range(5)]
+    frame = pd.DataFrame({
+        "time": times,
+        "open": [1.1000, 1.1000, 1.0990, 1.0990, 1.0990],
+        "high": [1.1010, 1.1005, 1.1000, 1.1000, 1.1000],
+        "low": [1.0990, 1.0980, 1.0985, 1.0985, 1.0985],
+        "close": [1.1000, 1.0990, 1.0992, 1.0991, 1.0990],
+        "volume": [1, 1, 1, 1, 1],
+    })
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    frame.to_csv(data_dir / "EURUSD_M15.csv", index=False)
+
+    def deterministic_signal(_df, _symbol, now, **_kwargs):
+        if pd.Timestamp(now) > start:
+            return SimpleNamespace(
+                signal="WAIT", cand={}, wait_reason="SL parity fixture complete",
+                fingerprint=lambda: "sl-parity-fixture",
+                to_json=lambda **_kw: {
+                    "signal": "WAIT", "fingerprint": "sl-parity-fixture"
+                },
+            )
+        close = float(_df.loc[_df["time"] <= now, "close"].iloc[-1])
+        candidate = {
+            "entry": close,
+            "sl": close - 0.0007,
+            "tp1": close + 0.0010,
+            "tp2": close + 0.0020,
+            "rr": 2.0 / 0.7,
+        }
+        return SimpleNamespace(
+            signal="BUY", cand=candidate, final_score=80.0,
+            confidence=75.0, market_regime="range", session="London",
+            fingerprint=lambda: "sl-parity-fixture",
+            to_json=lambda **_kw: {
+                "signal": "BUY", "fingerprint": "sl-parity-fixture"
+            },
+        )
+
+    monkeypatch.setattr(backtest, "analyze_mas", deterministic_signal)
+    monkeypatch.setattr(paper, "analyze_mas", deterministic_signal)
+
+    paper_out = tmp_path / "paper"
+    first = paper.run_paper(
+        str(data_dir), ["EURUSD"], out_dir=str(paper_out), feeds=None,
+        now=start.tz_localize(None),
+    )
+    assert len(first["opened_this_cycle"]) == 1
+    second = paper.run_paper(
+        str(data_dir), ["EURUSD"], out_dir=str(paper_out), feeds=None,
+        now=(start + pd.Timedelta(hours=1)).tz_localize(None),
+    )
+    assert len(second["closed_this_cycle"]) == 1
+    paper_trade = second["closed_this_cycle"][0]
+    assert paper_trade["outcome"] == "SL"
+
+    bt = backtest.backtest_mas(
+        frame, "EURUSD", start=start.isoformat(),
+        end=(start + pd.Timedelta(hours=1)).isoformat(), step_hours=1,
+    )
+    assert bt.n_signals == 1
+    assert len(bt.trades) == 1
+    bt_trade = bt.trades[0]
+    assert bt_trade.exit_reason == "SL"
+    assert bt_trade.entry == pytest.approx(paper_trade["entry"], abs=1e-12)
+    assert bt_trade.lots == pytest.approx(paper_trade["lots"], abs=1e-12)
+    assert bt_trade.exit_time == pd.Timestamp(paper_trade["exit_time"])
+    assert bt_trade.pnl_usd == pytest.approx(paper_trade["pnl_usd"], abs=0.01)
+    assert bt.equity_end == pytest.approx(
+        _paper_state_for_test(paper_out)["equity"], abs=0.01
+    )
+
+    def lifecycle(events):
+        return [
+            event for event in events
+            if event["event_type"] in ("PositionOpened", "PositionClosed")
+        ]
+
+    paper_lifecycle = lifecycle(captured_events["paper"])
+    backtest_lifecycle = lifecycle(captured_events["backtest"])
+    assert [event["event_type"] for event in paper_lifecycle] == [
+        "PositionOpened", "PositionClosed"
+    ]
+    assert [event["event_type"] for event in backtest_lifecycle] == [
+        "PositionOpened", "PositionClosed"
+    ]
+    for paper_event, backtest_event in zip(paper_lifecycle, backtest_lifecycle):
+        assert paper_event["trade_id"] == backtest_event["trade_id"]
+        assert paper_event["occurred_at"] == backtest_event["occurred_at"]
+        for field in ("lots", "entry_price", "exit_price", "pnl_gross"):
+            if field in paper_event["payload"] or field in backtest_event["payload"]:
+                assert float(paper_event["payload"][field]) == pytest.approx(
+                    float(backtest_event["payload"][field]), abs=1e-10
+                )
