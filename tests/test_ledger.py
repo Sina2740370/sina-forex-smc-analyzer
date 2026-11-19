@@ -693,7 +693,9 @@ def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
     assert events[0].payload == event["payload"]
 
 
-def _v2_open_event(key="v2-open-1", payload_overrides=None, **snapshot_overrides):
+def _v2_open_event(
+    key="v2-open-1", trade_id="trade-v2", payload_overrides=None, **snapshot_overrides
+):
     sizing = {
         "sizing_id": "size-001",
         "approved": True,
@@ -729,7 +731,7 @@ def _v2_open_event(key="v2-open-1", payload_overrides=None, **snapshot_overrides
         payload.update(payload_overrides)
     return {
         "account_id": "paper-account",
-        "trade_id": "trade-v2",
+        "trade_id": trade_id,
         "event_type": "PositionOpened",
         "idempotency_key": key,
         "schema_version": 2,
@@ -766,6 +768,13 @@ def test_v2_position_open_rejects_invalid_sizing_snapshot(
         ledger.append_event(
             _v2_open_event(payload_overrides=payload_overrides, **overrides)
         )
+    assert ledger.read_events("paper-account") == []
+
+
+def test_v2_position_open_requires_non_empty_trade_id(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2-no-trade-id.db")
+    with pytest.raises(LedgerError, match="non-empty trade_id"):
+        ledger.append_event(_v2_open_event(trade_id=None))
     assert ledger.read_events("paper-account") == []
 
 
