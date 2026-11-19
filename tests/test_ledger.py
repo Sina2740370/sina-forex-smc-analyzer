@@ -754,7 +754,11 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
         ({"symbol": "GBPUSD"}, "identity does not match", None),
         ({"lots": "0.51"}, "lots/entry/stop do not match", None),
         ({"actual_risk": "51.00"}, "risk arithmetic is inconsistent", None),
-        ({"lots": "0.505"}, "lot_step", {"lots": "0.505"}),
+        (
+            {"lots": "0.505", "actual_risk": "50.500"},
+            "lot_step",
+            {"lots": "0.505"},
+        ),
         ({"max_lot": "0.40"}, "outside min/max", None),
         ({"stop_loss": "1.10100"}, "BUY stop_loss", {"sl": "1.10100"}),
         ({"requested_risk": "NaN"}, "finite and positive", None),
