@@ -2,7 +2,7 @@
 import pytest
 from decimal import Decimal
 
-from engine.mas.ledger import LedgerConflictError, SQLiteLedger
+from engine.mas.ledger import LedgerConflictError, LedgerError, SQLiteLedger
 
 
 def _event(key="fill-1", payload=None):
@@ -757,7 +757,7 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
 )
 def test_v2_position_open_rejects_invalid_sizing_snapshot(tmp_path, overrides, message):
     ledger = SQLiteLedger(tmp_path / "ledger-v2.db")
-    with pytest.raises(Exception, match=message):
+    with pytest.raises(LedgerError, match=message):
         ledger.append_event(_v2_open_event(**overrides))
     assert ledger.read_events("paper-account") == []
 
