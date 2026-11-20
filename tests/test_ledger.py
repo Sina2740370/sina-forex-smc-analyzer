@@ -48,6 +48,34 @@ def test_batch_append_is_atomic_on_conflict(tmp_path):
     assert [event.idempotency_key for event in ledger.read_events("paper-account")] == ["existing"]
 
 
+def test_batch_retries_same_idempotency_key_with_same_body_once(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-batch-idempotency.db")
+    first = _event("batch-retry", {"lots": "0.10", "price": "1.10000"})
+    retry = _event("batch-retry", {"lots": "0.10", "price": "1.10000"})
+
+    results = ledger.append_events([first, retry])
+
+    assert [inserted for _stored, inserted in results] == [True, False]
+    assert results[0][0].event_id == results[1][0].event_id
+    events = ledger.read_events("paper-account")
+    assert len(events) == 1
+    assert events[0].sequence == 1
+    assert events[0].idempotency_key == "batch-retry"
+
+
+def test_batch_conflicting_same_idempotency_key_rolls_back_first_insert(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-batch-idempotency-conflict.db")
+    first = _event("batch-conflict", {"lots": "0.10", "price": "1.10000"})
+    conflicting_retry = _event(
+        "batch-conflict", {"lots": "0.20", "price": "1.10000"}
+    )
+
+    with pytest.raises(LedgerConflictError, match="different event body"):
+        ledger.append_events([first, conflicting_retry])
+
+    assert ledger.read_events("paper-account") == []
+
+
 def test_sequence_is_monotonic_and_survives_restart(tmp_path):
     path = tmp_path / "ledger.db"
     ledger = SQLiteLedger(path)
