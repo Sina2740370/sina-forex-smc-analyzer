@@ -1,4 +1,5 @@
 """Tests for the transactional SQLite event ledger."""
+import sqlite3
 import pytest
 from decimal import Decimal
 
