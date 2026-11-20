@@ -76,6 +76,41 @@ def test_batch_conflicting_same_idempotency_key_rolls_back_first_insert(tmp_path
     assert ledger.read_events("paper-account") == []
 
 
+def test_batch_idempotency_replay_is_stable_after_database_restart(tmp_path):
+    path = tmp_path / "ledger-batch-replay-restart.db"
+    ledger = SQLiteLedger(path)
+    first = {
+        "account_id": "paper-account",
+        "event_type": "CashAdjustment",
+        "idempotency_key": "cash:deposit:1",
+        "payload": {"amount": "125.50"},
+    }
+    second = {
+        "account_id": "paper-account",
+        "event_type": "CashAdjustment",
+        "idempotency_key": "cash:withdrawal:1",
+        "payload": {"amount": "-25.25"},
+    }
+    retry = dict(second)
+
+    results = ledger.append_events([first, second, retry])
+    assert [inserted for _stored, inserted in results] == [True, True, False]
+    assert results[1][0].event_id == results[2][0].event_id
+
+    before_restart = ledger.replay_account("paper-account", "1000.00")
+    assert before_restart["cash_balance"] == "1100.25"
+    assert before_restart["last_sequence"] == 2
+
+    restarted = SQLiteLedger(path)
+    persisted_events = restarted.read_events("paper-account")
+    after_restart = restarted.replay_account("paper-account", "1000.00")
+
+    assert [event.sequence for event in persisted_events] == [1, 2]
+    assert after_restart == before_restart
+    assert after_restart["cash_balance"] == "1100.25"
+    assert after_restart["last_sequence"] == 2
+
+
 def test_sequence_is_monotonic_and_survives_restart(tmp_path):
     path = tmp_path / "ledger.db"
     ledger = SQLiteLedger(path)
