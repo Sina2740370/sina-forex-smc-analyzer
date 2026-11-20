@@ -56,8 +56,8 @@ def test_risk_agent_rejects_low_rr_and_sizes_lots():
     assert not v.approved and any(g.gate == "R-RR" for g in v.gates)   # RR=1.5 < 2
     v2 = evaluate_risk("EURUSD", "BUY", entry=1.1000, sl=1.0990, tp2=1.1020, price=1.1000)
     assert v2.approved and v2.lots > 0
-    # ریاضی حجم: 1% از 10k = $100؛ ریسک 10 پیپ × $10/لات → 1 لات
-    assert abs(v2.lots - 1.0) < 0.01 and abs(v2.risk_amount - 100) < 1.0
+    # ریاضی حجم: 0.5% از 10k = $50؛ ریسک 10 پیپ × $10/لات → 0.5 لات
+    assert abs(v2.lots - 0.5) < 0.01 and abs(v2.risk_amount - 50) < 1.0
     v3 = evaluate_risk("EURUSD", "BUY", 1.1, 1.099, 1.102, 1.1,
                        acct=AccountState(equity=10_000, open_trades=3))
     assert not v3.approved and any(g.gate == "R-OPEN" for g in v3.gates)
