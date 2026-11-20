@@ -885,3 +885,31 @@ def test_v2_replay_rejects_corrupted_persisted_sizing_snapshot(tmp_path):
 
     with pytest.raises(LedgerError, match="risk arithmetic is inconsistent"):
         ledger.replay_account("paper-account", "10000.00")
+
+
+def test_append_events_rolls_back_entire_batch_on_late_insert_conflict(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-batch-atomicity.db")
+    shared_event_id = "duplicate-event-id"
+
+    first = {
+        "event_id": shared_event_id,
+        "account_id": "paper-account",
+        "event_type": "AuditMarker",
+        "idempotency_key": "atomicity:first",
+        "payload": {"marker": "first"},
+    }
+    second = {
+        "event_id": shared_event_id,
+        "account_id": "paper-account",
+        "event_type": "AuditMarker",
+        "idempotency_key": "atomicity:second",
+        "payload": {"marker": "second"},
+    }
+
+    # Both inputs pass application validation. The second INSERT then violates
+    # the event_id primary key after the first INSERT has executed in the
+    # transaction. The batch must leave no partially committed event behind.
+    with pytest.raises(sqlite3.IntegrityError):
+        ledger.append_events([first, second])
+
+    assert ledger.read_events("paper-account") == []
