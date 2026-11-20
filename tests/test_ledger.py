@@ -797,6 +797,32 @@ def test_v2_position_open_rejects_invalid_sizing_snapshot(
     assert ledger.read_events("paper-account") == []
 
 
+
+def test_v2_position_open_rejects_missing_sizing_snapshot(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2-missing-snapshot.db")
+    event = _v2_open_event()
+    event["payload"].pop("sizing_result")
+    with pytest.raises(LedgerError, match="requires sizing_result"):
+        ledger.append_event(event)
+    assert ledger.read_events("paper-account") == []
+
+
+def test_v2_position_open_rejects_missing_required_snapshot_field(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2-missing-field.db")
+    event = _v2_open_event()
+    event["payload"]["sizing_result"].pop("risk_config_hash")
+    with pytest.raises(LedgerError, match="missing fields: risk_config_hash"):
+        ledger.append_event(event)
+    assert ledger.read_events("paper-account") == []
+
+
+@pytest.mark.parametrize("invalid_step", ["0", "-0.01"])
+def test_v2_position_open_rejects_non_positive_lot_step(tmp_path, invalid_step):
+    ledger = SQLiteLedger(tmp_path / f"ledger-v2-lot-step-{invalid_step}.db")
+    with pytest.raises(LedgerError, match="finite and positive"):
+        ledger.append_event(_v2_open_event(lot_step=invalid_step))
+    assert ledger.read_events("paper-account") == []
+
 def test_v2_position_open_requires_non_empty_trade_id(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger-v2-no-trade-id.db")
     with pytest.raises(LedgerError, match="non-empty trade_id"):
