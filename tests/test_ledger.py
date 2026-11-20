@@ -747,6 +747,28 @@ def test_v2_position_open_requires_and_preserves_authorized_sizing_snapshot(tmp_
     assert projection["open_positions"]["trade-v2"]["sizing_result"]["sizing_id"] == "size-001"
 
 
+def test_v2_sizing_snapshot_survives_database_restart_and_replay(tmp_path):
+    path = tmp_path / "ledger-v2-restart.db"
+    original = SQLiteLedger(path)
+    stored, created = original.append_event(_v2_open_event())
+
+    assert created is True
+    assert stored.schema_version == 2
+    expected_snapshot = stored.payload["sizing_result"]
+
+    # Constructing a new ledger instance models a process restart against the
+    # same durable SQLite file; no in-memory projection is reused.
+    restarted = SQLiteLedger(path)
+    replayed_events = restarted.read_events("paper-account")
+    assert len(replayed_events) == 1
+    assert replayed_events[0].payload["sizing_result"] == expected_snapshot
+
+    projection = restarted.replay_account("paper-account", "10000.00")
+    position = projection["open_positions"]["trade-v2"]
+    assert position["sizing_result"] == expected_snapshot
+    assert position["lots"] == "0.50"
+
+
 @pytest.mark.parametrize(
     "overrides, message, payload_overrides",
     [
