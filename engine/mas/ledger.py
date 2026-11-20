@@ -584,23 +584,33 @@ class SQLiteLedger:
         # their actual exit timestamps. Aggregate partial fills per trade and apply
         # completed trades in exit-time order. Explicit lock release remains a
         # separate, auditable event and never follows automatically from a win.
-        risk_timeline = [
+        risk_events = [
             event for event in events
             if event.event_type in (
-                "RiskStateSnapshot", "RiskLockActivated", "RiskLockReleased",
+                "RiskLockActivated", "RiskLockReleased",
                 "PositionPartiallyClosed", "PositionClosed",
             )
         ]
-        risk_timeline.sort(key=lambda item: (event_time(item), item.sequence))
-        chronological_streak = 0
-        chronological_lock = False
+        snapshots = [event for event in events if event.event_type == "RiskStateSnapshot"]
+        # RiskStateSnapshot is a one-time migration baseline, not a recurring
+        # state mutation. It is authoritative only when it predates every
+        # risk-changing event in append order. A late/stale snapshot must never
+        # overwrite a newer lock or loss streak merely because its occurred_at
+        # sorts later on the historical timeline.
+        baseline = min(snapshots, key=lambda item: item.sequence) if snapshots else None
+        if baseline is not None and any(item.sequence < baseline.sequence for item in risk_events):
+            baseline = None
+        risk_timeline = sorted(risk_events, key=lambda item: (event_time(item), item.sequence))
+        chronological_streak = (
+            int(baseline.payload.get("consecutive_losses", 0)) if baseline else 0
+        )
+        chronological_lock = (
+            bool(baseline.payload.get("risk_lock_active", False)) if baseline else False
+        )
         trade_net_totals: dict[str, Decimal] = {}
         for risk_event in risk_timeline:
             rp = risk_event.payload
-            if risk_event.event_type == "RiskStateSnapshot":
-                chronological_streak = int(rp.get("consecutive_losses", 0))
-                chronological_lock = bool(rp.get("risk_lock_active", False))
-            elif risk_event.event_type == "RiskLockActivated":
+            if risk_event.event_type == "RiskLockActivated":
                 chronological_lock = True
             elif risk_event.event_type == "RiskLockReleased":
                 chronological_lock = False
