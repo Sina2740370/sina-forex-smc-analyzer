@@ -266,6 +266,67 @@ def test_replay_reconstructs_paper_cycle_and_risk_state(tmp_path):
     assert state["closed_trades"][0]["pnl_usd"] == "-50"
 
 
+def test_risk_replay_orders_delayed_closes_before_later_audited_release(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "delayed-risk-release.db")
+    account = "paper-account"
+
+    for trade_id in ("loss-1", "loss-2", "loss-3"):
+        ledger.append_event({
+            "account_id": account,
+            "trade_id": trade_id,
+            "event_type": "PositionOpened",
+            "idempotency_key": f"open:{trade_id}",
+            "occurred_at": "2026-11-18T09:00:00+00:00",
+            "payload": {
+                "symbol": "EURUSD",
+                "direction": "BUY",
+                "lots": "1",
+                "entry_price": "1.1000",
+            },
+        })
+
+    # The hard stop and its audited release are appended before delayed
+    # settlements arrive, but their timestamps are later than the exits.
+    ledger.append_event({
+        "account_id": account,
+        "event_type": "RiskLockActivated",
+        "idempotency_key": "lock:review-window",
+        "occurred_at": "2026-11-18T14:00:00+00:00",
+        "payload": {},
+    })
+    ledger.append_event({
+        "account_id": account,
+        "event_type": "RiskLockReleased",
+        "idempotency_key": "unlock:review-approval",
+        "occurred_at": "2026-11-18T15:00:00+00:00",
+        "payload": {"consecutive_losses": 0},
+    })
+
+    for index, trade_id in enumerate(("loss-1", "loss-2", "loss-3"), start=10):
+        ledger.append_event({
+            "account_id": account,
+            "trade_id": trade_id,
+            "event_type": "PositionClosed",
+            "idempotency_key": f"close:{trade_id}",
+            "occurred_at": f"2026-11-18T{index:02d}:00:00+00:00",
+            "payload": {
+                "lots_closed": "1",
+                "pnl_gross": "-10",
+                "commission": "0",
+                "slippage": "0",
+                "swap": "0",
+                "consecutive_loss_stop": 3,
+            },
+        })
+
+    state = ledger.replay_account(account, "10000")
+    assert state["consecutive_losses"] == 0
+    assert state["risk_lock_active"] is False
+
+    restarted = SQLiteLedger(tmp_path / "delayed-risk-release.db")
+    assert restarted.replay_account(account, "10000") == state
+
+
 def test_daily_risk_reset_changes_only_daily_loss_not_loss_streak(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
     ledger.append_event({
