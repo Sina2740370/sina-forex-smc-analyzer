@@ -471,6 +471,64 @@ def test_consecutive_losses_follow_exit_time_not_append_sequence(tmp_path):
     assert state["risk_lock_active"] is False
 
 
+def test_late_risk_snapshot_cannot_overwrite_newer_loss_state(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "stale-risk-snapshot.db")
+    account = "paper-account"
+    ledger.append_event({
+        "account_id": account, "trade_id": "trade-after-snapshot",
+        "event_type": "PositionOpened", "idempotency_key": "open:trade-after-snapshot",
+        "occurred_at": "2026-11-18T09:00:00+00:00",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "trade-after-snapshot",
+        "event_type": "PositionClosed", "idempotency_key": "close:trade-after-snapshot",
+        "occurred_at": "2026-11-18T10:00:00+00:00",
+        "payload": {"lots_closed": "1", "pnl_gross": "-10",
+                    "commission": "0", "slippage": "0", "swap": "0",
+                    "consecutive_loss_stop": 3},
+    })
+    ledger.append_event({
+        "account_id": account, "event_type": "RiskStateSnapshot",
+        "idempotency_key": "stale-risk-snapshot",
+        "occurred_at": "2026-11-18T16:00:00+00:00",
+        "payload": {"consecutive_losses": 0, "risk_lock_active": False},
+    })
+    state = ledger.replay_account(account, "10000")
+    assert state["consecutive_losses"] == 1
+    assert state["risk_lock_active"] is False
+
+
+def test_migration_risk_snapshot_is_baseline_before_delayed_settlement(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "baseline-risk-snapshot.db")
+    account = "paper-account"
+    ledger.append_event({
+        "account_id": account, "event_type": "RiskStateSnapshot",
+        "idempotency_key": "legacy-risk-baseline",
+        "occurred_at": "2026-11-18T16:00:00+00:00",
+        "payload": {"consecutive_losses": 2, "risk_lock_active": False},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "delayed-trade",
+        "event_type": "PositionOpened", "idempotency_key": "open:delayed-trade",
+        "occurred_at": "2026-11-18T09:00:00+00:00",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
+    ledger.append_event({
+        "account_id": account, "trade_id": "delayed-trade",
+        "event_type": "PositionClosed", "idempotency_key": "close:delayed-trade",
+        "occurred_at": "2026-11-18T10:00:00+00:00",
+        "payload": {"lots_closed": "1", "pnl_gross": "-10",
+                    "commission": "0", "slippage": "0", "swap": "0",
+                    "consecutive_loss_stop": 3},
+    })
+    state = ledger.replay_account(account, "10000")
+    assert state["consecutive_losses"] == 3
+    assert state["risk_lock_active"] is True
+
+
 def test_partial_closes_count_once_using_aggregate_trade_result(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
     account = "paper-account"
