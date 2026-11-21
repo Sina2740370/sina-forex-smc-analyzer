@@ -1284,7 +1284,6 @@ def test_replay_rejects_reused_trade_id_even_after_prior_close(tmp_path):
     # Simulate an older/corrupt persisted event bypassing the append API.
     conn = ledger._connect()
     try:
-        conn.execute("DROP TRIGGER ledger_events_no_insert")
         conn.execute(
             """
             INSERT INTO ledger_events (
@@ -1298,15 +1297,6 @@ def test_replay_rejects_reused_trade_id_even_after_prior_close(tmp_path):
                 "2026-11-21T00:00:00+00:00", "corrupt-reopen-key", 1,
                 '{"direction":"BUY","entry_price":"1.10000","lots":"1.00","symbol":"EURUSD"}',
             ),
-        )
-        conn.execute(
-            """
-            CREATE TRIGGER ledger_events_no_insert
-            BEFORE INSERT ON ledger_events
-            BEGIN
-                SELECT RAISE(ABORT, 'ledger_events is append-only');
-            END
-            """
         )
     finally:
         conn.close()
