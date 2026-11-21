@@ -48,6 +48,8 @@ STORED_ONLY_EVENT_TYPES = frozenset({
 SUPPORTED_EVENT_TYPES = PROJECTION_EVENT_TYPES | STORED_ONLY_EVENT_TYPES
 SUPPORTED_SCHEMA_VERSIONS = {
     "PositionOpened": frozenset({1, 2}),
+    # v1 remains replayable for historical records; new releases require v2.
+    "RiskLockReleased": frozenset({1, 2}),
 }
 DEFAULT_SCHEMA_VERSIONS = frozenset({1})
 
@@ -249,6 +251,16 @@ class SQLiteLedger:
             raise LedgerError("schema v2 PositionOpened requires a non-empty trade_id")
 
     @staticmethod
+    def _validate_risk_lock_released_v2(payload: Mapping[str, Any]) -> None:
+        """Require attributable release metadata; this is not identity authentication."""
+        for field in ("reviewed_by", "reason", "approval_reference"):
+            value = payload.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise LedgerError(
+                    f"RiskLockReleased schema v2 requires non-empty {field}"
+                )
+
+    @staticmethod
     def _validate_input(event: Mapping[str, Any]) -> dict[str, Any]:
         required = ("account_id", "event_type", "idempotency_key", "payload")
         missing = [key for key in required if key not in event]
@@ -281,6 +293,10 @@ class SQLiteLedger:
                 f"unsupported schema_version {schema_version} for {normalized['event_type']}"
             )
         normalized["schema_version"] = schema_version
+        if normalized["event_type"] == "RiskLockReleased":
+            if schema_version != 2:
+                raise LedgerError("new RiskLockReleased events require schema_version 2")
+            SQLiteLedger._validate_risk_lock_released_v2(payload)
         if normalized["event_type"] in ("PositionPartiallyClosed", "PositionClosed"):
             for cost_field in ("commission", "slippage", "swap"):
                 raw_cost = payload.get(cost_field, "0")
@@ -561,6 +577,8 @@ class SQLiteLedger:
                     f"for {event.event_type}"
                 )
             payload = event.payload
+            if event.event_type == "RiskLockReleased" and event.schema_version == 2:
+                self._validate_risk_lock_released_v2(payload)
             if event.event_type == "CashAdjustment":
                 balance += dec(payload.get("amount"), "amount")
             elif event.event_type == "RiskStateSnapshot":
