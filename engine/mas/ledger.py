@@ -276,6 +276,19 @@ class SQLiteLedger:
                 f"unsupported schema_version {schema_version} for {normalized['event_type']}"
             )
         normalized["schema_version"] = schema_version
+        if normalized["event_type"] in ("PositionPartiallyClosed", "PositionClosed"):
+            for cost_field in ("commission", "slippage", "swap"):
+                raw_cost = payload.get(cost_field, "0")
+                if not isinstance(raw_cost, str):
+                    raise LedgerError(f"{cost_field} must be encoded as a decimal string")
+                try:
+                    cost = Decimal(raw_cost)
+                except InvalidOperation as exc:
+                    raise LedgerError(f"{cost_field} is not a valid decimal") from exc
+                if not cost.is_finite():
+                    raise LedgerError(f"{cost_field} must be finite")
+                if cost_field in ("commission", "slippage") and cost < 0:
+                    raise LedgerError(f"{cost_field} cannot be negative")
         if normalized["schema_version"] == 2 and normalized["event_type"] == "PositionOpened":
             SQLiteLedger._validate_position_opened_v2(
                 normalized["payload"], normalized.get("trade_id") or normalized["payload"].get("trade_id")
@@ -330,6 +343,7 @@ class SQLiteLedger:
         conn = self._connect()
         try:
             conn.execute("BEGIN IMMEDIATE")
+            new_trade_ids: set[tuple[str, str]] = set()
             for item in prepared:
                 existing = conn.execute(
                     "SELECT * FROM ledger_events WHERE account_id=? AND idempotency_key=?",
@@ -350,6 +364,26 @@ class SQLiteLedger:
                         )
                     results.append((self._row_to_event(existing), False))
                     continue
+
+                if item["event_type"] == "PositionOpened":
+                    trade_id = item.get("trade_id") or item["payload"].get("trade_id")
+                    if not isinstance(trade_id, str) or not trade_id.strip():
+                        raise LedgerError("PositionOpened requires a non-empty trade_id")
+                    identity = (item["account_id"], trade_id)
+                    if identity in new_trade_ids:
+                        raise LedgerConflictError(
+                            "trade_id has already been used by a PositionOpened event"
+                        )
+                    prior_open = conn.execute(
+                        "SELECT 1 FROM ledger_events "
+                        "WHERE account_id=? AND event_type='PositionOpened' AND trade_id=? LIMIT 1",
+                        identity,
+                    ).fetchone()
+                    if prior_open is not None:
+                        raise LedgerConflictError(
+                            "trade_id has already been used by a PositionOpened event"
+                        )
+                    new_trade_ids.add(identity)
 
                 sequence = conn.execute(
                     "SELECT COALESCE(MAX(sequence), 0) + 1 AS next_seq "
@@ -411,6 +445,7 @@ class SQLiteLedger:
         balance = dec(initial_balance, "initial_balance")
         realized = Decimal("0")
         positions: dict[str, dict[str, Any]] = {}
+        seen_trade_ids: set[str] = set()
         closed_trades: list[dict[str, Any]] = []
         risk_lock_active = False
         consecutive_losses = 0
@@ -476,8 +511,9 @@ class SQLiteLedger:
                 if event.schema_version == 2:
                     self._validate_position_opened_v2(payload, event.trade_id or payload.get("trade_id"))
                 trade_id = event.trade_id or payload.get("trade_id")
-                if not trade_id or trade_id in positions:
-                    raise LedgerError("PositionOpened requires a unique trade_id")
+                if not trade_id or trade_id in seen_trade_ids:
+                    raise LedgerError("PositionOpened trade_id must be unique for the account lifetime")
+                seen_trade_ids.add(trade_id)
                 lots = dec(payload.get("lots"), "lots")
                 if lots <= 0:
                     raise LedgerError("opened lots must be positive")
@@ -519,6 +555,8 @@ class SQLiteLedger:
                 commission = dec(payload.get("commission", "0"), "commission")
                 slippage = dec(payload.get("slippage", "0"), "slippage")
                 swap = dec(payload.get("swap", "0"), "swap")
+                if commission < 0 or slippage < 0:
+                    raise LedgerError("commission and slippage cannot be negative")
                 net = gross - commission - slippage - swap
                 realized += net
                 # Position lifecycle remains sequence-ordered, but period risk is
