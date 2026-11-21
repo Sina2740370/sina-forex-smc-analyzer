@@ -92,3 +92,16 @@ the registry and version checks so unsupported persisted records fail closed.
 This change does not claim semantic lifecycle validation before commit, permanent
 trade identity enforcement, or atomic legacy migration recovery; those remain
 separate acceptance gates.
+
+
+## Lifetime trade identity and settlement cost invariants
+
+Implemented on the ledger hardening branch:
+- A `PositionOpened` event must carry a non-empty `trade_id`; the value is normalized into the immutable event envelope.
+- An account may use a given `trade_id` for only one opening event over its entire event history. Closing a position does not make that identifier reusable.
+- The append transaction checks persisted openings and earlier openings in the same batch. Idempotent retries of the original opening event remain valid because the idempotency match is resolved first.
+- Replay independently rejects a repeated `trade_id`, including reuse after a prior position was fully closed.
+- Commission and slippage must be finite decimal strings greater than or equal to zero. Swap must be finite but may be positive or negative because rollover credits and debits are both possible.
+- These checks apply at append and replay boundaries. They do not introduce assumed costs or change Paper/Backtest producer values.
+
+Validation status: regression tests have been added for lifetime identity, same-batch rollback, idempotent retry, persisted-history rejection, negative/non-finite commission and slippage, and signed swap. They remain unexecuted until a CI run reports results for the exact branch head.
