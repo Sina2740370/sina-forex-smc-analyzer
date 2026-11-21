@@ -245,14 +245,14 @@ def test_paper_risk_lock_release_requires_audited_idempotent_review(env):
 
     released = release_paper_risk_lock(
         str(out), reviewer="senior-reviewer", reason="manual risk review completed",
-        request_id="review-2026-001",
+        request_id="review-2026-001", approval_reference="ticket:RISK-2026-001",
     )
     assert released["risk_lock_active"] is False
     assert released["consecutive_losses"] == 0
 
     repeated = release_paper_risk_lock(
         str(out), reviewer="senior-reviewer", reason="manual risk review completed",
-        request_id="review-2026-001",
+        request_id="review-2026-001", approval_reference="ticket:RISK-2026-001",
     )
     assert repeated["risk_lock_active"] is False
     events = SQLiteLedger(out / "ledger.sqlite3").read_events("paper")
@@ -481,6 +481,7 @@ def test_risk_lock_release_recovers_after_ledger_commit_before_state_replace(env
         paper.release_paper_risk_lock(
             str(out), reviewer="senior-reviewer", reason="review completed",
             request_id="release-crash-001",
+            approval_reference="ticket:RISK-CRASH-001",
         )
 
     ledger = SQLiteLedger(out / "ledger.sqlite3")
@@ -496,6 +497,7 @@ def test_risk_lock_release_recovers_after_ledger_commit_before_state_replace(env
     recovered = paper.release_paper_risk_lock(
         str(out), reviewer="senior-reviewer", reason="review completed",
         request_id="release-crash-001",
+        approval_reference="ticket:RISK-CRASH-001",
     )
     assert recovered["risk_lock_active"] is False
     assert recovered["consecutive_losses"] == 0
