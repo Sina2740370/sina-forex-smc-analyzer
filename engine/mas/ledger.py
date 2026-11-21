@@ -603,14 +603,17 @@ class SQLiteLedger:
                     raise LedgerError("PositionOpened trade_id must be unique for the account lifetime")
                 seen_trade_ids.add(trade_id)
                 lots = dec(payload.get("lots"), "lots")
+                entry_price = dec(payload.get("entry_price"), "entry_price")
                 if lots <= 0:
                     raise LedgerError("opened lots must be positive")
+                if entry_price <= 0:
+                    raise LedgerError("opened entry_price must be positive")
                 positions[trade_id] = {
                     "trade_id": trade_id,
                     "symbol": payload.get("symbol"),
                     "direction": payload.get("direction"),
                     "lots": lots,
-                    "entry_price": dec(payload.get("entry_price"), "entry_price"),
+                    "entry_price": entry_price,
                     "sl": payload.get("sl"),
                     "tp2": payload.get("tp2"),
                     "entry_time": payload.get("entry_time") or event.occurred_at,
@@ -639,6 +642,10 @@ class SQLiteLedger:
                     raise LedgerError("closed lots must be positive and <= remaining lots")
                 if event.event_type == "PositionClosed" and closed_lots != position["lots"]:
                     raise LedgerError("PositionClosed must settle the full remaining quantity")
+                if event.event_type == "PositionPartiallyClosed" and closed_lots >= position["lots"]:
+                    raise LedgerError(
+                        "PositionPartiallyClosed must leave a positive remaining quantity"
+                    )
                 gross = dec(payload.get("pnl_gross"), "pnl_gross")
                 commission = dec(payload.get("commission", "0"), "commission")
                 slippage = dec(payload.get("slippage", "0"), "slippage")
