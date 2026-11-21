@@ -169,6 +169,35 @@ def test_new_cash_adjustment_requires_v2_provenance(tmp_path):
     assert ledger.read_events("paper-account") == []
 
 
+def test_replay_keeps_historical_v1_cash_and_risk_release_compatibility(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-historical-v1-compat.db")
+    conn = ledger._connect()
+    try:
+        # Simulate immutable historical rows created before v2 append policies.
+        rows = [
+            ("historical-lock", "RiskLockActivated", 1, "legacy-lock", "{}"),
+            ("historical-cash", "CashAdjustment", 2, "legacy-cash",
+             '{"amount":"10.00"}'),
+            ("historical-release", "RiskLockReleased", 3, "legacy-release", "{}"),
+        ]
+        for event_id, event_type, sequence, key, payload in rows:
+            conn.execute(
+                """INSERT INTO ledger_events (
+                    event_id, account_id, trade_id, order_id, event_type, sequence,
+                    occurred_at, recorded_at, idempotency_key, schema_version, payload_json
+                ) VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, ?)""",
+                (event_id, "paper-account", event_type, sequence,
+                 "2026-01-01T00:00:00+00:00", "2026-01-01T00:00:00+00:00",
+                 key, payload),
+            )
+    finally:
+        conn.close()
+
+    state = ledger.replay_account("paper-account", "1000.00")
+    assert state["cash_balance"] == "1010.00"
+    assert state["risk_lock_active"] is False
+
+
 def test_batch_idempotency_replay_is_stable_after_database_restart(tmp_path):
     path = tmp_path / "ledger-batch-replay-restart.db"
     ledger = SQLiteLedger(path)
