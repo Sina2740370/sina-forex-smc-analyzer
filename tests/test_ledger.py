@@ -1320,3 +1320,73 @@ def test_replay_rejects_reused_trade_id_even_after_prior_close(tmp_path):
 
     with pytest.raises(LedgerError, match="unique for the account lifetime"):
         ledger.replay_account("paper-account", "1000.00")
+
+
+
+def test_append_rejects_close_for_unknown_trade_without_persisting(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "unknown-close-precommit.db")
+    with pytest.raises(LedgerError, match="unknown position"):
+        ledger.append_event(_position_event("PositionClosed", "close-unknown"))
+    assert ledger.read_events("paper-account") == []
+
+
+def test_append_rejects_over_close_before_commit(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "over-close-precommit.db")
+    ledger.append_event(_position_event("PositionOpened", "open-over"))
+    close = _position_event(
+        "PositionClosed", "close-over",
+        payload={
+            "lots_closed": "1.01", "pnl_gross": "1",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    )
+    with pytest.raises(LedgerError, match="<= remaining lots"):
+        ledger.append_event(close)
+    assert [event.event_type for event in ledger.read_events("paper-account")] == [
+        "PositionOpened"
+    ]
+
+
+def test_append_rejects_incomplete_final_close_before_commit(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "incomplete-close-precommit.db")
+    ledger.append_event(_position_event("PositionOpened", "open-incomplete"))
+    close = _position_event(
+        "PositionClosed", "close-incomplete",
+        payload={
+            "lots_closed": "0.50", "pnl_gross": "1",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    )
+    with pytest.raises(LedgerError, match="full remaining quantity"):
+        ledger.append_event(close)
+    assert len(ledger.read_events("paper-account")) == 1
+
+
+def test_invalid_late_event_rolls_back_entire_position_batch(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "position-batch-rollback.db")
+    batch = [
+        _position_event("PositionOpened", "batch-open", trade_id="batch-trade"),
+        _position_event(
+            "PositionClosed", "batch-invalid-close", trade_id="not-opened",
+            payload={
+                "lots_closed": "1", "pnl_gross": "10",
+                "commission": "0", "slippage": "0", "swap": "0",
+            },
+        ),
+    ]
+    with pytest.raises(LedgerError, match="unknown position"):
+        ledger.append_events(batch)
+    assert ledger.read_events("paper-account") == []
+
+
+def test_append_validates_mark_references_active_position(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "unknown-mark-precommit.db")
+    with pytest.raises(LedgerError, match="unknown position"):
+        ledger.append_event({
+            "account_id": "paper-account",
+            "trade_id": "missing-trade",
+            "event_type": "PositionMarked",
+            "idempotency_key": "mark:missing",
+            "payload": {"unrealized_pnl": "1.00"},
+        })
+    assert ledger.read_events("paper-account") == []
