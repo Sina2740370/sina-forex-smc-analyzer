@@ -133,3 +133,20 @@ The Paper importer now uses immutable migration intent/completion metadata:
 - An account with existing non-migration events, no baseline, and no pending migration still fails closed rather than guessing its opening balance.
 
 Crash-injection tests cover interruption before baseline persistence, interruption before the completion marker, and recovery of the older metadata-only failure state.
+
+
+## Version-2 RiskLockReleased audit contract
+
+New `RiskLockReleased` appends now require schema version 2 and non-empty
+`reviewed_by`, `reason`, and `approval_reference` fields. Historical
+schema-version-1 release events remain replayable for backward compatibility,
+but new v1 releases are rejected. The Paper release API requires an explicit
+approval reference and writes the same immutable metadata on the event.
+
+Important security boundary: these fields provide audit attribution only.
+They do not authenticate the reviewer, prove that an approval ticket exists,
+or establish separation of duties. No identity provider or authorization
+service is currently integrated; the release operation must not be described
+as authenticated approval. A future authenticated workflow must verify the
+actor and approval reference against a trusted authorization system before
+appending the event.
