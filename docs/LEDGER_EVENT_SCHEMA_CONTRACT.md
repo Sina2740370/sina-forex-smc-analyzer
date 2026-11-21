@@ -153,3 +153,15 @@ service is currently integrated; the release operation must not be described
 as authenticated approval. A future authenticated workflow must verify the
 actor and approval reference against a trusted authorization system before
 appending the event.
+
+
+## Version-2 CashAdjustment provenance
+
+New `CashAdjustment` appends require schema version 2, a finite non-zero
+decimal-string `amount`, and non-empty `actor`, `reason`,
+`approval_reference`, and `source` fields. Historical v1 adjustments
+remain replayable, but new v1 adjustments are rejected. The repository currently
+has no Paper/Backtest or API cash-adjustment producer; callers must not fabricate
+a provenance record or treat these metadata strings as independently
+authenticated identity/approval. A future administrative workflow must validate
+the actor and approval reference against a trusted authorization system.
