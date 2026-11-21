@@ -76,3 +76,19 @@ Implementation is eligible for review only after the versioned contract, legacy 
 ## Version-2 PositionOpened identity and validation order
 
 A schema-version-2 `PositionOpened` event must carry a non-empty event-level `trade_id`. The Risk Agent sizing snapshot must agree exactly with the immutable position payload for symbol, direction, lots, entry price, and stop loss before the ledger accepts the event. After identity consistency is established, the ledger validates risk arithmetic, lot bounds and step alignment, and directional stop placement. Negative tests that target a later invariant must keep the corresponding outer position fields aligned with the snapshot so they exercise that invariant rather than failing the earlier identity check.
+
+## Runtime event registry and schema allowlist
+
+The runtime now maintains an explicit event registry in `engine/mas/ledger.py`.
+Projection-affecting event types are enumerated separately from stored-only
+event types (`FillRecorded` and `AuditMarker`). Stored-only events are retained
+in the immutable log but intentionally do not mutate the account projection.
+
+Append validation rejects event types outside the registry. It also rejects
+non-integer schema versions, versions outside the event-specific allowlist,
+and schema version 2 on event types other than `PositionOpened`. Replay repeats
+the registry and version checks so unsupported persisted records fail closed.
+
+This change does not claim semantic lifecycle validation before commit, permanent
+trade identity enforcement, or atomic legacy migration recovery; those remain
+separate acceptance gates.
