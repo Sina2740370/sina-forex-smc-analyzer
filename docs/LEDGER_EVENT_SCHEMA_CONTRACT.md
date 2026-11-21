@@ -86,8 +86,11 @@ in the immutable log but intentionally do not mutate the account projection.
 
 Append validation rejects event types outside the registry. It also rejects
 non-integer schema versions, versions outside the event-specific allowlist,
-and schema version 2 on event types other than `PositionOpened`. Replay repeats
-the registry and version checks so unsupported persisted records fail closed.
+and schema version 2 on event types other than `PositionOpened` and
+`RiskLockReleased`. `RiskLockReleased` v2 requires non-empty reviewer, reason,
+and approval-reference metadata; new v1 releases are rejected while historical
+v1 records remain replayable. Replay repeats the registry, version, and v2
+release-metadata checks so unsupported persisted records fail closed.
 
 The initial registry-only change deliberately left lifecycle, identity, and
 migration recovery as separate acceptance gates. Those gates are now addressed
