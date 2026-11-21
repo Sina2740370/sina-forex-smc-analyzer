@@ -262,8 +262,14 @@ def test_risk_lock_state_is_replayed_from_events(tmp_path):
     ledger.append_event({**base, "event_type": "RiskLockActivated",
                          "idempotency_key": "lock-1"})
     assert ledger.replay_account("paper-account", "1000")["risk_lock_active"] is True
+    with pytest.raises(LedgerError, match="require schema_version 2"):
+        ledger.append_event({**base, "event_type": "RiskLockReleased",
+                             "idempotency_key": "unlock-legacy"})
     ledger.append_event({**base, "event_type": "RiskLockReleased",
-                         "idempotency_key": "unlock-1"})
+                         "schema_version": 2, "idempotency_key": "unlock-1",
+                         "payload": {"reviewed_by": "reviewer",
+                                     "reason": "review completed",
+                                     "approval_reference": "ticket-001"}})
     assert ledger.replay_account("paper-account", "1000")["risk_lock_active"] is False
 
 
@@ -377,7 +383,10 @@ def test_risk_replay_orders_delayed_closes_before_later_audited_release(tmp_path
         "event_type": "RiskLockReleased",
         "idempotency_key": "unlock:review-approval",
         "occurred_at": "2026-11-18T15:00:00+00:00",
-        "payload": {"consecutive_losses": 0},
+        "schema_version": 2,
+        "payload": {"consecutive_losses": 0, "reviewed_by": "reviewer",
+                    "reason": "review completed",
+                    "approval_reference": "review-ticket-001"},
     })
 
     for index, trade_id in enumerate(("loss-1", "loss-2", "loss-3"), start=10):
@@ -807,8 +816,10 @@ def test_three_chronological_losses_lock_risk_gate_until_audited_release(tmp_pat
         "account_id": account, "event_type": "RiskLockReleased",
         "idempotency_key": "review:release-after-loss-streak",
         "occurred_at": "2026-11-18T15:00:00+00:00",
-        "payload": {"consecutive_losses": 0, "reviewer": "independent-review",
-                    "reason": "audited test release"},
+        "schema_version": 2,
+        "payload": {"consecutive_losses": 0, "reviewed_by": "independent-review",
+                    "reason": "audited test release",
+                    "approval_reference": "test-approval-001"},
     })
     released = ledger.replay_account(account, "10000")
     assert released["consecutive_losses"] == 0
