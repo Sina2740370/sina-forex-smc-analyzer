@@ -127,6 +127,10 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 raise RuntimeError(
                     "Cannot migrate legacy Paper state: state.json is unreadable and no completed migration exists"
                 ) from exc
+            if not isinstance(legacy_state, dict):
+                raise RuntimeError(
+                    "Cannot migrate legacy Paper state: state.json must contain a JSON object"
+                )
 
         seed_equity = legacy_state.get(
             "equity", equity or RISK_RULES["equity_default"]
