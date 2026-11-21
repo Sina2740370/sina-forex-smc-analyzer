@@ -502,3 +502,117 @@ def test_risk_lock_release_recovers_after_ledger_commit_before_state_replace(env
     releases = [event for event in ledger.read_events("paper")
                 if event.event_type == "RiskLockReleased"]
     assert len(releases) == 1
+
+
+
+def test_legacy_migration_recovers_after_seed_batch_before_initial_balance(env, monkeypatch):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+
+    root, data_dir, _frame = env
+    out = root / "paper-migration-seed-crash"
+    out.mkdir()
+    json.dump({
+        "equity": 12345.0, "consecutive_losses": 1,
+        "risk_lock_active": False, "daily_loss_pct": 0.0,
+        "weekly_loss_pct": 0.0, "open_positions": [], "runs": 4,
+        "last_run_ts": "2026-11-20T12:00:00+00:00",
+    }, open(out / "state.json", "w"))
+
+    original_set_meta_once = SQLiteLedger.set_meta_once
+    crashed = {"done": False}
+
+    def crash_before_initial_balance(self, key, value):
+        stored = original_set_meta_once(self, key, value)
+        if key == "initial_balance:paper" and not crashed["done"]:
+            crashed["done"] = True
+            raise RuntimeError("simulated crash after legacy seed batch")
+        return stored
+
+    monkeypatch.setattr(SQLiteLedger, "set_meta_once", crash_before_initial_balance)
+    with pytest.raises(RuntimeError, match="legacy seed batch"):
+        run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    seeded_before_restart = [
+        event for event in ledger.read_events("paper")
+        if event.idempotency_key == "legacy-paper-state-v1"
+    ]
+    assert len(seeded_before_restart) == 1
+    assert ledger.get_meta("initial_balance:paper") is None
+
+    monkeypatch.setattr(SQLiteLedger, "set_meta_once", original_set_meta_once)
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    recovered = SQLiteLedger(out / "ledger.sqlite3")
+    seeded_after_restart = [
+        event for event in recovered.read_events("paper")
+        if event.idempotency_key == "legacy-paper-state-v1"
+    ]
+    assert len(seeded_after_restart) == 1
+    assert recovered.get_meta("initial_balance:paper") == "12345.0"
+    assert recovered.get_meta("legacy_migration:paper:v1:completed") == "completed"
+
+
+def test_legacy_migration_recovers_old_metadata_only_crash_window(env):
+    from engine.mas.ledger import SQLiteLedger
+
+    root, data_dir, _frame = env
+    out = root / "paper-migration-old-crash"
+    out.mkdir()
+    json.dump({
+        "equity": 9876.5, "consecutive_losses": 2,
+        "risk_lock_active": False, "daily_loss_pct": 0.0,
+        "weekly_loss_pct": 0.0, "open_positions": [], "runs": 2,
+        "last_run_ts": "2026-11-20T12:00:00+00:00",
+    }, open(out / "state.json", "w"))
+
+    # Recreate the old implementation's vulnerable state: immutable baseline
+    # exists, but the legacy seed event batch was never appended.
+    ledger = SQLiteLedger(out / "ledger.sqlite3")
+    ledger.set_meta_once("initial_balance:paper", "9876.5")
+
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    recovered = SQLiteLedger(out / "ledger.sqlite3")
+    events = recovered.read_events("paper")
+    assert sum(event.idempotency_key == "legacy-paper-state-v1" for event in events) == 1
+    assert recovered.get_meta("legacy_migration:paper:v1:completed") == "completed"
+    assert recovered.get_meta("initial_balance:paper") == "9876.5"
+
+
+def test_legacy_migration_recovers_after_baseline_before_completion_marker(env, monkeypatch):
+    from engine.mas.ledger import SQLiteLedger
+
+    root, data_dir, _frame = env
+    out = root / "paper-migration-completion-crash"
+    out.mkdir()
+    json.dump({
+        "equity": 7654.0, "consecutive_losses": 0,
+        "risk_lock_active": False, "daily_loss_pct": 0.0,
+        "weekly_loss_pct": 0.0, "open_positions": [], "runs": 1,
+        "last_run_ts": "2026-11-20T12:00:00+00:00",
+    }, open(out / "state.json", "w"))
+
+    original_set_meta_once = SQLiteLedger.set_meta_once
+    crashed = {"done": False}
+
+    def crash_before_completion(self, key, value):
+        stored = original_set_meta_once(self, key, value)
+        if key == "legacy_migration:paper:v1:completed" and not crashed["done"]:
+            crashed["done"] = True
+            raise RuntimeError("simulated crash before migration completion marker")
+        return stored
+
+    monkeypatch.setattr(SQLiteLedger, "set_meta_once", crash_before_completion)
+    with pytest.raises(RuntimeError, match="completion marker"):
+        run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    monkeypatch.setattr(SQLiteLedger, "set_meta_once", original_set_meta_once)
+    run_paper(str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None)
+
+    recovered = SQLiteLedger(out / "ledger.sqlite3")
+    events = recovered.read_events("paper")
+    assert sum(event.idempotency_key == "legacy-paper-state-v1" for event in events) == 1
+    assert recovered.get_meta("initial_balance:paper") == "7654.0"
+    assert recovered.get_meta("legacy_migration:paper:v1:completed") == "completed"
