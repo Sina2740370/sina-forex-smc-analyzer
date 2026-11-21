@@ -264,6 +264,11 @@ class SQLiteLedger:
         if not isinstance(payload, Mapping):
             raise LedgerError("event payload must be a mapping")
         normalized["payload_json"] = _canonical_payload(payload)
+        if normalized["event_type"] == "PositionOpened":
+            trade_id = normalized.get("trade_id") or payload.get("trade_id")
+            if not isinstance(trade_id, str) or not trade_id.strip():
+                raise LedgerError("PositionOpened requires a non-empty trade_id")
+            normalized["trade_id"] = trade_id
         normalized["event_id"] = str(normalized.get("event_id") or uuid.uuid4())
         schema_version = normalized.get("schema_version", 1)
         if isinstance(schema_version, bool) or not isinstance(schema_version, int):
