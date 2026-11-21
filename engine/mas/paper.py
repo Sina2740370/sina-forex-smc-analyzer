@@ -170,12 +170,14 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                     "weekly_risk_week": legacy_state.get("weekly_risk_week"),
                 },
             })
-            for position in legacy_state.get("open_positions", []):
+            for index, position in enumerate(legacy_state.get("open_positions", [])):
                 trade_id = position.get("trade_id")
                 if not trade_id:
                     identity = "|".join(
-                        str(position.get(k, ""))
-                        for k in ("symbol", "direction", "entry_time", "entry")
+                        [str(index)] + [
+                            str(position.get(k, ""))
+                            for k in ("symbol", "direction", "entry_time", "entry")
+                        ]
                     )
                     trade_id = hashlib.sha256(identity.encode()).hexdigest()[:32]
                 seed_events.append({
