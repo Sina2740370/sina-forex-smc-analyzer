@@ -16,6 +16,46 @@ def _event(key="fill-1", payload=None):
     }
 
 
+@pytest.mark.parametrize("event_type", ["UnknownFinancialEvent", "FutureEventV9"])
+def test_append_rejects_unknown_event_types(tmp_path, event_type):
+    ledger = SQLiteLedger(tmp_path / "ledger-unknown-event.db")
+    event = {**_event(), "event_type": event_type}
+    with pytest.raises(LedgerError, match="unsupported event_type"):
+        ledger.append_event(event)
+    assert ledger.read_events("paper-account") == []
+
+
+@pytest.mark.parametrize("schema_version", [0, 3, -1, True, "2"])
+def test_append_rejects_unsupported_or_malformed_schema_versions(tmp_path, schema_version):
+    ledger = SQLiteLedger(tmp_path / "ledger-unknown-schema.db")
+    event = {**_event(), "schema_version": schema_version}
+    with pytest.raises(LedgerError, match="schema_version"):
+        ledger.append_event(event)
+    assert ledger.read_events("paper-account") == []
+
+
+def test_schema_v2_is_restricted_to_position_opened(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-v2-event-scope.db")
+    event = {**_event(), "schema_version": 2}
+    with pytest.raises(LedgerError, match="unsupported schema_version 2 for FillRecorded"):
+        ledger.append_event(event)
+    assert ledger.read_events("paper-account") == []
+
+
+def test_stored_only_events_are_explicitly_accepted(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-stored-only.db")
+    ledger.append_event(_event())
+    ledger.append_event({
+        "account_id": "paper-account",
+        "event_type": "AuditMarker",
+        "idempotency_key": "audit-marker-1",
+        "payload": {"marker": "reviewed"},
+    })
+    assert [event.event_type for event in ledger.read_events("paper-account")] == [
+        "FillRecorded", "AuditMarker"
+    ]
+
+
 def test_append_is_idempotent_and_has_one_financial_effect(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
     first, created_first = ledger.append_event(_event())
