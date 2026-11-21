@@ -83,33 +83,61 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     ledger = SQLiteLedger(os.path.join(out_dir, "ledger.sqlite3"))
     account_id = "paper"
 
-    # Ledger metadata/events are authoritative once initialized. Do not even
-    # parse state.json on the recovery path: a stale or truncated projection must
-    # never prevent rebuilding the account after a process crash.
+    # Legacy import is a resumable protocol. The pending/completed markers
+    # make crashes between event seeding and immutable metadata recoverable.
+    migration_pending_key = f"legacy_migration:{account_id}:v1:pending"
+    migration_completed_key = f"legacy_migration:{account_id}:v1:completed"
+    initial_balance_key = f"initial_balance:{account_id}"
     existing_events = ledger.read_events(account_id)
-    stored_initial_balance = ledger.get_meta(f"initial_balance:{account_id}")
+    stored_initial_balance = ledger.get_meta(initial_balance_key)
+    migration_pending = ledger.get_meta(migration_pending_key) is not None
+    migration_completed = ledger.get_meta(migration_completed_key) is not None
+    has_legacy_seed_events = any(
+        event.idempotency_key == "legacy-paper-state-v1"
+        or event.idempotency_key.startswith("legacy-open:")
+        or event.idempotency_key.startswith("legacy-history:")
+        for event in existing_events
+    )
+
+    # A metadata-only account with no events is the exact crash window left by
+    # the former implementation. Legacy seed events are also safe to replay:
+    # their deterministic idempotency keys make the import idempotent.
+    resume_legacy_import = (
+        not migration_completed
+        and (
+            migration_pending
+            or has_legacy_seed_events
+            or not existing_events
+        )
+    )
+    if stored_initial_balance is None and existing_events and not (
+        migration_pending or has_legacy_seed_events
+    ):
+        raise RuntimeError(
+            "Paper Ledger has events but immutable initial balance metadata is missing"
+        )
+
     legacy_state = {}
-    if stored_initial_balance is None:
-        if existing_events:
-            raise RuntimeError("Paper Ledger has events but immutable initial balance metadata is missing")
+    if resume_legacy_import:
         if os.path.exists(state_p):
             try:
                 with open(state_p, encoding="utf-8") as stream:
                     legacy_state = json.load(stream)
             except (OSError, json.JSONDecodeError) as exc:
                 raise RuntimeError(
-                    "Cannot migrate legacy Paper state: state.json is unreadable and no Ledger baseline exists"
+                    "Cannot migrate legacy Paper state: state.json is unreadable and no completed migration exists"
                 ) from exc
-        seed_equity = legacy_state.get("equity", equity or RISK_RULES["equity_default"])
-        initial_balance = ledger.set_meta_once(
-            f"initial_balance:{account_id}", str(seed_equity)
-        )
-    else:
-        initial_balance = stored_initial_balance
 
-    # One-time import of the old JSON state/journal. After this point, state.json
-    # and journal.jsonl are rebuildable projections, never the accounting authority.
-    if not existing_events:
+        seed_equity = legacy_state.get(
+            "equity", equity or RISK_RULES["equity_default"]
+        )
+        initial_balance = stored_initial_balance or str(seed_equity)
+
+        # Record intent before appending any migration event. If the process
+        # stops at any later point, the next run resumes this exact import.
+        if not migration_pending:
+            ledger.set_meta_once(migration_pending_key, "started")
+
         seed_events = []
         if legacy_state:
             last_run = legacy_state.get("last_run_ts")
@@ -117,9 +145,11 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 legacy_day = pd.Timestamp(last_run).date().isoformat() if last_run else None
             except (TypeError, ValueError):
                 legacy_day = None
-            legacy_lock = bool(legacy_state.get("risk_lock_active", False)
-                               or legacy_state.get("consecutive_losses", 0)
-                               >= RISK_RULES["consecutive_losses_stop"])
+            legacy_lock = bool(
+                legacy_state.get("risk_lock_active", False)
+                or legacy_state.get("consecutive_losses", 0)
+                >= RISK_RULES["consecutive_losses_stop"]
+            )
             seed_events.append({
                 "account_id": account_id,
                 "event_type": "RiskStateSnapshot",
@@ -136,18 +166,24 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                     "weekly_risk_week": legacy_state.get("weekly_risk_week"),
                 },
             })
-            for index, position in enumerate(legacy_state.get("open_positions", [])):
+            for position in legacy_state.get("open_positions", []):
                 trade_id = position.get("trade_id")
                 if not trade_id:
-                    identity = "|".join(str(position.get(k, "")) for k in
-                                         ("symbol", "direction", "entry_time", "entry"))
+                    identity = "|".join(
+                        str(position.get(k, ""))
+                        for k in ("symbol", "direction", "entry_time", "entry")
+                    )
                     trade_id = hashlib.sha256(identity.encode()).hexdigest()[:32]
                 seed_events.append({
                     "account_id": account_id,
                     "trade_id": trade_id,
                     "event_type": "PositionOpened",
                     "idempotency_key": f"legacy-open:{trade_id}",
-                    "occurred_at": str(position.get("entry_time") or last_run or pd.Timestamp.now(tz="UTC").isoformat()),
+                    "occurred_at": str(
+                        position.get("entry_time")
+                        or last_run
+                        or pd.Timestamp.now(tz="UTC").isoformat()
+                    ),
                     "payload": {
                         "symbol": position.get("symbol"),
                         "direction": position.get("direction"),
@@ -173,8 +209,17 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
                 "idempotency_key": f"legacy-history:{index}:{legacy_trade_id}",
                 "payload": {"trade": trade},
             })
+
         if seed_events:
             ledger.append_events(seed_events)
+        initial_balance = ledger.set_meta_once(initial_balance_key, str(initial_balance))
+        ledger.set_meta_once(migration_completed_key, "completed")
+    else:
+        if stored_initial_balance is None:
+            raise RuntimeError(
+                "Paper Ledger migration state is inconsistent: initial balance is missing"
+            )
+        initial_balance = stored_initial_balance
 
     projection = ledger.replay_account(account_id, initial_balance)
     state = _projection_to_paper_state(projection)
