@@ -89,9 +89,10 @@ non-integer schema versions, versions outside the event-specific allowlist,
 and schema version 2 on event types other than `PositionOpened`. Replay repeats
 the registry and version checks so unsupported persisted records fail closed.
 
-This change does not claim semantic lifecycle validation before commit, permanent
-trade identity enforcement, or atomic legacy migration recovery; those remain
-separate acceptance gates.
+The initial registry-only change deliberately left lifecycle, identity, and
+migration recovery as separate acceptance gates. Those gates are now addressed
+in the following implementation sections; each remains subject to CI and
+integration validation on the final branch head.
 
 
 ## Lifetime trade identity and settlement cost invariants
