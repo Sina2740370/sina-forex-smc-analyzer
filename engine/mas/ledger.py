@@ -336,6 +336,78 @@ class SQLiteLedger:
         finally:
             conn.close()
 
+    @staticmethod
+    def _validate_position_lifecycle_events(events: Iterable[LedgerEvent]) -> None:
+        """Validate the complete ordered position lifecycle before transaction commit.
+
+        This deliberately validates only lifecycle invariants and does not require
+        account metadata or a balance baseline. Replay remains the full projection
+        validator and independently checks the same persisted history.
+        """
+        positions: dict[str, Decimal] = {}
+        seen_trade_ids: set[str] = set()
+
+        def decimal_field(value: Any, field: str) -> Decimal:
+            if not isinstance(value, str):
+                raise LedgerError(f"{field} must be encoded as a decimal string")
+            try:
+                number = Decimal(value)
+            except (InvalidOperation, ValueError):
+                raise LedgerError(f"{field} is not a valid decimal") from None
+            if not number.is_finite():
+                raise LedgerError(f"{field} must be finite")
+            return number
+
+        for event in events:
+            payload = event.payload
+            if event.event_type == "PositionOpened":
+                trade_id = event.trade_id or payload.get("trade_id")
+                if not isinstance(trade_id, str) or not trade_id.strip():
+                    raise LedgerError("PositionOpened requires a non-empty trade_id")
+                if trade_id in seen_trade_ids:
+                    raise LedgerError(
+                        "PositionOpened trade_id must be unique for the account lifetime"
+                    )
+                lots = decimal_field(payload.get("lots"), "lots")
+                entry_price = decimal_field(payload.get("entry_price"), "entry_price")
+                if lots <= 0 or entry_price <= 0:
+                    raise LedgerError("opened lots and entry_price must be positive")
+                if event.schema_version == 2:
+                    SQLiteLedger._validate_position_opened_v2(payload, trade_id)
+                seen_trade_ids.add(trade_id)
+                positions[trade_id] = lots
+            elif event.event_type == "PositionMarked":
+                trade_id = event.trade_id or payload.get("trade_id")
+                if trade_id not in positions:
+                    raise LedgerError("PositionMarked references an unknown position")
+                decimal_field(payload.get("unrealized_pnl"), "unrealized_pnl")
+            elif event.event_type in ("PositionPartiallyClosed", "PositionClosed"):
+                trade_id = event.trade_id or payload.get("trade_id")
+                if trade_id not in positions:
+                    raise LedgerError("close event references an unknown position")
+                remaining = positions[trade_id]
+                closed_lots = decimal_field(payload.get("lots_closed"), "lots_closed")
+                if closed_lots <= 0 or closed_lots > remaining:
+                    raise LedgerError("closed lots must be positive and <= remaining lots")
+                if event.event_type == "PositionClosed" and closed_lots != remaining:
+                    raise LedgerError(
+                        "PositionClosed must settle the full remaining quantity"
+                    )
+                if event.event_type == "PositionPartiallyClosed" and closed_lots >= remaining:
+                    raise LedgerError(
+                        "PositionPartiallyClosed must leave a positive remaining quantity"
+                    )
+                decimal_field(payload.get("pnl_gross"), "pnl_gross")
+                for field in ("commission", "slippage", "swap"):
+                    value = decimal_field(payload.get(field, "0"), field)
+                    if field in ("commission", "slippage") and value < 0:
+                        raise LedgerError(f"{field} cannot be negative")
+                remaining -= closed_lots
+                if remaining == 0:
+                    positions.pop(trade_id)
+                else:
+                    positions[trade_id] = remaining
+
     def append_event(self, event: Mapping[str, Any]) -> tuple[LedgerEvent, bool]:
         events = self.append_events([event])
         return events[0]
@@ -411,6 +483,17 @@ class SQLiteLedger:
                     "SELECT * FROM ledger_events WHERE event_id=?", (item["event_id"],)
                 ).fetchone()
                 results.append((self._row_to_event(row), True))
+            # Validate the post-batch lifecycle against the transaction's own
+            # view before commit. Any invalid event rolls back every insert in
+            # this batch; SQLite BEGIN IMMEDIATE serializes competing writers.
+            for account_id in {item["account_id"] for item in prepared}:
+                rows = conn.execute(
+                    "SELECT * FROM ledger_events WHERE account_id=? ORDER BY sequence ASC",
+                    (account_id,),
+                ).fetchall()
+                self._validate_position_lifecycle_events(
+                    self._row_to_event(row) for row in rows
+                )
             conn.commit()
             return results
         except Exception:
