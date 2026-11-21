@@ -151,20 +151,44 @@ def test_batch_conflicting_same_idempotency_key_rolls_back_first_insert(tmp_path
     assert ledger.read_events("paper-account") == []
 
 
+def test_new_cash_adjustment_requires_v2_provenance(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-cash-provenance.db")
+    legacy = {
+        "account_id": "paper-account", "event_type": "CashAdjustment",
+        "idempotency_key": "cash-legacy-new", "payload": {"amount": "50.00"},
+    }
+    with pytest.raises(LedgerError, match="require schema_version 2"):
+        ledger.append_event(legacy)
+
+    incomplete = {
+        **legacy, "schema_version": 2,
+        "idempotency_key": "cash-v2-incomplete",
+    }
+    with pytest.raises(LedgerError, match="requires non-empty actor"):
+        ledger.append_event(incomplete)
+    assert ledger.read_events("paper-account") == []
+
+
 def test_batch_idempotency_replay_is_stable_after_database_restart(tmp_path):
     path = tmp_path / "ledger-batch-replay-restart.db"
     ledger = SQLiteLedger(path)
     first = {
         "account_id": "paper-account",
         "event_type": "CashAdjustment",
+        "schema_version": 2,
         "idempotency_key": "cash:deposit:1",
-        "payload": {"amount": "125.50"},
+        "payload": {"amount": "125.50", "actor": "test-operator",
+                    "reason": "opening funding", "approval_reference": "cash-ticket-001",
+                    "source": "test-fixture"},
     }
     second = {
         "account_id": "paper-account",
         "event_type": "CashAdjustment",
+        "schema_version": 2,
         "idempotency_key": "cash:withdrawal:1",
-        "payload": {"amount": "-25.25"},
+        "payload": {"amount": "-25.25", "actor": "test-operator",
+                    "reason": "test withdrawal", "approval_reference": "cash-ticket-002",
+                    "source": "test-fixture"},
     }
     retry = dict(second)
 
