@@ -56,6 +56,41 @@ def test_stored_only_events_are_explicitly_accepted(tmp_path):
     ]
 
 
+@pytest.mark.parametrize(
+    ("column", "value", "message"),
+    [
+        ("event_type", "UnknownPersistedEvent", "unsupported persisted event_type"),
+        ("schema_version", 99, "unsupported persisted schema_version"),
+    ],
+)
+def test_replay_fails_closed_for_unsupported_persisted_contract(
+    tmp_path, column, value, message
+):
+    ledger = SQLiteLedger(tmp_path / "ledger-corrupt-contract.db")
+    ledger.append_event(_event())
+    conn = ledger._connect()
+    try:
+        conn.execute("DROP TRIGGER ledger_events_no_update")
+        conn.execute(
+            f"UPDATE ledger_events SET {column}=? WHERE account_id=?",
+            (value, "paper-account"),
+        )
+        conn.execute(
+            """
+            CREATE TRIGGER ledger_events_no_update
+            BEFORE UPDATE ON ledger_events
+            BEGIN
+                SELECT RAISE(ABORT, 'ledger_events is append-only');
+            END
+            """
+        )
+    finally:
+        conn.close()
+
+    with pytest.raises(LedgerError, match=message):
+        ledger.replay_account("paper-account", "1000")
+
+
 def test_append_is_idempotent_and_has_one_financial_effect(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
     first, created_first = ledger.append_event(_event())
