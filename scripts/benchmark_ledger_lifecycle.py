@@ -3,8 +3,8 @@
 Run from the repository root:
     python scripts/benchmark_ledger_lifecycle.py --sizes 100 1000 10000 --repeats 3 --samples 25
 
-This is an observational benchmark, not a pass/fail performance test. It creates
-fresh temporary databases and never touches the configured Paper account.
+This observational benchmark uses fresh temporary databases and never touches
+the configured Paper account.
 """
 from __future__ import annotations
 
@@ -18,40 +18,44 @@ from pathlib import Path
 from engine.mas.ledger import SQLiteLedger
 
 
-def lifecycle_fixture(count: int) -> list[dict[str, object]]:
-    events: list[dict[str, object]] = []
-    for index in range(count):
-        trade_id = f"bench-trade-{index:08d}"
-        common = {
-            "account_id": "benchmark",
+def lifecycle_fixture(event_count: int) -> list[dict[str, object]]:
+    if event_count < 2:
+        raise ValueError("event_count must be at least 2")
+    trade_id = "bench-trade-single"
+    common = {"account_id": "benchmark", "trade_id": trade_id}
+    events: list[dict[str, object]] = [{
+        **common,
+        "event_type": "PositionOpened",
+        "idempotency_key": "open-benchmark-trade",
+        "payload": {
             "trade_id": trade_id,
-        }
+            "symbol": "EURUSD",
+            "direction": "BUY",
+            "lots": "0.01",
+            "entry_price": "1.10000",
+            "sl": "1.09000",
+        },
+    }]
+    for index in range(event_count - 2):
         events.append({
             **common,
-            "event_type": "PositionOpened",
-            "idempotency_key": f"open-{trade_id}",
-            "payload": {
-                "trade_id": trade_id,
-                "symbol": "EURUSD",
-                "direction": "BUY",
-                "lots": "0.01",
-                "entry_price": "1.10000",
-                "sl": "1.09000",
-            },
+            "event_type": "PositionMarked",
+            "idempotency_key": f"mark-{index}",
+            "payload": {"trade_id": trade_id, "unrealized_pnl": "0.01"},
         })
-        events.append({
-            **common,
-            "event_type": "PositionClosed",
-            "idempotency_key": f"close-{trade_id}",
-            "payload": {
-                "trade_id": trade_id,
-                "lots_closed": "0.01",
-                "pnl_gross": "0.10",
-                "commission": "0",
-                "slippage": "0",
-                "swap": "0",
-            },
-        })
+    events.append({
+        **common,
+        "event_type": "PositionClosed",
+        "idempotency_key": "close-benchmark-trade",
+        "payload": {
+            "trade_id": trade_id,
+            "lots_closed": "0.01",
+            "pnl_gross": "0.10",
+            "commission": "0",
+            "slippage": "0",
+            "swap": "0",
+        },
+    })
     return events
 
 
@@ -61,16 +65,13 @@ def percentile(values: list[float], fraction: float) -> float:
     return ordered[index]
 
 
-def run_case(trades: int, repeats: int, samples: int) -> dict[str, object]:
+def run_case(event_count: int, repeats: int, samples: int) -> dict[str, object]:
     timings_ms: list[float] = []
-    history_events = trades * 2
     for repetition in range(repeats):
         with tempfile.TemporaryDirectory(prefix="ledger-lifecycle-bench-") as temp:
             ledger = SQLiteLedger(Path(temp) / "benchmark.sqlite3")
             try:
-                seed = lifecycle_fixture(trades)
-                ledger.append_events(seed)
-                # Warm-up is intentionally excluded from the reported sample.
+                ledger.append_events(lifecycle_fixture(event_count))
                 ledger.append_event({
                     "account_id": "benchmark",
                     "event_type": "AuditMarker",
@@ -86,18 +87,18 @@ def run_case(trades: int, repeats: int, samples: int) -> dict[str, object]:
                         "payload": {"kind": "benchmark-sample", "sample": sample},
                     })
                     timings_ms.append((time.perf_counter() - start) * 1000.0)
-                # Ensure the benchmark did not alter lifecycle projection semantics.
                 projection = ledger.replay_account("benchmark", "10000")
                 if projection["open_positions"]:
                     raise RuntimeError("benchmark fixture unexpectedly left open positions")
-                if len(projection["closed_trades"]) != trades:
+                if len(projection["closed_trades"]) != 1:
                     raise RuntimeError("benchmark fixture replay trade count mismatch")
+                if len(ledger.read_events("benchmark")) != event_count + samples + 1:
+                    raise RuntimeError("benchmark event count mismatch")
             finally:
                 ledger.close()
 
     return {
-        "trades": trades,
-        "lifecycle_events": history_events,
+        "history_events": event_count,
         "append_samples": len(timings_ms),
         "median_ms": round(statistics.median(timings_ms), 4),
         "p95_ms": round(percentile(timings_ms, 0.95), 4),
@@ -112,16 +113,13 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--samples", type=int, default=25)
     args = parser.parse_args()
-    if args.repeats < 1 or args.samples < 2 or any(size < 1 for size in args.sizes):
-        parser.error("sizes/repeats must be positive and samples must be at least 2")
+    if args.repeats < 1 or args.samples < 2 or any(size < 2 for size in args.sizes):
+        parser.error("sizes must be >= 2, repeats positive, and samples at least 2")
 
-    results = [
-        run_case(size, args.repeats, args.samples)
-        for size in args.sizes
-    ]
+    results = [run_case(size, args.repeats, args.samples) for size in args.sizes]
     print(json.dumps({
         "benchmark": "SQLiteLedger full-account lifecycle validation baseline",
-        "method": "fresh temporary SQLite DB per repetition; one batched seed; timed stored-only appends; replay equivalence guard",
+        "method": "fresh temporary DB per repetition; one lifecycle seed batch; timed stored-only appends; replay and event-count guards",
         "results": results,
     }, indent=2))
 
