@@ -469,9 +469,10 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
 
 
 def release_paper_risk_lock(out_dir: str, reviewer: str, reason: str,
-                            request_id: str) -> dict:
+                            request_id: str, approval_reference: str) -> dict:
     """Release a Paper hard stop only through an explicit, auditable review event."""
-    for name, value in (("reviewer", reviewer), ("reason", reason), ("request_id", request_id)):
+    for name, value in (("reviewer", reviewer), ("reason", reason),
+                        ("request_id", request_id), ("approval_reference", approval_reference)):
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"{name} must be a non-empty string")
 
@@ -496,6 +497,7 @@ def release_paper_risk_lock(out_dir: str, reviewer: str, reason: str,
     ledger.append_event({
         "account_id": account_id,
         "event_type": "RiskLockReleased",
+        "schema_version": 2,
         "idempotency_key": idempotency_key,
         **({"occurred_at": prior_event.occurred_at} if prior_event else {
             "occurred_at": pd.Timestamp.now(tz="UTC").isoformat()
@@ -503,6 +505,7 @@ def release_paper_risk_lock(out_dir: str, reviewer: str, reason: str,
         "payload": {
             "reviewed_by": reviewer.strip(),
             "reason": reason.strip(),
+            "approval_reference": approval_reference.strip(),
             "consecutive_losses": 0,
         },
     })
