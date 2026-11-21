@@ -242,15 +242,18 @@ def test_replay_rejects_over_close_and_incomplete_final_close(tmp_path):
         "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1.00",
                     "entry_price": "1.10000"},
     })
-    ledger.append_event({
-        "account_id": "paper-account", "trade_id": "trade-1",
-        "event_type": "PositionClosed", "idempotency_key": "close-1",
-        "payload": {"lots_closed": "0.50", "pnl_gross": "1.00",
-                    "commission": "0", "slippage": "0", "swap": "0"},
-    })
-
-    with pytest.raises(LedgerError):
-        ledger.replay_account("paper-account", "1000.00")
+    # Incomplete final settlement is now rejected at append time, not
+    # persisted and deferred until a later replay.
+    with pytest.raises(LedgerError, match="full remaining quantity"):
+        ledger.append_event({
+            "account_id": "paper-account", "trade_id": "trade-1",
+            "event_type": "PositionClosed", "idempotency_key": "close-1",
+            "payload": {"lots_closed": "0.50", "pnl_gross": "1.00",
+                        "commission": "0", "slippage": "0", "swap": "0"},
+        })
+    assert [event.event_type for event in ledger.read_events("paper-account")] == [
+        "PositionOpened"
+    ]
 
 
 def test_risk_lock_state_is_replayed_from_events(tmp_path):
@@ -638,6 +641,12 @@ def test_partial_closes_count_once_using_aggregate_trade_result(tmp_path):
 
 def test_idempotent_retry_rejects_changed_financial_timestamp(tmp_path):
     ledger = SQLiteLedger(tmp_path / "ledger.db")
+    ledger.append_event({
+        "account_id": "paper-account", "trade_id": "trade-1",
+        "event_type": "PositionOpened", "idempotency_key": "open:trade-1",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
     event = {
         "account_id": "paper-account",
         "trade_id": "trade-1",
@@ -653,8 +662,8 @@ def test_idempotent_retry_rejects_changed_financial_timestamp(tmp_path):
         ledger.append_event(changed_time)
 
     stored = ledger.read_events("paper-account")
-    assert len(stored) == 1
-    assert stored[0].occurred_at == event["occurred_at"]
+    assert len(stored) == 2
+    assert stored[1].occurred_at == event["occurred_at"]
 
 def test_shared_paper_backtest_accounting_contract_is_deterministic(tmp_path):
     """Identical Paper/Backtest event streams must replay to identical accounting."""
@@ -923,6 +932,14 @@ def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
     account = "paper-account"
     workers = 8
     barrier = Barrier(workers)
+    ledger.append_event({
+        "account_id": account,
+        "trade_id": "single-close",
+        "event_type": "PositionOpened",
+        "idempotency_key": "open:single-close",
+        "payload": {"symbol": "EURUSD", "direction": "BUY", "lots": "1",
+                    "entry_price": "1.1000"},
+    })
     event = {
         "account_id": account,
         "trade_id": "single-close",
@@ -945,10 +962,10 @@ def test_concurrent_same_idempotency_key_commits_exactly_one_event(tmp_path):
     assert sum(1 for _stored, inserted in results if inserted) == 1
     assert sum(1 for _stored, inserted in results if not inserted) == workers - 1
     events = ledger.read_events(account)
-    assert len(events) == 1
-    assert events[0].sequence == 1
-    assert events[0].idempotency_key == event["idempotency_key"]
-    assert events[0].payload == event["payload"]
+    assert len(events) == 2
+    assert events[1].sequence == 2
+    assert events[1].idempotency_key == event["idempotency_key"]
+    assert events[1].payload == event["payload"]
 
 
 def _v2_open_event(
