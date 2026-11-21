@@ -1171,3 +1171,145 @@ def test_append_events_rolls_back_entire_batch_on_late_insert_conflict(tmp_path)
         ledger.append_events([first, second])
 
     assert ledger.read_events("paper-account") == []
+
+
+
+def _position_event(event_type, key, trade_id="trade-lifetime-1", payload=None):
+    defaults = {
+        "PositionOpened": {
+            "symbol": "EURUSD", "direction": "BUY", "lots": "1.00",
+            "entry_price": "1.10000",
+        },
+        "PositionClosed": {
+            "lots_closed": "1.00", "pnl_gross": "10.00",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    }
+    return {
+        "account_id": "paper-account",
+        "trade_id": trade_id,
+        "event_type": event_type,
+        "idempotency_key": key,
+        "payload": payload if payload is not None else defaults[event_type],
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("commission", "-0.01"), ("slippage", "-1"), ("commission", "NaN"),
+     ("slippage", "Infinity")],
+)
+def test_close_rejects_negative_or_non_finite_commission_and_slippage(
+    tmp_path, field, value
+):
+    ledger = SQLiteLedger(tmp_path / "invalid-close-cost.db")
+    ledger.append_event(_position_event("PositionOpened", "open-cost"))
+    close = _position_event(
+        "PositionClosed", "close-cost",
+        payload={
+            "lots_closed": "1.00", "pnl_gross": "10.00",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    )
+    close["payload"][field] = value
+
+    with pytest.raises(LedgerError):
+        ledger.append_event(close)
+
+    assert [event.event_type for event in ledger.read_events("paper-account")] == [
+        "PositionOpened"
+    ]
+
+
+def test_signed_swap_is_allowed_and_applied_to_net_pnl(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "signed-swap.db")
+    ledger.append_event(_position_event("PositionOpened", "open-swap"))
+    close = _position_event(
+        "PositionClosed", "close-swap",
+        payload={
+            "lots_closed": "1.00", "pnl_gross": "10.00",
+            "commission": "1.00", "slippage": "0.50", "swap": "-0.25",
+        },
+    )
+    ledger.append_event(close)
+    state = ledger.replay_account("paper-account", "1000.00")
+    assert state["realized_pnl"] == "8.75"
+
+
+def test_trade_id_cannot_be_reused_after_position_is_closed(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "trade-id-lifetime.db")
+    ledger.append_events([
+        _position_event("PositionOpened", "open-first"),
+        _position_event("PositionClosed", "close-first"),
+    ])
+
+    with pytest.raises(LedgerConflictError, match="trade_id has already been used"):
+        ledger.append_event(_position_event("PositionOpened", "open-second"))
+
+    assert len(ledger.read_events("paper-account")) == 2
+
+
+def test_duplicate_trade_id_in_batch_rolls_back_entire_batch(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "trade-id-batch.db")
+    batch = [
+        _position_event("PositionOpened", "open-one", trade_id="same-id"),
+        _position_event("PositionOpened", "open-two", trade_id="same-id"),
+    ]
+
+    with pytest.raises(LedgerConflictError, match="trade_id has already been used"):
+        ledger.append_events(batch)
+
+    assert ledger.read_events("paper-account") == []
+
+
+def test_position_open_idempotent_retry_does_not_consume_trade_id_twice(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "trade-id-idempotency.db")
+    opened = _position_event("PositionOpened", "open-idempotent")
+    first, inserted = ledger.append_event(opened)
+    retry, inserted_retry = ledger.append_event(opened)
+
+    assert inserted is True
+    assert inserted_retry is False
+    assert first.event_id == retry.event_id
+    assert len(ledger.read_events("paper-account")) == 1
+
+
+def test_replay_rejects_reused_trade_id_even_after_prior_close(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "trade-id-replay-guard.db")
+    ledger.append_events([
+        _position_event("PositionOpened", "open-first"),
+        _position_event("PositionClosed", "close-first"),
+    ])
+
+    # Simulate an older/corrupt persisted event bypassing the append API.
+    conn = ledger._connect()
+    try:
+        conn.execute("DROP TRIGGER ledger_events_no_insert")
+        conn.execute(
+            """
+            INSERT INTO ledger_events (
+                event_id, account_id, trade_id, order_id, event_type, sequence,
+                occurred_at, recorded_at, idempotency_key, schema_version, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "corrupt-reopen", "paper-account", "trade-lifetime-1", None,
+                "PositionOpened", 3, "2026-11-21T00:00:00+00:00",
+                "2026-11-21T00:00:00+00:00", "corrupt-reopen-key", 1,
+                '{"direction":"BUY","entry_price":"1.10000","lots":"1.00","symbol":"EURUSD"}',
+            ),
+        )
+        conn.execute(
+            """
+            CREATE TRIGGER ledger_events_no_insert
+            BEFORE INSERT ON ledger_events
+            BEGIN
+                SELECT RAISE(ABORT, 'ledger_events is append-only');
+            END
+            """
+        )
+    finally:
+        conn.close()
+
+    with pytest.raises(LedgerError, match="unique for the account lifetime"):
+        ledger.replay_account("paper-account", "1000.00")
