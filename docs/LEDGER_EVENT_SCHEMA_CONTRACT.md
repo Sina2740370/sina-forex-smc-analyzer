@@ -165,3 +165,36 @@ has no Paper/Backtest or API cash-adjustment producer; callers must not fabricat
 a provenance record or treat these metadata strings as independently
 authenticated identity/approval. A future administrative workflow must validate
 the actor and approval reference against a trusted authorization system.
+
+
+## Lifecycle validation performance baseline
+
+The append-time lifecycle guard currently loads and revalidates every event for
+each affected account after every append batch. Its per-append work therefore
+grows with account history length. Do not replace this full-history check with
+an in-memory cache: such a cache is not authoritative after process restart and
+can become stale across independent Ledger instances.
+
+A reproducible observational baseline is available at
+`scripts/benchmark_ledger_lifecycle.py`. Run it from the repository root:
+
+```bash
+python scripts/benchmark_ledger_lifecycle.py --sizes 100 1000 10000 --repeats 3 --samples 25
+```
+
+The benchmark creates fresh temporary SQLite databases, seeds completed
+PositionOpened/PositionClosed lifecycles in one batch, times subsequent
+stored-only appends (which still invoke the current account-wide lifecycle
+validator), and checks the replayed closed-trade count and absence of open
+positions. It reports median and p95 latency; it is deliberately not a
+wall-clock pytest gate. It does not connect to market data, Telegram, a broker,
+or the configured Paper account.
+
+Optimization is not accepted on timing alone. A candidate must preserve
+transaction-local validation under `BEGIN IMMEDIATE`, lifetime trade-id
+uniqueness (including legacy rows whose envelope trade_id may be null but whose
+payload contains trade_id), batch rollback, idempotent retry behavior,
+concurrent-writer serialization, and replay equivalence. Establish baseline
+measurements first, then compare the candidate using the same fixture and
+environment. Until those equivalence checks exist, the production validator
+remains unchanged.
