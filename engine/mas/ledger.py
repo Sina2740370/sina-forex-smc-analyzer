@@ -47,8 +47,9 @@ STORED_ONLY_EVENT_TYPES = frozenset({
 })
 SUPPORTED_EVENT_TYPES = PROJECTION_EVENT_TYPES | STORED_ONLY_EVENT_TYPES
 SUPPORTED_SCHEMA_VERSIONS = {
+    # v1 remains replayable for historical records; new financial/admin events use v2.
+    "CashAdjustment": frozenset({1, 2}),
     "PositionOpened": frozenset({1, 2}),
-    # v1 remains replayable for historical records; new releases require v2.
     "RiskLockReleased": frozenset({1, 2}),
 }
 DEFAULT_SCHEMA_VERSIONS = frozenset({1})
@@ -251,6 +252,23 @@ class SQLiteLedger:
             raise LedgerError("schema v2 PositionOpened requires a non-empty trade_id")
 
     @staticmethod
+    def _validate_cash_adjustment_v2(payload: Mapping[str, Any]) -> None:
+        """Require provenance and a finite non-zero amount for new cash movements."""
+        amount = payload.get("amount")
+        if not isinstance(amount, str):
+            raise LedgerError("CashAdjustment schema v2 amount must be a decimal string")
+        try:
+            value = Decimal(amount)
+        except (InvalidOperation, ValueError):
+            raise LedgerError("CashAdjustment schema v2 amount is not a valid decimal") from None
+        if not value.is_finite() or value == 0:
+            raise LedgerError("CashAdjustment schema v2 amount must be finite and non-zero")
+        for field in ("actor", "reason", "approval_reference", "source"):
+            item = payload.get(field)
+            if not isinstance(item, str) or not item.strip():
+                raise LedgerError(f"CashAdjustment schema v2 requires non-empty {field}")
+
+    @staticmethod
     def _validate_risk_lock_released_v2(payload: Mapping[str, Any]) -> None:
         """Require attributable release metadata; this is not identity authentication."""
         for field in ("reviewed_by", "reason", "approval_reference"):
@@ -293,6 +311,10 @@ class SQLiteLedger:
                 f"unsupported schema_version {schema_version} for {normalized['event_type']}"
             )
         normalized["schema_version"] = schema_version
+        if normalized["event_type"] == "CashAdjustment":
+            if schema_version != 2:
+                raise LedgerError("new CashAdjustment events require schema_version 2")
+            SQLiteLedger._validate_cash_adjustment_v2(payload)
         if normalized["event_type"] == "RiskLockReleased":
             if schema_version != 2:
                 raise LedgerError("new RiskLockReleased events require schema_version 2")
@@ -577,6 +599,8 @@ class SQLiteLedger:
                     f"for {event.event_type}"
                 )
             payload = event.payload
+            if event.event_type == "CashAdjustment" and event.schema_version == 2:
+                self._validate_cash_adjustment_v2(payload)
             if event.event_type == "RiskLockReleased" and event.schema_version == 2:
                 self._validate_risk_lock_released_v2(payload)
             if event.event_type == "CashAdjustment":
