@@ -105,3 +105,17 @@ Implemented on the ledger hardening branch:
 - These checks apply at append and replay boundaries. They do not introduce assumed costs or change Paper/Backtest producer values.
 
 Validation status: regression tests have been added for lifetime identity, same-batch rollback, idempotent retry, persisted-history rejection, negative/non-finite commission and slippage, and signed swap. They remain unexecuted until a CI run reports results for the exact branch head.
+
+
+## Pre-commit position lifecycle validation
+
+The append transaction now validates the complete ordered position lifecycle for every affected account after inserting the candidate batch but before committing:
+- Position openings require a unique lifetime trade identity, finite positive lots, and a finite positive entry price.
+- Marks and close events must reference a currently active position.
+- Close quantities must be positive and cannot exceed the remaining quantity.
+- A full close must settle exactly the remaining quantity; a partial close must leave a positive remainder.
+- Gross PnL and settlement costs must be finite decimal strings; commission and slippage must be non-negative while swap remains signed.
+- The validation runs against the transaction's own database view under `BEGIN IMMEDIATE`. If any event fails, the entire batch is rolled back.
+- Idempotent retries are resolved against their original stored event before lifecycle validation, preserving retry behavior without applying the event twice.
+
+The same lifecycle rules remain independently enforced during replay. This is defense in depth: invalid history cannot be newly committed through the supported append API, and persisted corruption is still rejected during projection rebuild.
