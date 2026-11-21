@@ -119,3 +119,16 @@ The append transaction now validates the complete ordered position lifecycle for
 - Idempotent retries are resolved against their original stored event before lifecycle validation, preserving retry behavior without applying the event twice.
 
 The same lifecycle rules remain independently enforced during replay. This is defense in depth: invalid history cannot be newly committed through the supported append API, and persisted corruption is still rejected during projection rebuild.
+
+
+## Crash-safe legacy Paper migration
+
+The Paper importer now uses immutable migration intent/completion metadata:
+- A pending marker is written before importing legacy state or journal records.
+- Seed events are appended as one atomic batch using deterministic legacy idempotency keys.
+- The immutable initial-balance baseline is written only after the seed batch is durable.
+- A completed marker is written last. On restart, a pending but incomplete migration re-reads the legacy source and retries the same event batch; idempotency prevents duplicate import.
+- The importer recognizes the former implementation's metadata-only crash window (initial balance present, no ledger events, no migration completion marker) and completes the import from the still-authoritative legacy state/journal.
+- An account with existing non-migration events, no baseline, and no pending migration still fails closed rather than guessing its opening balance.
+
+Crash-injection tests cover interruption before baseline persistence, interruption before the completion marker, and recovery of the older metadata-only failure state.
