@@ -24,6 +24,34 @@ class LedgerConflictError(LedgerError):
     """An event identifier was reused with conflicting idempotency data."""
 
 
+# Event types are explicit. Stored-only events are accepted and retained but do
+# not alter the accounting projection. Adding a new event requires an intentional
+# contract decision here and a replay/append test.
+PROJECTION_EVENT_TYPES = frozenset({
+    "CashAdjustment",
+    "RiskStateSnapshot",
+    "DailyRiskReset",
+    "WeeklyRiskReset",
+    "PaperCycleCompleted",
+    "HistoricalTradeImported",
+    "PositionOpened",
+    "PositionMarked",
+    "PositionPartiallyClosed",
+    "PositionClosed",
+    "RiskLockActivated",
+    "RiskLockReleased",
+})
+STORED_ONLY_EVENT_TYPES = frozenset({
+    "FillRecorded",
+    "AuditMarker",
+})
+SUPPORTED_EVENT_TYPES = PROJECTION_EVENT_TYPES | STORED_ONLY_EVENT_TYPES
+SUPPORTED_SCHEMA_VERSIONS = {
+    "PositionOpened": frozenset({1, 2}),
+}
+DEFAULT_SCHEMA_VERSIONS = frozenset({1})
+
+
 @dataclass(frozen=True)
 class LedgerEvent:
     event_id: str
@@ -230,11 +258,24 @@ class SQLiteLedger:
         for key in ("account_id", "event_type", "idempotency_key"):
             if not isinstance(normalized[key], str) or not normalized[key].strip():
                 raise ValueError(f"{key} must be a non-empty string")
-        normalized["payload_json"] = _canonical_payload(normalized["payload"])
+        if normalized["event_type"] not in SUPPORTED_EVENT_TYPES:
+            raise LedgerError(f"unsupported event_type: {normalized['event_type']}")
+        payload = normalized["payload"]
+        if not isinstance(payload, Mapping):
+            raise LedgerError("event payload must be a mapping")
+        normalized["payload_json"] = _canonical_payload(payload)
         normalized["event_id"] = str(normalized.get("event_id") or uuid.uuid4())
-        normalized["schema_version"] = int(normalized.get("schema_version", 1))
-        if normalized["schema_version"] < 1:
-            raise ValueError("schema_version must be >= 1")
+        schema_version = normalized.get("schema_version", 1)
+        if isinstance(schema_version, bool) or not isinstance(schema_version, int):
+            raise LedgerError("schema_version must be an integer")
+        allowed_versions = SUPPORTED_SCHEMA_VERSIONS.get(
+            normalized["event_type"], DEFAULT_SCHEMA_VERSIONS
+        )
+        if schema_version not in allowed_versions:
+            raise LedgerError(
+                f"unsupported schema_version {schema_version} for {normalized['event_type']}"
+            )
+        normalized["schema_version"] = schema_version
         if normalized["schema_version"] == 2 and normalized["event_type"] == "PositionOpened":
             SQLiteLedger._validate_position_opened_v2(
                 normalized["payload"], normalized.get("trade_id") or normalized["payload"].get("trade_id")
@@ -386,6 +427,16 @@ class SQLiteLedger:
         events = self.read_events(account_id)
 
         for event in events:
+            if event.event_type not in SUPPORTED_EVENT_TYPES:
+                raise LedgerError(f"unsupported persisted event_type: {event.event_type}")
+            allowed_versions = SUPPORTED_SCHEMA_VERSIONS.get(
+                event.event_type, DEFAULT_SCHEMA_VERSIONS
+            )
+            if event.schema_version not in allowed_versions:
+                raise LedgerError(
+                    f"unsupported persisted schema_version {event.schema_version} "
+                    f"for {event.event_type}"
+                )
             payload = event.payload
             if event.event_type == "CashAdjustment":
                 balance += dec(payload.get("amount"), "amount")
