@@ -523,11 +523,10 @@ def test_legacy_migration_recovers_after_seed_batch_before_initial_balance(env, 
     crashed = {"done": False}
 
     def crash_before_initial_balance(self, key, value):
-        stored = original_set_meta_once(self, key, value)
         if key == "initial_balance:paper" and not crashed["done"]:
             crashed["done"] = True
             raise RuntimeError("simulated crash after legacy seed batch")
-        return stored
+        return original_set_meta_once(self, key, value)
 
     monkeypatch.setattr(SQLiteLedger, "set_meta_once", crash_before_initial_balance)
     with pytest.raises(RuntimeError, match="legacy seed batch"):
@@ -598,11 +597,10 @@ def test_legacy_migration_recovers_after_baseline_before_completion_marker(env, 
     crashed = {"done": False}
 
     def crash_before_completion(self, key, value):
-        stored = original_set_meta_once(self, key, value)
         if key == "legacy_migration:paper:v1:completed" and not crashed["done"]:
             crashed["done"] = True
             raise RuntimeError("simulated crash before migration completion marker")
-        return stored
+        return original_set_meta_once(self, key, value)
 
     monkeypatch.setattr(SQLiteLedger, "set_meta_once", crash_before_completion)
     with pytest.raises(RuntimeError, match="completion marker"):
