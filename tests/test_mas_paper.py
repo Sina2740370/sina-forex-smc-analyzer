@@ -86,3 +86,90 @@ def test_attribution_math():
     assert a["n_trades"] == 3 and a["win_rate_pct"] == 66.7
     assert a["total_pnl_usd"] == 40 and a["return_pct"] == 4.0
     assert a["by_symbol"]["A"]["n"] == 2 and a["by_session"]["London"]["pnl"] == 70
+
+
+
+def test_paper_settlement_and_analysis_share_one_common_asof_timestamp(
+    tmp_path, monkeypatch
+):
+    from types import SimpleNamespace
+    import engine.data.providers as providers
+    import engine.mas.paper as paper
+
+    data_dir = tmp_path / "paper-common-asof-data"
+    data_dir.mkdir()
+    out = tmp_path / "paper-common-asof-out"
+    out.mkdir()
+    (data_dir / "GBPUSD_M15.csv").write_text("fixture", encoding="utf-8")
+    (data_dir / "USDJPY_M15.csv").write_text("fixture", encoding="utf-8")
+
+    gbp = make_15m(420, seed=41, base=1.26, vol=0.0005)
+    jpy = make_15m(420, seed=42, base=150.0, vol=0.05)
+    jpy.loc[jpy.index[-2:], "time"] += pd.Timedelta(minutes=30)
+    frames = {"GBPUSD": gbp, "USDJPY": jpy}
+    monkeypatch.setattr(
+        providers,
+        "load_mt5_csv",
+        lambda path: frames["GBPUSD" if "GBPUSD" in path else "USDJPY"].copy(),
+    )
+
+    state = {
+        "equity": 10_000.0,
+        "consecutive_losses": 0,
+        "daily_loss_pct": 0.0,
+        "open_positions": [
+            {
+                "symbol": symbol,
+                "direction": "BUY",
+                "entry_time": str(frames[symbol]["time"].iloc[100]),
+                "entry": 1.0,
+                "sl": 0.1,
+                "tp2": 2.0,
+                "lots": 0.01,
+                "risk_usd": 10.0,
+                "risk_pct": 0.1,
+                "final_score": 70.0,
+                "regime": "range",
+                "session": "London",
+            }
+            for symbol in ("GBPUSD", "USDJPY")
+        ],
+        "runs": 0,
+        "last_run_ts": "1900-01-01T00:00:00+00:00",
+    }
+    (out / "state.json").write_text(json.dumps(state), encoding="utf-8")
+
+    settlement_times = []
+    analysis_times = []
+
+    def capture_advance(_position, _frame, _times, as_of, _spec, **_kwargs):
+        settlement_times.append(pd.Timestamp(as_of))
+        return None
+
+    def capture_analysis(_frame, symbol, as_of, **_kwargs):
+        analysis_times.append((symbol, pd.Timestamp(as_of)))
+        return SimpleNamespace(
+            signal="WAIT",
+            cand={},
+            wait_reason="common timestamp fixture",
+            to_json=lambda **_kwargs: {
+                "signal": "WAIT",
+                "wait_reason": "common timestamp fixture",
+            },
+        )
+
+    monkeypatch.setattr(paper, "_advance_position", capture_advance)
+    monkeypatch.setattr(paper, "analyze_mas", capture_analysis)
+    result = paper.run_paper(
+        str(data_dir), ["GBPUSD", "USDJPY"], out_dir=str(out), feeds=None
+    )
+
+    expected = min(
+        pd.to_datetime(gbp["time"], utc=True).max(),
+        pd.to_datetime(jpy["time"], utc=True).max(),
+    )
+    assert settlement_times == [expected, expected]
+    assert [stamp for _symbol, stamp in analysis_times] == [expected, expected]
+    assert pd.Timestamp(_state(out)["last_run_ts"]) == expected
+    assert result["results"]["GBPUSD"]["signal"] == "WAIT"
+    assert result["results"]["USDJPY"]["signal"] == "WAIT"
