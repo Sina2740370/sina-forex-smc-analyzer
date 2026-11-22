@@ -74,6 +74,75 @@ def test_non_lifecycle_append_skips_redundant_lifecycle_scan(tmp_path, monkeypat
     assert len(ledger.read_events("paper-account")) == 1
 
 
+def test_lifecycle_validation_query_uses_partial_index(tmp_path):
+    ledger = SQLiteLedger(tmp_path / "ledger-lifecycle-index.db")
+    conn = ledger._connect()
+    try:
+        plan = conn.execute(
+            """
+            EXPLAIN QUERY PLAN
+            SELECT * FROM ledger_events
+            WHERE account_id=?
+              AND event_type IN (
+                  'PositionOpened', 'PositionMarked',
+                  'PositionPartiallyClosed', 'PositionClosed'
+              )
+            ORDER BY sequence ASC
+            """,
+            ("paper-account",),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    details = " ".join(row["detail"] for row in plan)
+    assert "idx_ledger_position_lifecycle_sequence" in details
+
+
+def test_lifecycle_validation_preserves_complete_ordered_lifecycle_history(
+    tmp_path, monkeypatch
+):
+    ledger = SQLiteLedger(tmp_path / "ledger-lifecycle-filter.db")
+    ledger.append_event({
+        "account_id": "paper-account",
+        "trade_id": "trade-index",
+        "event_type": "PositionOpened",
+        "idempotency_key": "open-index",
+        "payload": {
+            "trade_id": "trade-index",
+            "symbol": "EURUSD",
+            "direction": "BUY",
+            "lots": "0.10",
+            "entry_price": "1.10000",
+        },
+    })
+    for index in range(5):
+        ledger.append_event({
+            "account_id": "paper-account",
+            "event_type": "AuditMarker",
+            "idempotency_key": f"audit-index-{index}",
+            "payload": {"marker": index},
+        })
+
+    observed = []
+    original = ledger._validate_position_lifecycle_events
+
+    def capture(events):
+        materialized = list(events)
+        observed.extend(event.event_type for event in materialized)
+        return original(materialized)
+
+    monkeypatch.setattr(ledger, "_validate_position_lifecycle_events", capture)
+    ledger.append_event({
+        "account_id": "paper-account",
+        "trade_id": "trade-index",
+        "event_type": "PositionMarked",
+        "idempotency_key": "mark-index",
+        "payload": {"trade_id": "trade-index", "unrealized_pnl": "1.25"},
+    })
+
+    assert observed == ["PositionOpened", "PositionMarked"]
+
+
 def test_new_position_lifecycle_event_still_runs_transactional_validation(
     tmp_path, monkeypatch
 ):
