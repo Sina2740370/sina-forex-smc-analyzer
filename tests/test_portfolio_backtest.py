@@ -295,3 +295,20 @@ def test_portfolio_backtest_never_settles_beyond_explicit_end(monkeypatch):
     assert result.trades[0].exit_reason == "TIME_EXIT"
     assert result.trades[0].exit_time == end
     assert result.trades[0].exit == pytest.approx(float(frame.loc[2, "close"]))
+
+
+
+def test_portfolio_backtest_rejects_invalid_spread_configuration():
+    frame = _frame("EURUSD")
+    with pytest.raises(ValueError, match="spread"):
+        portfolio_bt.backtest_portfolio(
+            {"EURUSD": frame}, spreads={"EURUSD": float("nan")},
+            start=frame["time"].iloc[0].isoformat(),
+            end=frame["time"].iloc[-1].isoformat(),
+        )
+    with pytest.raises(ValueError, match="unsupported input symbol"):
+        portfolio_bt.backtest_portfolio(
+            {"EURUSD": frame}, spreads={"GBPUSD": 0.0001},
+            start=frame["time"].iloc[0].isoformat(),
+            end=frame["time"].iloc[-1].isoformat(),
+        )
