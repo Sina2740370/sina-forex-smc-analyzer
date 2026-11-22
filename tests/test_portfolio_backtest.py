@@ -93,3 +93,103 @@ def test_portfolio_backtest_rejects_invalid_step_and_missing_symbol_data():
                 "low": [0.9], "close": [1.0],
             })
         }, start="2026-01-05T00:00:00Z")
+
+
+
+def test_two_symbol_paper_and_portfolio_backtest_match_open_and_close_accounting(
+    tmp_path, monkeypatch
+):
+    import engine.mas.paper as paper
+    from engine.mas.ledger import SQLiteLedger
+
+    symbols = ["EURUSD", "GBPUSD"]
+    frames = {symbol: _frame(symbol) for symbol in symbols}
+    start = pd.Timestamp("2026-01-05T00:00:00Z")
+    end = start + pd.Timedelta(hours=1)
+    for frame in frames.values():
+        frame.loc[1, "high"] = float(frame.loc[0, "close"]) + 0.003
+    data_dir = tmp_path / "parity-data"
+    data_dir.mkdir()
+    for symbol, frame in frames.items():
+        frame.to_csv(data_dir / f"{symbol}_M15.csv", index=False)
+
+    def deterministic_signal(frame, symbol, now, **_kwargs):
+        assert frame["time"].max() <= pd.Timestamp(now)
+        if pd.Timestamp(now) != start:
+            return SimpleNamespace(
+                signal="WAIT", cand={}, wait_reason="parity fixture complete",
+                fingerprint=lambda: f"parity-{symbol}",
+                to_json=lambda **_kw: {
+                    "signal": "WAIT", "fingerprint": f"parity-{symbol}",
+                },
+            )
+        close = float(frame.loc[frame["time"] <= now, "close"].iloc[-1])
+        candidate = {
+            "entry": close, "sl": close - 0.001,
+            "tp1": close + 0.0015, "tp2": close + 0.0025, "rr": 2.5,
+        }
+        return SimpleNamespace(
+            signal="BUY", cand=candidate, final_score=80.0,
+            confidence=75.0, market_regime="range", session="London",
+            fingerprint=lambda: f"parity-{symbol}",
+            to_json=lambda **_kw: {
+                "signal": "BUY", "fingerprint": f"parity-{symbol}",
+            },
+        )
+
+    monkeypatch.setattr(portfolio_bt, "analyze_mas", deterministic_signal)
+    monkeypatch.setattr(paper, "analyze_mas", deterministic_signal)
+
+    captured = {"paper": [], "portfolio": []}
+    original_append_events = SQLiteLedger.append_events
+
+    def capture_append_events(self, events):
+        batch = list(events)
+        for event in batch:
+            account = event.get("account_id", "")
+            if account == "paper":
+                captured["paper"].append(dict(event))
+            elif account.startswith("backtest:portfolio:"):
+                captured["portfolio"].append(dict(event))
+        return original_append_events(self, batch)
+
+    monkeypatch.setattr(SQLiteLedger, "append_events", capture_append_events)
+
+    paper_dir = tmp_path / "paper-ledger"
+    first = paper.run_paper(
+        str(data_dir), symbols, out_dir=str(paper_dir),
+        now=start, feeds=None,
+    )
+    assert len(first["opened_this_cycle"]) == 2
+    second = paper.run_paper(
+        str(data_dir), symbols, out_dir=str(paper_dir),
+        now=end, feeds=None,
+    )
+    assert len(second["closed_this_cycle"]) == 2
+
+    portfolio_result = portfolio_bt.backtest_portfolio(
+        frames, start=start.isoformat(), end=end.isoformat(),
+        step_hours=1, equity=10_000.0,
+    )
+    assert len(portfolio_result.trades) == 2
+
+    def select(events, event_type):
+        return sorted(
+            [event for event in events if event["event_type"] == event_type],
+            key=lambda event: event["payload"].get("symbol", ""),
+        )
+
+    paper_open = select(captured["paper"], "PositionOpened")
+    portfolio_open = select(captured["portfolio"], "PositionOpened")
+    assert len(paper_open) == len(portfolio_open) == 2
+    for left, right in zip(paper_open, portfolio_open):
+        for key in ("symbol", "direction", "lots", "entry_price", "sl", "tp2", "risk_usd", "risk_pct"):
+            assert left["payload"][key] == right["payload"][key]
+
+    paper_close = select(captured["paper"], "PositionClosed")
+    portfolio_close = select(captured["portfolio"], "PositionClosed")
+    assert len(paper_close) == len(portfolio_close) == 2
+    for left, right in zip(paper_close, portfolio_close):
+        for key in ("lots_closed", "pnl_gross", "commission", "slippage", "swap",
+                    "exit_price", "exit_time", "outcome"):
+            assert left["payload"][key] == right["payload"][key]
