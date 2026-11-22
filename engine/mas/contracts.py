@@ -69,6 +69,32 @@ class GateResult:
     detail: str = ""
 
 
+@dataclass(frozen=True)
+class SizingResult:
+    """Immutable, auditable sizing authorization produced only by Risk Agent.
+    Decimal-valued fields are canonical decimal strings to avoid float drift.
+    """
+    sizing_id: str
+    approved: bool
+    symbol: str
+    direction: str
+    entry_price: str
+    stop_loss: str
+    lots: str
+    requested_risk: str
+    actual_risk: str
+    per_lot_risk: str
+    lot_step: str
+    min_lot: str
+    max_lot: str
+    spec_version: str
+    fx_rate: str = ""
+    fx_timestamp: str = ""
+    rounding_mode: str = "ROUND_DOWN"
+    risk_config_hash: str = ""
+    reason: str = ""
+
+
 @dataclass
 class Signal:
     """سیگنال نهایی با اثر انگشت (replayable)."""
@@ -99,6 +125,7 @@ class Signal:
     # کاندید عددی معامله (برای بک‌تست/پورتفوی)؛ در to_json منتشر نمی‌شود چون
     # سطوح اجرایی همان entry/SL/TP فرمت‌شده بالای همین کلاس‌اند.
     cand: dict = field(default_factory=dict)
+    sizing_result: SizingResult | None = None
 
     def fingerprint(self, inputs_hash: str = "") -> str:
         payload = json.dumps({
@@ -122,6 +149,7 @@ class Signal:
             "risk_approved": self.risk_approved, "warnings": self.warnings,
             "missing_data": self.missing_data, "wait_reason": self.wait_reason,
             "fingerprint": self.fingerprint(inputs_hash),
+            "sizing_result": asdict(self.sizing_result) if self.sizing_result else None,
         }
         if include_reports:
             d["agent_reports"] = self.agent_reports

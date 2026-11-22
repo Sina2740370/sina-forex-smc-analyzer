@@ -32,12 +32,7 @@ def _csv_path(csv_dir: str, symbol: str) -> str:
 def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
                   symbols: list | None = None, equity: float = 10_000.0,
                   feeds=None) -> dict:
-    """تحلیل همه نمادها در یک timestamp مشترک با AccountState مشترک.
-
-    اگر now داده نشود، نقطه تحلیل از کمترین آخرین timestamp بین تمام
-    نمادهای دارای داده انتخاب می‌شود تا هیچ نمادی با کندل آینده‌تر وارد
-    همان snapshot پرتفوی نشود.
-    """
+    """تحلیل همه نمادها در یک timestamp مشترک با AccountState مشترک."""
     symbols = symbols or sorted(SYM_SPECS)
     analysis_at = pd.to_datetime(now, utc=True) if now is not None else None
 
@@ -61,8 +56,6 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
         loaded[sym] = df
 
     if analysis_at is None and loaded:
-        # Snapshot هم‌زمان: آخرین زمان مشترکی که تمام نمادهای بارگذاری‌شده
-        # تا آن زمان داده دارند، نه آخرین کندل مستقل هر نماد.
         analysis_at = min(df["time"].max() for df in loaded.values())
 
     acct = AccountState(equity=equity)
@@ -75,7 +68,6 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
             continue
         sig = analyze_mas(df, sym, analysis_at, acct=acct, feeds=feeds)
         results[sym] = sig.to_json(include_reports=False)
-        # سهم ریسک در سبد فقط برای سیگنال‌های تأییدشده ثبت می‌شود.
         if sig.signal in ("BUY", "SELL"):
             pct = float((sig.risk_amount or "0").split()[0]) / equity * 100
             acct.open_trades += 1
@@ -97,7 +89,6 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
         },
     }
     return portfolio
-
 
 def portfolio_markdown(p: dict) -> str:
     """گزارش فارسی سبد: جدول یک‌نگاهی + گزارش کامل هر نماد سیگنال‌دار."""
