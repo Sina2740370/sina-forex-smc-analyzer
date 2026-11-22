@@ -254,6 +254,10 @@ def backtest_portfolio(
 
     try:
         for event_index, now in enumerate(timeline):
+            # Period budgets roll on the market event timeline, not only when
+            # a trade closes. This matches Paper's day/week boundary semantics.
+            _append_period_resets(ledger, account_id, initial_balance, now)
+
             # Advance each open position through all candles up to this global
             # timestamp. The global timeline includes every symbol candle.
             for symbol in sorted(list(positions)):
