@@ -239,10 +239,10 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             continue
         frame = load_mt5_csv(path).dropna().drop_duplicates("time").sort_values("time").reset_index(drop=True)
         dfs[symbol] = frame
-        t_now[symbol] = pd.Timestamp(now, tz="UTC") if now else frame["time"].iloc[-1]
+        t_now[symbol] = pd.to_datetime(now, utc=True) if now else frame["time"].iloc[-1]
 
     analysis_point = (pd.Timestamp(max(t_now.values())).isoformat() if t_now else
-                      (pd.Timestamp(now, tz="UTC").isoformat() if now else
+                      (pd.to_datetime(now, utc=True).isoformat() if now else
                        pd.Timestamp.now(tz="UTC").isoformat()))
     daily_risk_date = pd.Timestamp(analysis_point).date().isoformat()
     if state.get("daily_risk_date") != daily_risk_date:
