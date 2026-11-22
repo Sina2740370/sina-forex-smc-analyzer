@@ -252,3 +252,38 @@ def test_portfolio_backtest_resets_daily_and_weekly_budgets_on_global_timeline(
     assert {event["payload"]["weekly_risk_week"] for event in weekly} == {
         "2026-01-05", "2026-01-12",
     }
+
+
+
+def test_portfolio_backtest_never_settles_beyond_explicit_end(monkeypatch):
+    frame = _frame("EURUSD")
+    start = frame["time"].iloc[0]
+    end = frame["time"].iloc[2]
+    monkeypatch.setattr(
+        "engine.data.providers.resample_ohlc",
+        lambda data, _tf: data.copy(),
+    )
+
+    def one_entry(_frame, _symbol, now, **_kwargs):
+        if pd.Timestamp(now) != start:
+            return SimpleNamespace(signal="WAIT", cand={}, wait_reason="end bound")
+        close = float(_frame["close"].iloc[-1])
+        return SimpleNamespace(
+            signal="BUY",
+            cand={"entry": close, "sl": close - 0.001,
+                  "tp2": close + 0.0025, "rr": 2.5},
+            final_score=80.0, confidence=75.0,
+            market_regime="range", session="London",
+            fingerprint=lambda: "end-bound-fixture",
+        )
+
+    monkeypatch.setattr(portfolio_bt, "analyze_mas", one_entry)
+    result = portfolio_bt.backtest_portfolio(
+        {"EURUSD": frame}, start=start.isoformat(), end=end.isoformat(),
+        step_hours=1,
+    )
+
+    assert len(result.trades) == 1
+    assert result.trades[0].exit_reason == "TIME_EXIT"
+    assert result.trades[0].exit_time == end
+    assert result.trades[0].exit == pytest.approx(float(frame.loc[2, "close"]))
