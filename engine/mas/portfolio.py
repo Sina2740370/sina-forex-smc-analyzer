@@ -34,7 +34,7 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
                   feeds=None) -> dict:
     """تحلیل چندجفتی هم‌زمان. نمادها با ریسک مشترک ارزیابی می‌شوند."""
     symbols = symbols or sorted(SYM_SPECS)
-    now = pd.Timestamp(now, tz="UTC") if now else None
+    now = pd.to_datetime(now, utc=True) if now else None
 
     acct = AccountState(equity=equity)
     results = {}
