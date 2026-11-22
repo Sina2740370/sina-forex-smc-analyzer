@@ -56,13 +56,6 @@ def test_stored_only_events_are_explicitly_accepted(tmp_path):
     ]
 
 
-@pytest.mark.parametrize(
-    ("column", "value", "message"),
-    [
-        ("event_type", "UnknownPersistedEvent", "unsupported persisted event_type"),
-        ("schema_version", 99, "unsupported persisted schema_version"),
-    ],
-)
 def test_non_lifecycle_append_skips_redundant_lifecycle_scan(tmp_path, monkeypatch):
     ledger = SQLiteLedger(tmp_path / "ledger-skip-lifecycle-scan.db")
 
@@ -109,6 +102,13 @@ def test_new_position_lifecycle_event_still_runs_transactional_validation(
     assert calls == [True]
 
 
+@pytest.mark.parametrize(
+    ("column", "value", "message"),
+    [
+        ("event_type", "UnknownPersistedEvent", "unsupported persisted event_type"),
+        ("schema_version", 99, "unsupported persisted schema_version"),
+    ],
+)
 def test_replay_fails_closed_for_unsupported_persisted_contract(
     tmp_path, column, value, message
 ):
