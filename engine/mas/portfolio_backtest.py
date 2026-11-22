@@ -145,7 +145,11 @@ def backtest_portfolio(
         raise ValueError("frames must be a non-empty symbol-to-DataFrame mapping")
     if isinstance(step_hours, bool) or not isinstance(step_hours, int) or step_hours <= 0:
         raise ValueError("step_hours must be a positive integer")
-    if not math.isfinite(float(equity)) or float(equity) <= 0:
+    try:
+        equity_value = float(equity)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("equity must be finite and positive") from exc
+    if not math.isfinite(equity_value) or equity_value <= 0:
         raise ValueError("equity must be finite and positive")
 
     normalized: dict[str, pd.DataFrame] = {}
@@ -162,6 +166,12 @@ def backtest_portfolio(
             raise ValueError(f"{symbol}: no valid UTC candles")
         normalized[symbol] = clean
 
+    for symbol, raw_spread in (spreads or {}).items():
+        if symbol not in normalized:
+            raise ValueError(f"spread supplied for unsupported input symbol: {symbol}")
+        if isinstance(raw_spread, bool) or not math.isfinite(float(raw_spread)) or float(raw_spread) < 0:
+            raise ValueError(f"{symbol}: spread must be a finite non-negative price value")
+
     first_time = max(frame["time"].iloc[0] for frame in normalized.values())
     last_time = min(frame["time"].iloc[-1] for frame in normalized.values())
     requested_start = pd.to_datetime(start, utc=True) if start is not None else first_time + pd.Timedelta(days=250)
@@ -171,7 +181,7 @@ def backtest_portfolio(
     t0 = max(requested_start, first_time)
     t1 = min(requested_end, last_time)
     if t0 >= t1:
-        return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
+        return PortfolioBTResult(symbols=list(normalized), equity_start=equity_value, equity_end=equity_value)
 
     # Explicit end bounds are authoritative. Never let terminal settlement read
     # a candle later than the requested backtest end.
@@ -180,7 +190,7 @@ def backtest_portfolio(
         for symbol, frame in normalized.items()
     }
     if any(frame.empty for frame in normalized.values()):
-        return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
+        return PortfolioBTResult(symbols=list(normalized), equity_start=equity_value, equity_end=equity_value)
 
     step = pd.Timedelta(hours=step_hours)
     decision_times = pd.date_range(start=t0, end=t1, freq=step)
@@ -197,7 +207,7 @@ def backtest_portfolio(
         for stamp in frame.loc[(frame["time"] >= t0) & (frame["time"] <= t1), "time"]
     })
     if not timeline:
-        return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
+        return PortfolioBTResult(symbols=list(normalized), equity_start=equity_value, equity_end=equity_value)
 
     from ..data.providers import BASE_TFS, resample_ohlc
     top_caches = {
@@ -210,10 +220,10 @@ def backtest_portfolio(
     account_id = "backtest:portfolio:" + hashlib.sha256(
         "|".join(sorted(normalized)).encode()
     ).hexdigest()[:16]
-    initial_balance = str(float(equity))
+    initial_balance = str(equity_value)
     ledger = SQLiteLedger(":memory:")
     result = PortfolioBTResult(
-        symbols=list(normalized), equity_start=float(equity), equity_end=float(equity)
+        symbols=list(normalized), equity_start=equity_value, equity_end=equity_value
     )
 
     def refresh_account() -> tuple[dict, AccountState]:
