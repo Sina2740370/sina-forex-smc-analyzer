@@ -616,3 +616,37 @@ def test_legacy_migration_recovers_after_baseline_before_completion_marker(env, 
     assert sum(event.idempotency_key == "legacy-paper-state-v1" for event in events) == 1
     assert recovered.get_meta("initial_balance:paper") == "7654.0"
     assert recovered.get_meta("legacy_migration:paper:v1:completed") == "completed"
+
+
+
+@pytest.mark.parametrize("make_naive", [False, True])
+def test_paper_normalizes_aware_and_naive_as_of_timestamps(env, monkeypatch, make_naive):
+    from types import SimpleNamespace
+    import engine.mas.paper as paper
+
+    root, data_dir, frame = env
+    out = root / ("paper-time-naive" if make_naive else "paper-time-aware")
+    as_of = pd.Timestamp(frame["time"].iloc[-1])
+    if make_naive:
+        as_of = as_of.tz_localize(None)
+
+    def wait_signal(*_args, **_kwargs):
+        return SimpleNamespace(
+            signal="WAIT",
+            cand={},
+            wait_reason="timestamp-regression",
+            to_json=lambda **_kwargs: {
+                "signal": "WAIT",
+                "wait_reason": "timestamp-regression",
+            },
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", wait_signal)
+    result = run_paper(
+        str(data_dir), ["EURUSD"], out_dir=str(out), feeds=None, now=as_of
+    )
+
+    persisted = _state(out)
+    expected = pd.to_datetime(as_of, utc=True).isoformat()
+    assert result["cycle"] == 1
+    assert pd.Timestamp(persisted["last_run_ts"]) == pd.Timestamp(expected)
