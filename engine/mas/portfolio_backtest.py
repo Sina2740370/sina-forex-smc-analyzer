@@ -164,8 +164,12 @@ def backtest_portfolio(
 
     first_time = max(frame["time"].iloc[0] for frame in normalized.values())
     last_time = min(frame["time"].iloc[-1] for frame in normalized.values())
-    t0 = pd.to_datetime(start, utc=True) if start is not None else first_time + pd.Timedelta(days=250)
-    t1 = pd.to_datetime(end, utc=True) if end is not None else last_time
+    requested_start = pd.to_datetime(start, utc=True) if start is not None else first_time + pd.Timedelta(days=250)
+    requested_end = pd.to_datetime(end, utc=True) if end is not None else last_time
+    # Even explicit caller bounds cannot extend the simulation beyond the
+    # intersection of all symbol histories.
+    t0 = max(requested_start, first_time)
+    t1 = min(requested_end, last_time)
     if t0 >= t1:
         return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
 
