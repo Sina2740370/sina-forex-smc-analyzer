@@ -111,6 +111,99 @@ def run_case(event_count: int, repeats: int, samples: int) -> dict[str, object]:
     }
 
 
+def run_index_query_case(history_events: int, repeats: int, samples: int) -> dict[str, object]:
+    """Compare full-account scans with indexed lifecycle-only reads on mixed history."""
+    if history_events < 2:
+        raise ValueError("history_events must be at least 2")
+
+    with tempfile.TemporaryDirectory(prefix="ledger-lifecycle-index-bench-") as temp:
+        ledger = SQLiteLedger(Path(temp) / "mixed-history.sqlite3")
+        ledger.append_event({
+            "account_id": "benchmark-index",
+            "trade_id": "benchmark-open",
+            "event_type": "PositionOpened",
+            "idempotency_key": "benchmark-open",
+            "payload": {
+                "trade_id": "benchmark-open",
+                "symbol": "EURUSD",
+                "direction": "BUY",
+                "lots": "0.01",
+                "entry_price": "1.10000",
+            },
+        })
+        conn = ledger._connect()
+        try:
+            conn.executemany(
+                """
+                INSERT INTO ledger_events (
+                    event_id, account_id, trade_id, order_id, event_type, sequence,
+                    occurred_at, recorded_at, idempotency_key, schema_version, payload_json
+                ) VALUES (?, ?, NULL, NULL, 'AuditMarker', ?, ?, ?, ?, 1, ?)
+                """,
+                [
+                    (
+                        f"noise-{index}", "benchmark-index", index + 2,
+                        "2026-01-01T00:00:00+00:00", "2026-01-01T00:00:00+00:00",
+                        f"noise-{index}", json.dumps({"noise": index}),
+                    )
+                    for index in range(history_events - 1)
+                ],
+            )
+            conn.commit()
+
+            full_sql = (
+                "SELECT * FROM ledger_events WHERE account_id=? ORDER BY sequence ASC"
+            )
+            lifecycle_sql = """
+                SELECT * FROM ledger_events
+                WHERE account_id=?
+                  AND event_type IN (
+                      'PositionOpened', 'PositionMarked',
+                      'PositionPartiallyClosed', 'PositionClosed'
+                  )
+                ORDER BY sequence ASC
+            """
+            plan = conn.execute(
+                "EXPLAIN QUERY PLAN " + lifecycle_sql, ("benchmark-index",)
+            ).fetchall()
+            plan_detail = " ".join(row["detail"] for row in plan)
+            if "idx_ledger_position_lifecycle_sequence" not in plan_detail:
+                raise RuntimeError("SQLite did not select the lifecycle partial index")
+
+            full_ms: list[float] = []
+            indexed_ms: list[float] = []
+            expected_lifecycle = None
+            for _ in range(repeats):
+                for _sample in range(samples):
+                    start = time.perf_counter()
+                    full_rows = conn.execute(full_sql, ("benchmark-index",)).fetchall()
+                    full_ms.append((time.perf_counter() - start) * 1000.0)
+                    lifecycle_rows = [row for row in full_rows if row["event_type"] in {
+                        "PositionOpened", "PositionMarked",
+                        "PositionPartiallyClosed", "PositionClosed",
+                    }]
+                    start = time.perf_counter()
+                    indexed_rows = conn.execute(
+                        lifecycle_sql, ("benchmark-index",)
+                    ).fetchall()
+                    indexed_ms.append((time.perf_counter() - start) * 1000.0)
+                    if [row["event_id"] for row in lifecycle_rows] != [
+                        row["event_id"] for row in indexed_rows
+                    ]:
+                        raise RuntimeError("indexed lifecycle query changed event selection")
+                    expected_lifecycle = len(indexed_rows)
+            return {
+                "history_events": history_events,
+                "lifecycle_events": expected_lifecycle,
+                "full_account_scan_median_ms": round(statistics.median(full_ms), 4),
+                "indexed_lifecycle_scan_median_ms": round(statistics.median(indexed_ms), 4),
+                "query_plan": plan_detail,
+            }
+        finally:
+            conn.close()
+            ledger.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sizes", nargs="+", type=int, default=[100, 1000, 10000])
@@ -121,10 +214,14 @@ def main() -> None:
         parser.error("sizes must be >= 2, repeats positive, and samples at least 2")
 
     results = [run_case(size, args.repeats, args.samples) for size in args.sizes]
+    index_results = [
+        run_index_query_case(size, args.repeats, args.samples) for size in args.sizes
+    ]
     print(json.dumps({
-        "benchmark": "SQLiteLedger full-account lifecycle validation baseline",
-        "method": "fresh temporary DB per repetition; one lifecycle seed batch; timed stored-only appends; replay and event-count guards",
+        "benchmark": "SQLiteLedger lifecycle validation",
+        "method": "fresh temporary DBs; stored-only append timing plus mixed-history full-scan versus indexed lifecycle-query comparison; replay, query-plan, and event-equivalence guards",
         "results": results,
+        "indexed_query_comparison": index_results,
     }, indent=2))
 
 
