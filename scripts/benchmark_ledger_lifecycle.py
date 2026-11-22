@@ -111,6 +111,110 @@ def run_case(event_count: int, repeats: int, samples: int) -> dict[str, object]:
     }
 
 
+
+def open_lifecycle_fixture(event_count: int) -> list[dict[str, object]]:
+    """Create an active position with a dense mark history."""
+    if event_count < 2:
+        raise ValueError("event_count must be at least 2")
+    trade_id = "bench-dense-trade"
+    common = {"account_id": "benchmark-dense", "trade_id": trade_id}
+    events: list[dict[str, object]] = [{
+        **common,
+        "event_type": "PositionOpened",
+        "idempotency_key": "dense-open",
+        "payload": {
+            "trade_id": trade_id,
+            "symbol": "EURUSD",
+            "direction": "BUY",
+            "lots": "0.01",
+            "entry_price": "1.10000",
+        },
+    }]
+    for index in range(event_count - 1):
+        events.append({
+            **common,
+            "event_type": "PositionMarked",
+            "idempotency_key": f"dense-seed-mark-{index}",
+            "payload": {"trade_id": trade_id, "unrealized_pnl": "0.01"},
+        })
+    return events
+
+
+def run_dense_lifecycle_case(
+    history_events: int, repeats: int, samples: int
+) -> dict[str, object]:
+    """Measure real lifecycle appends with/without the partial index."""
+    configurations: dict[str, dict[str, object]] = {}
+    for indexed in (True, False):
+        timings_ms: list[float] = []
+        index_bytes: int | None = None
+        page_count: int | None = None
+        for repetition in range(repeats):
+            with tempfile.TemporaryDirectory(prefix="ledger-dense-append-") as temp:
+                ledger = SQLiteLedger(Path(temp) / "dense.sqlite3")
+                conn = ledger._connect()
+                try:
+                    if not indexed:
+                        conn.execute(
+                            "DROP INDEX idx_ledger_position_lifecycle_sequence"
+                        )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                try:
+                    ledger.append_events(open_lifecycle_fixture(history_events))
+                    for sample in range(samples):
+                        event = {
+                            "account_id": "benchmark-dense",
+                            "trade_id": "bench-dense-trade",
+                            "event_type": "PositionMarked",
+                            "idempotency_key": f"dense-sample-{repetition}-{sample}",
+                            "payload": {
+                                "trade_id": "bench-dense-trade",
+                                "unrealized_pnl": "0.02",
+                            },
+                        }
+                        start = time.perf_counter()
+                        ledger.append_event(event)
+                        timings_ms.append((time.perf_counter() - start) * 1000.0)
+
+                    projection = ledger.replay_account("benchmark-dense", "10000")
+                    if "bench-dense-trade" not in projection["open_positions"]:
+                        raise RuntimeError("dense benchmark unexpectedly closed its position")
+                    if len(ledger.read_events("benchmark-dense")) != history_events + samples:
+                        raise RuntimeError("dense benchmark event count mismatch")
+
+                    conn = ledger._connect()
+                    try:
+                        page_count = int(conn.execute("PRAGMA page_count").fetchone()[0])
+                        try:
+                            row = conn.execute(
+                                "SELECT COALESCE(SUM(pgsize), 0) FROM dbstat WHERE name=?",
+                                ("idx_ledger_position_lifecycle_sequence",),
+                            ).fetchone()
+                            current_index_bytes = int(row[0])
+                            index_bytes = (
+                                current_index_bytes if index_bytes is None
+                                else max(index_bytes, current_index_bytes)
+                            )
+                        except sqlite3.OperationalError:
+                            index_bytes = None
+                    finally:
+                        conn.close()
+                finally:
+                    ledger.close()
+
+        configurations["indexed" if indexed else "index_disabled_control"] = {
+            "append_samples": len(timings_ms),
+            "median_ms": round(statistics.median(timings_ms), 4),
+            "p95_ms": round(percentile(timings_ms, 0.95), 4),
+            "index_bytes": index_bytes if indexed else 0,
+            "database_pages_last_repetition": page_count,
+        }
+    return {"history_events": history_events, "configurations": configurations}
+
+
 def run_index_query_case(history_events: int, repeats: int, samples: int) -> dict[str, object]:
     """Compare full-account scans with indexed lifecycle-only reads on mixed history."""
     if history_events < 2:
@@ -217,11 +321,15 @@ def main() -> None:
     index_results = [
         run_index_query_case(size, args.repeats, args.samples) for size in args.sizes
     ]
+    dense_lifecycle_results = [
+        run_dense_lifecycle_case(size, args.repeats, args.samples) for size in args.sizes
+    ]
     print(json.dumps({
         "benchmark": "SQLiteLedger lifecycle validation",
         "method": "fresh temporary DBs; stored-only append timing plus mixed-history full-scan versus indexed lifecycle-query comparison; replay, query-plan, and event-equivalence guards",
         "results": results,
         "indexed_query_comparison": index_results,
+        "dense_lifecycle_append_comparison": dense_lifecycle_results,
     }, indent=2))
 
 
