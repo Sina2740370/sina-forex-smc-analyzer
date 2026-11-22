@@ -59,6 +59,21 @@ The consolidated Ledger PR includes append-only storage, idempotency, lifecycle 
 - Paper parity: two-symbol open and close accounting payloads match exactly for the tested full-close path.
 - Input contract: invalid step size and empty/invalid candle sets fail explicitly.
 
-## 7. Explicit exclusions
+## 7. Local CLI entry point
+
+The engine is exposed through the local-CSV command:
+
+```bash
+python -m engine.cli mas-portfolio-backtest \
+  --csv-dir data_duka \
+  --symbols EURUSD GBPUSD USDJPY \
+  --step-hours 8 \
+  --out out_mas/portfolio_backtest
+```
+
+The command loads only the requested local M15 CSV files and does not construct online data feeds or contact a broker. It writes `portfolio_backtest.json` and, when trades exist, `portfolio_trades.csv`. Its report retains the explicit uncertified execution-cost warning.
+
+
+## 8. Explicit exclusions
 
 No broker connection, Live order routing, real trade, Telegram send, market scan, or remote data retrieval is performed. Strategy thresholds and Risk Agent defaults are not changed by this portfolio-backtest implementation.
