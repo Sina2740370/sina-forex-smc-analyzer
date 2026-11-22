@@ -198,3 +198,20 @@ concurrent-writer serialization, and replay equivalence. Establish baseline
 measurements first, then compare the candidate using the same fixture and
 environment. Until those equivalence checks exist, the production validator
 remains unchanged.
+
+
+## Lifecycle validation query optimization
+
+The append transaction continues to validate the complete ordered position
+lifecycle for every account whose position lifecycle receives a new event.
+The query now selects only `PositionOpened`, `PositionMarked`,
+`PositionPartiallyClosed`, and `PositionClosed`; other event classes do not
+participate in the position lifecycle state machine.
+
+A partial index on `(account_id, sequence)` with the same lifecycle-event
+predicate supports this query while retaining account-wide ordering. This is
+an access-path optimization only: it does not introduce a checkpoint, cache,
+per-trade validation boundary, or weaker fail-closed policy. The benchmark
+compares the indexed lifecycle result with filtering the complete account
+history and fails if the selected event identities differ or SQLite does not
+use the partial index.
