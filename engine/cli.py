@@ -221,6 +221,55 @@ def cmd_mas_backtest(args):
     print("ذخیره شد ->", os.path.join(args.out, "bt_all.json"))
 
 
+
+def cmd_mas_portfolio_backtest(args):
+    """Historical multi-symbol MAS backtest using one shared Ledger account."""
+    from dataclasses import asdict
+    from .mas.portfolio_backtest import backtest_portfolio
+    from .mas.symbols import supported_symbols
+
+    symbols = args.symbols or supported_symbols(args.csv_dir)
+    if not symbols:
+        raise SystemExit(f"هیچ نمادی با داده معتبر در {args.csv_dir} پیدا نشد")
+
+    frames = {}
+    for symbol in sorted(set(symbols)):
+        path = _mas_csv_path(args.csv_dir, symbol)
+        print(f"> load {symbol} ...", flush=True)
+        frames[symbol] = load_mt5_csv(path)
+
+    result = backtest_portfolio(
+        frames,
+        start=args.start,
+        end=args.end,
+        step_hours=args.step_hours,
+        equity=args.equity,
+    )
+    os.makedirs(args.out, exist_ok=True)
+    payload = {
+        "symbols": result.symbols,
+        "start": args.start,
+        "end": args.end,
+        "step_hours": args.step_hours,
+        "summary": result.summary(),
+        "execution_cost_warning": (
+            "Commission, slippage and swap are uncertified zero placeholders; "
+            "results are not broker-realizable net performance."
+        ),
+    }
+    json_path = os.path.join(args.out, "portfolio_backtest.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2, default=str)
+    if result.trades:
+        trades_path = os.path.join(args.out, "portfolio_trades.csv")
+        pd.DataFrame([asdict(trade) for trade in result.trades]).to_csv(
+            trades_path, index=False
+        )
+        print("معاملات ->", trades_path)
+    print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+    print("گزارش ذخیره شد ->", json_path)
+
+
 def cmd_mas_paper(args):
     """فاز ۵: یک چرخه اجرای کاغذی — تسویه بازها، تحلیل، ثبت سیگنال‌ها و ژورنال."""
     from .mas.datafeeds import MASFeeds
@@ -323,6 +372,20 @@ def main():
     mb.add_argument("--out", default="out_mas/backtest")
     mb.add_argument("--offline", action="store_true", help="فقط کش؛ بدون شبکه")
     mb.set_defaults(fn=cmd_mas_backtest)
+
+    mpb = sub.add_parser(
+        "mas-portfolio-backtest",
+        help="بک‌تست تاریخی چندنمادی با حساب و Ledger مشترک؛ بدون اتصال شبکه",
+    )
+    mpb.add_argument("--symbols", nargs="*", default=None,
+                     help="نمادها؛ خالی = همه نمادهایی که داده دارند")
+    mpb.add_argument("--csv-dir", default="data_duka")
+    mpb.add_argument("--start", default=None)
+    mpb.add_argument("--end", default=None)
+    mpb.add_argument("--step-hours", type=int, default=8)
+    mpb.add_argument("--equity", type=float, default=10_000.0)
+    mpb.add_argument("--out", default="out_mas/portfolio_backtest")
+    mpb.set_defaults(fn=cmd_mas_portfolio_backtest)
 
     mpp = sub.add_parser("mas-paper", help="فاز ۵: یک چرخه اجرای کاغذی (تسویه + سیگنال + ژورنال)")
     mpp.add_argument("--symbols", nargs="*", default=None)
