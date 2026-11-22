@@ -34,6 +34,7 @@ def test_portfolio_backtest_uses_one_shared_account_and_deterministic_symbol_ord
     )
 
     def deterministic_signal(_frame, symbol, now, **_kwargs):
+        assert _frame["time"].max() <= pd.Timestamp(now)
         calls.append((pd.Timestamp(now), symbol))
         if pd.Timestamp(now) != start:
             return SimpleNamespace(
@@ -71,6 +72,15 @@ def test_portfolio_backtest_uses_one_shared_account_and_deterministic_symbol_ord
         result.equity_start + sum(trade.pnl_usd for trade in result.trades)
     )
     assert result.open_positions_at_end == []
+    assert result.execution_costs_certified is False
+    assert result.summary()["execution_cost_model"] == "uncertified_zero_cost_placeholder"
+
+    repeated = portfolio_bt.backtest_portfolio(
+        frames, start=start.isoformat(),
+        end=(start + pd.Timedelta(hours=1)).isoformat(),
+        step_hours=1, equity=10_000.0,
+    )
+    assert repeated.summary() == result.summary()
 
 
 def test_portfolio_backtest_rejects_invalid_step_and_missing_symbol_data():
