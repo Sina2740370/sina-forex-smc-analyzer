@@ -72,7 +72,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     closed, still_open = [], []
     for pos in state["open_positions"]:
         sym = pos["symbol"]
-        if sym not in dfs:
+        if sym not in t_now:
             still_open.append(pos)
             continue
         df, spec = dfs[sym], spec_of[sym]
@@ -105,8 +105,8 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     new_signals, results = [], {}
     last_run = state.get("last_run_ts")
     for sym in symbols:
-        if sym not in dfs:
-            results[sym] = {"error": "داده پیدا نشد"}
+        if sym not in t_now:
+            results[sym] = {"error": "داده‌ای در نقطه زمانی مشترک پرتفوی موجود نیست"}
             continue
         if last_run and (t_now[sym] - pd.Timestamp(last_run)) < pd.Timedelta(hours=min_gap_hours):
             results[sym] = {"skipped": "فاصله کم از اجرای قبلی"}
@@ -143,7 +143,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
          "final_score": s["final_score"], "regime": s["regime"], "session": s["session"]}
         for s in new_signals]
     state["runs"] = state.get("runs", 0) + 1
-    state["last_run_ts"] = str(max(t_now.values())) if t_now else None
+    state["last_run_ts"] = analysis_point if t_now else None
     state.pop("open_positions_hist", None)
     with open(journal_p, "a", encoding="utf-8") as f:
         f.write(json.dumps({"cycle": state["runs"], "ts": pd.Timestamp.now(tz="UTC").isoformat(),
