@@ -233,17 +233,30 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     spec_of = {symbol: get_spec(symbol) for symbol in symbols}
     dfs, t_now = {}, {}
     from ..data.providers import load_mt5_csv
+    requested_at = pd.to_datetime(now, utc=True) if now is not None else None
     for symbol in symbols:
         path = _csv_path(csv_dir, symbol)
         if not path:
             continue
-        frame = load_mt5_csv(path).dropna().drop_duplicates("time").sort_values("time").reset_index(drop=True)
-        dfs[symbol] = frame
-        t_now[symbol] = pd.to_datetime(now, utc=True) if now else frame["time"].iloc[-1]
+        frame = load_mt5_csv(path).dropna().drop_duplicates("time").copy()
+        if frame.empty or "time" not in frame.columns:
+            continue
+        frame["time"] = pd.to_datetime(frame["time"], utc=True, errors="coerce")
+        frame = frame.dropna(subset=["time"]).sort_values("time").reset_index(drop=True)
+        if not frame.empty:
+            dfs[symbol] = frame
 
-    analysis_point = (pd.Timestamp(max(t_now.values())).isoformat() if t_now else
-                      (pd.to_datetime(now, utc=True).isoformat() if now else
-                       pd.Timestamp.now(tz="UTC").isoformat()))
+    # One UTC snapshot for all symbols: never mix different final candle times.
+    analysis_at = requested_at
+    if analysis_at is None and dfs:
+        analysis_at = min(frame["time"].max() for frame in dfs.values())
+    if analysis_at is None:
+        analysis_at = pd.Timestamp.now(tz="UTC")
+    for symbol, frame in dfs.items():
+        if (frame["time"] <= analysis_at).any():
+            t_now[symbol] = analysis_at
+
+    analysis_point = analysis_at.isoformat()
     daily_risk_date = pd.Timestamp(analysis_point).date().isoformat()
     if state.get("daily_risk_date") != daily_risk_date:
         ledger.append_event({
@@ -273,7 +286,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     equity_cursor = state["equity"]
     for position in state["open_positions"]:
         symbol = position["symbol"]
-        if symbol not in dfs:
+        if symbol not in t_now:
             continue
         frame, spec = dfs[symbol], spec_of[symbol]
         working = {**position,
@@ -332,8 +345,8 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     new_signals, results = [], {}
     last_run = state.get("last_run_ts")
     for symbol in symbols:
-        if symbol not in dfs:
-            results[symbol] = {"error": "داده پیدا نشد"}
+        if symbol not in t_now:
+            results[symbol] = {"error": "داده‌ای در نقطه زمانی مشترک پرتفوی موجود نیست"}
             continue
         if last_run and (t_now[symbol] - pd.Timestamp(last_run)) < pd.Timedelta(hours=min_gap_hours):
             results[symbol] = {"skipped": "فاصله کم از اجرای قبلی"}
