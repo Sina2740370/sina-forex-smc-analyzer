@@ -32,11 +32,11 @@ def _csv_path(csv_dir: str, symbol: str) -> str:
 def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
                   symbols: list | None = None, equity: float = 10_000.0,
                   feeds=None) -> dict:
-    """تحلیل چندجفتی هم‌زمان. نمادها با ریسک مشترک ارزیابی می‌شوند."""
+    """تحلیل همه نمادها در یک timestamp مشترک با AccountState مشترک."""
     symbols = symbols or sorted(SYM_SPECS)
-    now = pd.to_datetime(now, utc=True) if now else None
+    analysis_at = pd.to_datetime(now, utc=True) if now is not None else None
 
-    acct = AccountState(equity=equity)
+    loaded = {}
     results = {}
     for sym in symbols:
         path = _csv_path(csv_dir, sym)
@@ -44,10 +44,30 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
             results[sym] = {"error": "داده پیدا نشد"}
             continue
         df = load_mt5_csv(path)
-        t_now = now or df["time"].iloc[-1]      # پیش‌فرض: آخرین کندل هر نماد
-        sig = analyze_mas(df, sym, t_now, acct=acct, feeds=feeds)
+        if df.empty or "time" not in df.columns:
+            results[sym] = {"error": "داده خالی یا فاقد ستون زمان است"}
+            continue
+        df = df.copy()
+        df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+        df = df.dropna(subset=["time"]).sort_values("time").reset_index(drop=True)
+        if df.empty:
+            results[sym] = {"error": "هیچ timestamp معتبر برای نماد وجود ندارد"}
+            continue
+        loaded[sym] = df
+
+    if analysis_at is None and loaded:
+        analysis_at = min(df["time"].max() for df in loaded.values())
+
+    acct = AccountState(equity=equity)
+    for sym in symbols:
+        if sym not in loaded:
+            continue
+        df = loaded[sym]
+        if analysis_at is None or not (df["time"] <= analysis_at).any():
+            results[sym] = {"error": "داده‌ای در نقطه زمانی مشترک پرتفوی موجود نیست"}
+            continue
+        sig = analyze_mas(df, sym, analysis_at, acct=acct, feeds=feeds)
         results[sym] = sig.to_json(include_reports=False)
-        # سهم ریسک در سبد فقط برای سیگنال‌های تأییدشده ثبت می‌شود
         if sig.signal in ("BUY", "SELL"):
             pct = float((sig.risk_amount or "0").split()[0]) / equity * 100
             acct.open_trades += 1
@@ -59,7 +79,7 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
     errors = [s for s, r in results.items() if "error" in r]
     portfolio = {
         "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
-        "analysis_point": str(now) if now else "آخرین کندل موجود هر نماد",
+        "analysis_point": analysis_at.isoformat() if analysis_at is not None else None,
         "equity_usd": equity,
         "symbols": results,
         "summary": {
@@ -69,7 +89,6 @@ def run_portfolio(csv_dir: str, now: pd.Timestamp | None = None,
         },
     }
     return portfolio
-
 
 def portfolio_markdown(p: dict) -> str:
     """گزارش فارسی سبد: جدول یک‌نگاهی + گزارش کامل هر نماد سیگنال‌دار."""
