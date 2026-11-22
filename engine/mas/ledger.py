@@ -521,10 +521,22 @@ class SQLiteLedger:
                     "SELECT * FROM ledger_events WHERE event_id=?", (item["event_id"],)
                 ).fetchone()
                 results.append((self._row_to_event(row), True))
-            # Validate the post-batch lifecycle against the transaction's own
-            # view before commit. Any invalid event rolls back every insert in
-            # this batch; SQLite BEGIN IMMEDIATE serializes competing writers.
-            for account_id in {item["account_id"] for item in prepared}:
+            # Only newly inserted position-lifecycle events can change the
+            # lifecycle state. Stored-only, cash, and risk-state events cannot
+            # invalidate position transitions, so rescanning the complete account
+            # history for those appends is redundant (and grows linearly with
+            # ledger size). Keep validation inside this transaction for every
+            # account whose lifecycle was actually extended.
+            lifecycle_event_types = {
+                "PositionOpened", "PositionMarked",
+                "PositionPartiallyClosed", "PositionClosed",
+            }
+            lifecycle_accounts = {
+                item["account_id"]
+                for item, (_event, inserted) in zip(prepared, results)
+                if inserted and item["event_type"] in lifecycle_event_types
+            }
+            for account_id in lifecycle_accounts:
                 rows = conn.execute(
                     "SELECT * FROM ledger_events WHERE account_id=? ORDER BY sequence ASC",
                     (account_id,),
