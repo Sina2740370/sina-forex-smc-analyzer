@@ -134,6 +134,16 @@ class SQLiteLedger:
                 "CREATE INDEX IF NOT EXISTS idx_ledger_account_time "
                 "ON ledger_events(account_id, occurred_at, sequence)"
             )
+            # A partial covering index keeps lifecycle validation scoped to the
+            # event classes that can change position state, while preserving the
+            # complete account-wide ordered history and fail-closed semantics.
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_ledger_position_lifecycle_sequence "
+                "ON ledger_events(account_id, sequence) "
+                "WHERE event_type IN "
+                "('PositionOpened', 'PositionMarked', "
+                "'PositionPartiallyClosed', 'PositionClosed')"
+            )
             conn.execute(
                 """
                 CREATE TRIGGER IF NOT EXISTS ledger_events_no_update
@@ -538,7 +548,15 @@ class SQLiteLedger:
             }
             for account_id in lifecycle_accounts:
                 rows = conn.execute(
-                    "SELECT * FROM ledger_events WHERE account_id=? ORDER BY sequence ASC",
+                    """
+                    SELECT * FROM ledger_events
+                    WHERE account_id=?
+                      AND event_type IN (
+                          'PositionOpened', 'PositionMarked',
+                          'PositionPartiallyClosed', 'PositionClosed'
+                      )
+                    ORDER BY sequence ASC
+                    """,
                     (account_id,),
                 ).fetchall()
                 self._validate_position_lifecycle_events(
