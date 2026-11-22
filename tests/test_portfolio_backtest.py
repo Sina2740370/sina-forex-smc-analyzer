@@ -138,7 +138,15 @@ def test_two_symbol_paper_and_portfolio_backtest_match_open_and_close_accounting
         )
 
     monkeypatch.setattr(portfolio_bt, "analyze_mas", deterministic_signal)
-    monkeypatch.setattr(paper, "analyze_mas", deterministic_signal)
+
+    # The real aggregator applies this as-of slice internally. Keep that
+    # behavior in the Paper fixture while asserting the portfolio engine
+    # enforces the boundary before invoking its analyzer.
+    def paper_asof_signal(frame, symbol, now, **kwargs):
+        past = frame.loc[frame["time"] <= pd.Timestamp(now)].reset_index(drop=True)
+        return deterministic_signal(past, symbol, now, **kwargs)
+
+    monkeypatch.setattr(paper, "analyze_mas", paper_asof_signal)
 
     captured = {"paper": [], "portfolio": []}
     original_append_events = SQLiteLedger.append_events
