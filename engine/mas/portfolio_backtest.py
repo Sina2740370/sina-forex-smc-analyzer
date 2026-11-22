@@ -169,7 +169,11 @@ def backtest_portfolio(
     for symbol, raw_spread in (spreads or {}).items():
         if symbol not in normalized:
             raise ValueError(f"spread supplied for unsupported input symbol: {symbol}")
-        if isinstance(raw_spread, bool) or not math.isfinite(float(raw_spread)) or float(raw_spread) < 0:
+        try:
+            spread_value = float(raw_spread)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"{symbol}: spread must be a finite non-negative price value") from exc
+        if isinstance(raw_spread, bool) or not math.isfinite(spread_value) or spread_value < 0:
             raise ValueError(f"{symbol}: spread must be a finite non-negative price value")
 
     first_time = max(frame["time"].iloc[0] for frame in normalized.values())
@@ -215,7 +219,6 @@ def backtest_portfolio(
         for symbol, frame in normalized.items()
     }
     arrays = {symbol: frame["time"].to_numpy() for symbol, frame in normalized.items()}
-    indices = {symbol: -1 for symbol in normalized}
     positions: dict[str, dict] = {}
     account_id = "backtest:portfolio:" + hashlib.sha256(
         "|".join(sorted(normalized)).encode()
