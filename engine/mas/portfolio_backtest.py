@@ -173,6 +173,15 @@ def backtest_portfolio(
     if t0 >= t1:
         return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
 
+    # Explicit end bounds are authoritative. Never let terminal settlement read
+    # a candle later than the requested backtest end.
+    normalized = {
+        symbol: frame.loc[frame["time"] <= t1].reset_index(drop=True)
+        for symbol, frame in normalized.items()
+    }
+    if any(frame.empty for frame in normalized.values()):
+        return PortfolioBTResult(symbols=list(normalized), equity_start=float(equity), equity_end=float(equity))
+
     step = pd.Timedelta(hours=step_hours)
     decision_times = pd.date_range(start=t0, end=t1, freq=step)
     decision_sets = {
@@ -252,11 +261,18 @@ def backtest_portfolio(
         ))
         positions.pop(symbol, None)
 
+    period_day = None
+    period_week = None
     try:
         for event_index, now in enumerate(timeline):
-            # Period budgets roll on the market event timeline, not only when
-            # a trade closes. This matches Paper's day/week boundary semantics.
-            _append_period_resets(ledger, account_id, initial_balance, now)
+            # Period budgets roll on day/week boundaries, not on every M15
+            # event and not only when a trade closes.
+            event_day = pd.Timestamp(now).date()
+            day_key = event_day.isoformat()
+            week_key = (event_day - timedelta(days=event_day.weekday())).isoformat()
+            if day_key != period_day or week_key != period_week:
+                _append_period_resets(ledger, account_id, initial_balance, now)
+                period_day, period_week = day_key, week_key
 
             # Advance each open position through all candles up to this global
             # timestamp. The global timeline includes every symbol candle.
@@ -266,9 +282,17 @@ def backtest_portfolio(
                 outcome = _advance_position(
                     position, frame, arrays[symbol], now, get_spec(symbol)
                 )
+                if outcome is None and now == frame["time"].iloc[-1]:
+                    # Exhaustion of this symbol's own data is a labeled
+                    # backtest boundary; it must not be deferred to another
+                    # symbol's later timestamp.
+                    outcome = _advance_position(
+                        position, frame, arrays[symbol], now, get_spec(symbol),
+                        force_exit=True,
+                    )
                 if outcome is not None:
                     exit_px, exit_time, last_idx, was_loss = outcome
-                    reason = "SL" if was_loss is True else "TP"
+                    reason = "TIME_EXIT" if was_loss is None else ("SL" if was_loss else "TP")
                     settle(symbol, position, exit_px, pd.Timestamp(exit_time),
                            last_idx, was_loss, reason)
 
@@ -280,6 +304,10 @@ def backtest_portfolio(
                 if symbol in positions:
                     continue
                 frame = normalized[symbol]
+                # Do not open a new position on the final available candle:
+                # there is no subsequent market event on which to manage it.
+                if now == frame["time"].iloc[-1]:
+                    continue
                 row_index = int(frame["time"].searchsorted(now, side="right")) - 1
                 if row_index < 0 or frame["time"].iloc[row_index] != now:
                     continue
