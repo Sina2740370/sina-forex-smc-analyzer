@@ -215,3 +215,22 @@ per-trade validation boundary, or weaker fail-closed policy. The benchmark
 compares the indexed lifecycle result with filtering the complete account
 history and fails if the selected event identities differ or SQLite does not
 use the partial index.
+
+### Dense lifecycle workload and index write-cost benchmark
+
+The same benchmark now includes a second workload that keeps one position open
+and seeds it with 100/1,000/10,000 ordered `PositionMarked` events. It then
+times additional real `PositionMarked` appends, which execute the full
+transactional lifecycle validator. Each size is measured in two isolated
+temporary databases: one with the partial lifecycle index and one control with
+that index dropped. The output reports median/p95 append latency, SQLite page
+count, and index bytes when the SQLite `dbstat` virtual table is available.
+
+This comparison is intended to expose both sides of the trade-off: lifecycle
+read acceleration and index maintenance/write amplification under dense
+lifecycle traffic. It is observational, not a CI latency threshold. The
+index-disabled control is benchmark-only and does not alter production schema
+or runtime configuration. Compare results on the same runner and Python/SQLite
+build; do not infer whole-system throughput or production account capacity from
+this microbenchmark.
+
