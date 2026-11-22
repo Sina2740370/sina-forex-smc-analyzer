@@ -193,3 +193,62 @@ def test_two_symbol_paper_and_portfolio_backtest_match_open_and_close_accounting
         for key in ("lots_closed", "pnl_gross", "commission", "slippage", "swap",
                     "exit_price", "exit_time", "outcome"):
             assert left["payload"][key] == right["payload"][key]
+
+
+
+def test_portfolio_backtest_resets_daily_and_weekly_budgets_on_global_timeline(
+    monkeypatch
+):
+    from engine.mas.ledger import SQLiteLedger
+
+    start = pd.Timestamp("2026-01-05T00:00:00Z")
+    times = pd.date_range(start, periods=8, freq="1D")
+    prices = [1.2 + index * 0.0001 for index in range(len(times))]
+    frame = pd.DataFrame({
+        "time": times, "open": prices,
+        "high": [price + 0.0001 for price in prices],
+        "low": [price - 0.0001 for price in prices],
+        "close": prices, "volume": [1.0] * len(times),
+    })
+    monkeypatch.setattr(
+        "engine.data.providers.resample_ohlc",
+        lambda data, _tf: data.copy(),
+    )
+
+    def one_signal(_frame, _symbol, now, **_kwargs):
+        if pd.Timestamp(now) != start:
+            return SimpleNamespace(signal="WAIT", cand={}, wait_reason="period fixture")
+        close = float(_frame["close"].iloc[-1])
+        return SimpleNamespace(
+            signal="BUY",
+            cand={"entry": close, "sl": close - 0.001,
+                  "tp2": close + 0.0025, "rr": 2.5},
+            final_score=80.0, confidence=75.0,
+            market_regime="range", session="London",
+            fingerprint=lambda: "weekly-reset-fixture",
+        )
+
+    monkeypatch.setattr(portfolio_bt, "analyze_mas", one_signal)
+    captured = []
+    original = SQLiteLedger.append_events
+
+    def capture(self, events):
+        batch = list(events)
+        captured.extend(dict(event) for event in batch
+                        if event.get("account_id", "").startswith("backtest:portfolio:"))
+        return original(self, batch)
+
+    monkeypatch.setattr(SQLiteLedger, "append_events", capture)
+    portfolio_bt.backtest_portfolio(
+        {"EURUSD": frame}, start=start.isoformat(),
+        end=times[-1].isoformat(), step_hours=24,
+    )
+
+    daily = [event for event in captured if event["event_type"] == "DailyRiskReset"]
+    weekly = [event for event in captured if event["event_type"] == "WeeklyRiskReset"]
+    assert {event["payload"]["daily_risk_date"] for event in daily} == {
+        timestamp.date().isoformat() for timestamp in times
+    }
+    assert {event["payload"]["weekly_risk_week"] for event in weekly} == {
+        "2026-01-05", "2026-01-12",
+    }
