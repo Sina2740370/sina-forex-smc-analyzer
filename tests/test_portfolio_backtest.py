@@ -294,7 +294,14 @@ def test_portfolio_backtest_never_settles_beyond_explicit_end(monkeypatch):
     assert len(result.trades) == 1
     assert result.trades[0].exit_reason == "TIME_EXIT"
     assert result.trades[0].exit_time == end
-    assert result.trades[0].exit == pytest.approx(float(frame.loc[2, "close"]))
+    from engine.mas.symbols import realized_pnl_usd
+    expected_exit = float(frame.loc[2, "close"])
+    assert result.trades[0].pnl_usd == pytest.approx(
+        realized_pnl_usd(
+            "EURUSD", result.trades[0].entry, expected_exit,
+            result.trades[0].direction, result.trades[0].lots,
+        )
+    )
 
 
 
