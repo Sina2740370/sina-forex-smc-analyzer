@@ -159,9 +159,14 @@ def backtest_portfolio(
         required = {"time", "open", "high", "low", "close"}
         if not isinstance(frame, pd.DataFrame) or not required.issubset(frame.columns):
             raise ValueError(f"{symbol}: frame must contain {sorted(required)}")
-        clean = frame.dropna(subset=list(required)).drop_duplicates("time").copy()
+        clean = frame.dropna(subset=list(required)).copy()
         clean["time"] = pd.to_datetime(clean["time"], utc=True, errors="coerce")
-        clean = clean.dropna(subset=["time"]).sort_values("time").reset_index(drop=True)
+        clean = (
+            clean.dropna(subset=["time"])
+            .drop_duplicates("time")
+            .sort_values("time", kind="mergesort")
+            .reset_index(drop=True)
+        )
         if clean.empty:
             raise ValueError(f"{symbol}: no valid UTC candles")
         normalized[symbol] = clean
