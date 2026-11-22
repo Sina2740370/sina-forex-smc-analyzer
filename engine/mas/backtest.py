@@ -115,8 +115,8 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     spec = get_spec(symbol)
     sp = spec.spread_price() if spread_price is None else spread_price
     df = df15.dropna().drop_duplicates("time").sort_values("time").reset_index(drop=True)
-    t0 = pd.Timestamp(start, tz="UTC") if start else df["time"].iloc[0] + pd.Timedelta(days=250)
-    t1 = pd.Timestamp(end, tz="UTC") if end else df["time"].iloc[-1]
+    t0 = pd.to_datetime(start, utc=True) if start else df["time"].iloc[0] + pd.Timedelta(days=250)
+    t1 = pd.to_datetime(end, utc=True) if end else df["time"].iloc[-1]
     if t0 >= t1:      # بازه خالی (مثلاً تاریخچه کوتاه‌تر از دوره گرم‌شدن)
         return BTResult(symbol=symbol)
     step = pd.Timedelta(hours=step_hours)
