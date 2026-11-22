@@ -85,3 +85,83 @@ def test_portfolio_reports_missing_data_without_guess():
     p = run_portfolio("nonexistent_dir", symbols=["EURUSD"], equity=10_000.0)
     assert p["symbols"]["EURUSD"]["error"]        # صادقانه خطا می‌دهد، حدس نمی‌زند
     assert p["summary"]["approved"] == []
+
+
+
+def test_portfolio_uses_one_common_asof_timestamp_for_all_symbols(
+    tmp_path, monkeypatch
+):
+    from types import SimpleNamespace
+    import engine.mas.portfolio as portfolio_module
+
+    data_dir = tmp_path / "portfolio-common-asof"
+    data_dir.mkdir()
+    (data_dir / "GBPUSD_M15.csv").write_text("fixture", encoding="utf-8")
+    (data_dir / "USDJPY_M15.csv").write_text("fixture", encoding="utf-8")
+
+    gbp = make_15m(150, seed=31, base=1.26, vol=0.0005)
+    jpy = make_15m(150, seed=32, base=150.0, vol=0.05)
+    # USDJPY contains later candles; the portfolio must not use them in the
+    # same snapshot as GBPUSD's earlier final candle.
+    jpy.loc[jpy.index[-2:], "time"] += pd.Timedelta(minutes=30)
+    frames = {"GBPUSD": gbp, "USDJPY": jpy}
+    observed = []
+
+    monkeypatch.setattr(
+        portfolio_module,
+        "load_mt5_csv",
+        lambda path: frames["GBPUSD" if "GBPUSD" in path else "USDJPY"].copy(),
+    )
+
+    def capture_analysis(_df, symbol, as_of, **_kwargs):
+        observed.append((symbol, pd.Timestamp(as_of)))
+        return SimpleNamespace(
+            signal="WAIT",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "fixture"},
+        )
+
+    monkeypatch.setattr(portfolio_module, "analyze_mas", capture_analysis)
+    result = portfolio_module.run_portfolio(
+        str(data_dir), symbols=["GBPUSD", "USDJPY"], equity=10_000.0
+    )
+
+    expected = min(
+        pd.to_datetime(gbp["time"], utc=True).max(),
+        pd.to_datetime(jpy["time"], utc=True).max(),
+    )
+    assert len(observed) == 2
+    assert observed[0][1] == expected
+    assert observed[1][1] == expected
+    assert pd.Timestamp(result["analysis_point"]) == expected
+
+
+def test_portfolio_normalizes_explicit_timezone_aware_asof_to_utc(
+    tmp_path, monkeypatch
+):
+    from types import SimpleNamespace
+    import engine.mas.portfolio as portfolio_module
+
+    data_dir = tmp_path / "portfolio-explicit-asof"
+    data_dir.mkdir()
+    (data_dir / "EURUSD_M15.csv").write_text("fixture", encoding="utf-8")
+    frame = make_15m(150, seed=33)
+    observed = []
+
+    monkeypatch.setattr(portfolio_module, "load_mt5_csv", lambda _path: frame.copy())
+
+    def capture_analysis(_df, _symbol, as_of, **_kwargs):
+        observed.append(pd.Timestamp(as_of))
+        return SimpleNamespace(
+            signal="WAIT",
+            to_json=lambda **_kwargs: {"signal": "WAIT", "wait_reason": "fixture"},
+        )
+
+    monkeypatch.setattr(portfolio_module, "analyze_mas", capture_analysis)
+    requested = pd.Timestamp("2026-01-05T12:00:00+03:00")
+    result = portfolio_module.run_portfolio(
+        str(data_dir), now=requested, symbols=["EURUSD"], equity=10_000.0
+    )
+
+    expected = requested.tz_convert("UTC")
+    assert observed == [expected]
+    assert pd.Timestamp(result["analysis_point"]) == expected
