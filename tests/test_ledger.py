@@ -63,6 +63,52 @@ def test_stored_only_events_are_explicitly_accepted(tmp_path):
         ("schema_version", 99, "unsupported persisted schema_version"),
     ],
 )
+def test_non_lifecycle_append_skips_redundant_lifecycle_scan(tmp_path, monkeypatch):
+    ledger = SQLiteLedger(tmp_path / "ledger-skip-lifecycle-scan.db")
+
+    def unexpected_scan(_events):
+        raise AssertionError("non-lifecycle append must not rescan position history")
+
+    monkeypatch.setattr(
+        ledger, "_validate_position_lifecycle_events", unexpected_scan
+    )
+    ledger.append_event({
+        "account_id": "paper-account",
+        "event_type": "AuditMarker",
+        "idempotency_key": "audit-only-1",
+        "payload": {"marker": "no position mutation"},
+    })
+    assert len(ledger.read_events("paper-account")) == 1
+
+
+def test_new_position_lifecycle_event_still_runs_transactional_validation(
+    tmp_path, monkeypatch
+):
+    ledger = SQLiteLedger(tmp_path / "ledger-validates-lifecycle.db")
+    calls = []
+    original = ledger._validate_position_lifecycle_events
+
+    def observed_scan(events):
+        calls.append(True)
+        return original(events)
+
+    monkeypatch.setattr(ledger, "_validate_position_lifecycle_events", observed_scan)
+    ledger.append_event({
+        "account_id": "paper-account",
+        "trade_id": "trade-lifecycle",
+        "event_type": "PositionOpened",
+        "idempotency_key": "open-lifecycle",
+        "payload": {
+            "trade_id": "trade-lifecycle",
+            "symbol": "EURUSD",
+            "direction": "BUY",
+            "lots": "0.10",
+            "entry_price": "1.10000",
+        },
+    })
+    assert calls == [True]
+
+
 def test_replay_fails_closed_for_unsupported_persisted_contract(
     tmp_path, column, value, message
 ):
