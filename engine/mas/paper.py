@@ -41,13 +41,32 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
     spec_of = {s: get_spec(s) for s in symbols}
     dfs, t_now = {}, {}
     from ..data.providers import load_mt5_csv
+    requested_at = pd.to_datetime(now, utc=True) if now is not None else None
     for sym in symbols:
         p = _csv_path(csv_dir, sym)
         if not p:
             continue
-        df = load_mt5_csv(p).dropna().drop_duplicates("time").sort_values("time").reset_index(drop=True)
-        dfs[sym] = df
-        t_now[sym] = pd.Timestamp(now, tz="UTC") if now else df["time"].iloc[-1]
+        df = load_mt5_csv(p).dropna().drop_duplicates("time").copy()
+        if df.empty or "time" not in df.columns:
+            continue
+        df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+        df = df.dropna(subset=["time"]).sort_values("time").reset_index(drop=True)
+        if not df.empty:
+            dfs[sym] = df
+
+    # All symbols in one Paper cycle share a single UTC market snapshot.
+    # Without an explicit as-of time, use the earliest latest timestamp so
+    # no symbol contributes candles from a later market time.
+    analysis_at = requested_at
+    if analysis_at is None and dfs:
+        analysis_at = min(frame["time"].max() for frame in dfs.values())
+    if analysis_at is None:
+        analysis_at = pd.Timestamp.now(tz="UTC")
+    for sym, frame in dfs.items():
+        if (frame["time"] <= analysis_at).any():
+            t_now[sym] = analysis_at
+
+    analysis_point = analysis_at.isoformat()
 
     # --- ۱) تسویه معاملات باز ---
     closed, still_open = [], []
