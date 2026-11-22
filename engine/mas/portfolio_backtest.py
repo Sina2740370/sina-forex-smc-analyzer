@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, replace
 import hashlib
+import math
 from datetime import timedelta
 
 import pandas as pd
@@ -32,6 +33,7 @@ class PortfolioBTResult:
     equity_end: float = RISK_RULES["equity_default"]
     open_positions_at_end: list[dict] = field(default_factory=list)
     ledger_events: int = 0
+    execution_costs_certified: bool = False
 
     @property
     def wins(self) -> int:
@@ -70,6 +72,8 @@ class PortfolioBTResult:
             "equity_end": round(self.equity_end, 2),
             "open_positions_at_end": len(self.open_positions_at_end),
             "ledger_events": self.ledger_events,
+            "execution_costs_certified": self.execution_costs_certified,
+            "execution_cost_model": "uncertified_zero_cost_placeholder",
             "wait_reasons": dict(sorted(self.wait_reasons.items(), key=lambda item: (-item[1], item[0]))),
         }
 
@@ -141,7 +145,7 @@ def backtest_portfolio(
         raise ValueError("frames must be a non-empty symbol-to-DataFrame mapping")
     if isinstance(step_hours, bool) or not isinstance(step_hours, int) or step_hours <= 0:
         raise ValueError("step_hours must be a positive integer")
-    if not pd.notna(equity) or float(equity) <= 0:
+    if not math.isfinite(float(equity)) or float(equity) <= 0:
         raise ValueError("equity must be finite and positive")
 
     normalized: dict[str, pd.DataFrame] = {}
@@ -272,8 +276,11 @@ def backtest_portfolio(
                 if row_index < 0 or frame["time"].iloc[row_index] != now:
                     continue
                 projection, account = refresh_account()
+                past = frame.loc[frame["time"] <= now].reset_index(drop=True)
+                if past.empty or past["time"].max() > now:
+                    raise RuntimeError(f"{symbol}: lookahead guard rejected a future candle")
                 signal = analyze_mas(
-                    frame, symbol, now,
+                    past, symbol, now,
                     spread_price=(spreads or {}).get(symbol, get_spec(symbol).spread_price()),
                     acct=account, feeds=feeds, top_cache=top_caches[symbol], cfg=cfg,
                 )
