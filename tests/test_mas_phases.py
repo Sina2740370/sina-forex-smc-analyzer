@@ -98,3 +98,35 @@ def test_backtest_accepts_timezone_aware_start_and_end():
     )
 
     assert result.n_points > 0
+
+
+
+@pytest.mark.parametrize("make_naive", [False, True])
+def test_portfolio_normalizes_aware_and_naive_as_of_timestamps(
+    tmp_path, monkeypatch, make_naive
+):
+    from types import SimpleNamespace
+    import engine.mas.portfolio as portfolio
+
+    data_dir = tmp_path / "portfolio-time-data"
+    data_dir.mkdir()
+    frame = make_15m(140, seed=23)
+    frame.to_csv(data_dir / "EURUSD_M15.csv", index=False)
+    as_of = pd.Timestamp(frame["time"].iloc[-1])
+    if make_naive:
+        as_of = as_of.tz_localize(None)
+
+    def wait_signal(*_args, **_kwargs):
+        return SimpleNamespace(
+            signal="WAIT",
+            risk_amount="0.00 USD",
+            to_json=lambda **_kwargs: {"signal": "WAIT"},
+        )
+
+    monkeypatch.setattr(portfolio, "analyze_mas", wait_signal)
+    result = portfolio.run_portfolio(
+        str(data_dir), now=as_of, symbols=["EURUSD"], equity=10_000.0
+    )
+
+    assert result["symbols"]["EURUSD"]["signal"] == "WAIT"
+    assert pd.Timestamp(result["analysis_point"]) == pd.to_datetime(as_of, utc=True)
