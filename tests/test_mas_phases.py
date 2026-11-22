@@ -85,3 +85,16 @@ def test_portfolio_reports_missing_data_without_guess():
     p = run_portfolio("nonexistent_dir", symbols=["EURUSD"], equity=10_000.0)
     assert p["symbols"]["EURUSD"]["error"]        # صادقانه خطا می‌دهد، حدس نمی‌زند
     assert p["summary"]["approved"] == []
+
+
+
+def test_backtest_accepts_timezone_aware_start_and_end():
+    m = make_15m(140, seed=19)
+    start = m["time"].iloc[30]
+    end = m["time"].iloc[-1]
+
+    result = backtest_mas(
+        m, "EURUSD", start=start, end=end, step_hours=8
+    )
+
+    assert result.n_points > 0
