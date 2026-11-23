@@ -8,6 +8,17 @@ import engine.mas.backtest as backtest
 
 
 def test_backtest_settles_final_trade_through_ledger_and_marks_time_exit(monkeypatch):
+    from engine.mas.ledger import SQLiteLedger
+
+    captured_events = []
+    original_append_event = SQLiteLedger.append_event
+
+    def capture_event(self, event):
+        if event.get("account_id") == "backtest:EURUSD":
+            captured_events.append(dict(event))
+        return original_append_event(self, event)
+
+    monkeypatch.setattr(SQLiteLedger, "append_event", capture_event)
     start = pd.Timestamp("2026-01-05T00:00:00Z")
     times = [start + pd.Timedelta(minutes=15 * i) for i in range(5)]
     frame = pd.DataFrame({
@@ -45,6 +56,11 @@ def test_backtest_settles_final_trade_through_ledger_and_marks_time_exit(monkeyp
     assert result.trades[0].exit_reason == "TIME_EXIT"
     assert result.trades[0].pnl_usd < 0
     assert result.equity_end == result.equity_start + result.trades[0].pnl_usd
+    marks = [event for event in captured_events if event["event_type"] == "PositionMarked"]
+    assert len(marks) >= 2
+    assert all(event["payload"]["mark_time"] == event["occurred_at"] for event in marks)
+    assert result.equity_curve
+    assert result.max_drawdown_pct > 0
 
 
 def test_paper_and_backtest_match_same_market_input_through_take_profit(
