@@ -290,7 +290,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             continue
         frame, spec = dfs[symbol], spec_of[symbol]
         working = {**position,
-                   "last_idx": int(frame["time"].searchsorted(pd.Timestamp(position["entry_time"])))}
+                   "last_idx": int(frame["time"].searchsorted(pd.Timestamp(position["entry_time"]))) - 1}
         outcome = _advance_position(working, frame, frame["time"].to_numpy(),
                                     t_now[symbol], spec)
         if outcome is None:
