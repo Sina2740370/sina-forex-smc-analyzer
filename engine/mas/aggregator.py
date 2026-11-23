@@ -34,7 +34,10 @@ def analyze_mas(df15: pd.DataFrame, symbol: str, now: pd.Timestamp,
         spread_price = get_spec(symbol).spread_price()
 
     # --- A1: داده (فقط گذشته) ---
-    past = df15[df15["time"] <= now]
+    # `time` is the candle OPEN timestamp; only expose bars whose full 15m
+    # interval has elapsed at the decision timestamp.
+    bar_close = df15["time"] + pd.Timedelta(minutes=15)
+    past = df15.loc[bar_close <= now].copy()
     data = run_data_agent(past)
     df = data["df"]
     if top is None and top_cache is not None:
