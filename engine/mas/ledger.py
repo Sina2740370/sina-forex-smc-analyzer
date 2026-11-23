@@ -746,17 +746,23 @@ class SQLiteLedger:
                 if "consecutive_losses" in payload:
                     consecutive_losses = int(payload["consecutive_losses"])
 
-        # Rebuild loss percentages from the immutable financial timeline. A delayed
-        # Paper cycle may append a historical close today; its denominator must be the
-        # account equity at the start of that close's actual day/week, not today's equity
-        # and not a caller-supplied percentage computed from a stale cycle snapshot.
+        # Rebuild daily/weekly loss from the complete equity timeline, including
+        # the latest mark for every open position. Marks replace prior marks;
+        # they are never accumulated. Period loss is the maximum adverse move
+        # from that period's opening equity, including realized and floating PnL.
         financial_events = [
             event for event in events
-            if event.event_type in ("CashAdjustment", "PositionPartiallyClosed", "PositionClosed")
+            if event.event_type in (
+                "CashAdjustment", "DailyRiskReset", "WeeklyRiskReset",
+                "PositionOpened", "PositionMarked",
+                "PositionPartiallyClosed", "PositionClosed",
+            )
         ]
 
         def event_time(event: LedgerEvent) -> datetime:
             raw = event.occurred_at or event.recorded_at
+            if event.event_type == "PositionMarked":
+                raw = event.payload.get("mark_time") or raw
             try:
                 parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
             except (AttributeError, TypeError, ValueError) as exc:
@@ -766,43 +772,81 @@ class SQLiteLedger:
             return parsed.astimezone(timezone.utc)
 
         financial_events.sort(key=lambda item: (event_time(item), item.sequence))
-        timeline_equity = dec(initial_balance, "initial_balance")
+        timeline_cash = dec(initial_balance, "initial_balance")
+        timeline_unrealized: dict[str, Decimal] = {}
         day_open_equity: dict[str, Decimal] = {}
         week_open_equity: dict[str, Decimal] = {}
         day_loss_usd: dict[str, Decimal] = {}
         week_loss_usd: dict[str, Decimal] = {}
+
         for financial_event in financial_events:
             moment = event_time(financial_event)
             day_key = moment.date().isoformat()
             week_key = (moment.date() - timedelta(days=moment.date().weekday())).isoformat()
-            day_open_equity.setdefault(day_key, timeline_equity)
-            week_open_equity.setdefault(week_key, timeline_equity)
-            if financial_event.event_type == "CashAdjustment":
-                timeline_equity += dec(financial_event.payload.get("amount"), "amount")
-                continue
-            fp = financial_event.payload
-            net_pnl = (
-                dec(fp.get("pnl_gross"), "pnl_gross")
-                - dec(fp.get("commission", "0"), "commission")
-                - dec(fp.get("slippage", "0"), "slippage")
-                - dec(fp.get("swap", "0"), "swap")
+            current_equity_before = timeline_cash + sum(
+                timeline_unrealized.values(), Decimal("0")
             )
-            if net_pnl < 0:
-                day_loss_usd[day_key] = day_loss_usd.get(day_key, Decimal("0")) - net_pnl
-                week_loss_usd[week_key] = week_loss_usd.get(week_key, Decimal("0")) - net_pnl
-            timeline_equity += net_pnl
+            day_open_equity.setdefault(day_key, current_equity_before)
+            week_open_equity.setdefault(week_key, current_equity_before)
+
+            event_type = financial_event.event_type
+            fp = financial_event.payload
+            trade_id = financial_event.trade_id or fp.get("trade_id")
+
+            if event_type == "CashAdjustment":
+                timeline_cash += dec(fp.get("amount"), "amount")
+            elif event_type in ("DailyRiskReset", "WeeklyRiskReset", "PositionOpened"):
+                pass
+            elif event_type == "PositionMarked":
+                if not trade_id:
+                    raise LedgerError("PositionMarked requires trade_id for risk replay")
+                timeline_unrealized[trade_id] = dec(
+                    fp.get("unrealized_pnl"), "unrealized_pnl"
+                )
+            elif event_type in ("PositionPartiallyClosed", "PositionClosed"):
+                if not trade_id:
+                    raise LedgerError("close event requires trade_id for risk replay")
+                net_pnl = (
+                    dec(fp.get("pnl_gross"), "pnl_gross")
+                    - dec(fp.get("commission", "0"), "commission")
+                    - dec(fp.get("slippage", "0"), "slippage")
+                    - dec(fp.get("swap", "0"), "swap")
+                )
+                timeline_cash += net_pnl
+                # A close settles the marked PnL into cash. Partial-close
+                # marks are reset too, preventing the old full-position mark
+                # from being counted alongside the realized partial result.
+                timeline_unrealized.pop(trade_id, None)
+
+            current_equity = timeline_cash + sum(
+                timeline_unrealized.values(), Decimal("0")
+            )
+            day_loss_usd[day_key] = max(
+                day_loss_usd.get(day_key, Decimal("0")),
+                max(Decimal("0"), day_open_equity[day_key] - current_equity),
+            )
+            week_loss_usd[week_key] = max(
+                week_loss_usd.get(week_key, Decimal("0")),
+                max(Decimal("0"), week_open_equity[week_key] - current_equity),
+            )
 
         for key, loss_usd in day_loss_usd.items():
             opening_equity = day_open_equity[key]
-            daily_loss_by_date[key] = daily_loss_by_date.get(key, Decimal("0")) + (
+            calculated_pct = (
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
             )
+            daily_loss_by_date[key] = max(
+                daily_loss_by_date.get(key, Decimal("0")), calculated_pct
+            )
         for key, loss_usd in week_loss_usd.items():
             opening_equity = week_open_equity[key]
-            weekly_loss_by_week[key] = weekly_loss_by_week.get(key, Decimal("0")) + (
+            calculated_pct = (
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
+            )
+            weekly_loss_by_week[key] = max(
+                weekly_loss_by_week.get(key, Decimal("0")), calculated_pct
             )
 
         # Consecutive-loss state is a trade-level metric, not an append-order
