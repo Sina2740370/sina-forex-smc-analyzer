@@ -34,6 +34,7 @@ class PortfolioBTResult:
     open_positions_at_end: list[dict] = field(default_factory=list)
     ledger_events: int = 0
     execution_costs_certified: bool = False
+    equity_curve: list[dict] = field(default_factory=list)
 
     @property
     def wins(self) -> int:
@@ -47,6 +48,15 @@ class PortfolioBTResult:
 
     @property
     def max_drawdown_pct(self) -> float:
+        if self.equity_curve:
+            peak = float(self.equity_curve[0]["equity"])
+            max_dd = 0.0
+            for point in self.equity_curve:
+                equity = float(point["equity"])
+                peak = max(peak, equity)
+                if peak > 0:
+                    max_dd = max(max_dd, (peak - equity) / peak)
+            return max_dd * 100.0
         equity = peak = self.equity_start
         max_dd = 0.0
         for trade in sorted(self.trades, key=lambda item: (item.exit_time, item.symbol)):
@@ -238,6 +248,19 @@ def backtest_portfolio(
         projection = ledger.replay_account(account_id, initial_balance)
         return projection, _account_from_projection(projection)
 
+    def record_equity(timestamp: pd.Timestamp) -> None:
+        projection, _ = refresh_account()
+        point = {
+            "time": pd.Timestamp(timestamp).isoformat(),
+            "equity": float(projection["equity"]),
+            "cash_balance": float(projection["cash_balance"]),
+            "unrealized_pnl": float(projection["unrealized_pnl"]),
+        }
+        if result.equity_curve and result.equity_curve[-1]["time"] == point["time"]:
+            result.equity_curve[-1] = point
+        else:
+            result.equity_curve.append(point)
+
     def settle(symbol: str, position: dict, exit_px: float,
                exit_time: pd.Timestamp, last_idx: int, was_loss, outcome: str) -> None:
         spec = get_spec(symbol)
@@ -314,6 +337,33 @@ def backtest_portfolio(
                     settle(symbol, position, exit_px, pd.Timestamp(exit_time),
                            last_idx, was_loss, reason)
 
+            # Mark every still-open position only from its latest fully closed
+            # candle. The entry candle is eligible only after its close timestamp.
+            for symbol in sorted(list(positions)):
+                position = positions[symbol]
+                frame = normalized[symbol]
+                mark_idx = int(position["last_idx"])
+                if mark_idx >= int(position["entry_idx"]) and mark_idx > int(position["last_mark_idx"]):
+                    mark_price = float(frame["close"].iloc[mark_idx])
+                    mark_pnl = realized_pnl_usd(
+                        symbol, position["entry"], mark_price,
+                        position["direction"], position["lots"],
+                    )
+                    mark_close = frame["time"].iloc[mark_idx] + pd.Timedelta(minutes=15)
+                    ledger.append_event({
+                        "account_id": account_id,
+                        "trade_id": position["trade_id"],
+                        "event_type": "PositionMarked",
+                        "idempotency_key": f"portfolio-bt-mark:{position['trade_id']}:{mark_close.isoformat()}",
+                        "occurred_at": pd.Timestamp(now).isoformat(),
+                        "payload": {
+                            "unrealized_pnl": str(mark_pnl),
+                            "mark_price": str(mark_price),
+                            "mark_time": mark_close.isoformat(),
+                        },
+                    })
+                    position["last_mark_idx"] = mark_idx
+
             # Deterministic same-time arbitration: lexical symbol order.
             for symbol in sorted(normalized):
                 if now not in decision_sets[symbol]:
@@ -387,11 +437,16 @@ def backtest_portfolio(
                     "trade_id": trade_id, "direction": signal.signal,
                     "entry_time": now, "entry": entry, "sl": sl, "tp2": tp2,
                     "lots": lots, "risk_usd": risk_usd, "last_idx": row_index - 1,
+                    "entry_idx": row_index, "last_mark_idx": row_index - 1,
                     "regime": signal.market_regime, "session": signal.session,
                     "final_score": float(signal.final_score),
                     "confidence": float(signal.confidence),
                 }
                 result.n_signals += 1
+
+            # Snapshot after fills/marks at every master-clock event. This
+            # captures intratrade drawdown that closed-trade PnL cannot show.
+            record_equity(pd.Timestamp(now))
 
             if progress and (event_index + 1) % 5000 == 0:
                 projection, _ = refresh_account()
@@ -418,6 +473,10 @@ def backtest_portfolio(
             settle(symbol, positions[symbol], exit_px, exit_time, last_idx, None, "TIME_EXIT")
 
         projection, _ = refresh_account()
+        if terminal:
+            record_equity(max(item[0] for item in terminal))
+        elif timeline:
+            record_equity(pd.Timestamp(timeline[-1]))
         result.equity_end = float(projection["equity"])
         result.open_positions_at_end = [
             dict(position) for _, position in sorted(positions.items())
