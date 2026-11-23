@@ -319,3 +319,45 @@ def test_portfolio_backtest_rejects_invalid_spread_configuration():
             start=frame["time"].iloc[0].isoformat(),
             end=frame["time"].iloc[-1].isoformat(),
         )
+
+
+
+def test_portfolio_equity_curve_captures_intratrade_drawdown(monkeypatch):
+    start = pd.Timestamp("2026-01-05T00:00:00Z")
+    frame = pd.DataFrame({
+        "time": [start + pd.Timedelta(minutes=15 * i) for i in range(4)],
+        "open": [1.2000, 1.2000, 1.1950, 1.2050],
+        "high": [1.2010, 1.2010, 1.2060, 1.2060],
+        "low": [1.1990, 1.1940, 1.1940, 1.2040],
+        "close": [1.2000, 1.1950, 1.2050, 1.2050],
+        "volume": [1.0] * 4,
+    })
+    monkeypatch.setattr(
+        "engine.data.providers.resample_ohlc",
+        lambda data, _tf: data.copy(),
+    )
+
+    def one_signal(_frame, _symbol, now, **_kwargs):
+        if pd.Timestamp(now) != start:
+            return SimpleNamespace(signal="WAIT", cand={}, wait_reason="equity curve fixture")
+        return SimpleNamespace(
+            signal="BUY",
+            cand={"entry": 1.2000, "sl": 1.1700, "tp2": 1.2700, "rr": 2.3},
+            final_score=80.0, confidence=75.0,
+            market_regime="range", session="London",
+            fingerprint=lambda: "intratrade-equity-curve",
+        )
+
+    monkeypatch.setattr(portfolio_bt, "analyze_mas", one_signal)
+    result = portfolio_bt.backtest_portfolio(
+        {"EURUSD": frame}, start=start.isoformat(),
+        end=(start + pd.Timedelta(minutes=45)).isoformat(),
+        step_hours=1, equity=10_000.0,
+    )
+
+    assert len(result.trades) == 1
+    assert result.trades[0].pnl_usd > 0
+    assert result.equity_curve
+    assert any(point["equity"] < result.equity_start for point in result.equity_curve)
+    assert result.equity_curve[-1]["equity"] == pytest.approx(result.equity_end)
+    assert result.max_drawdown_pct > 0
