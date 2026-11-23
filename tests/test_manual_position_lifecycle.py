@@ -38,6 +38,10 @@ def open_position(**overrides):
         "idempotency_key": "manual-open-0001",
     }
     values.update(overrides)
+    # Keep fixture risk geometry valid for both directions unless explicitly
+    # overridden by a test that is exercising an invalid stop-loss value.
+    if values["side"] == "SELL" and "stop_loss" not in overrides:
+        values["stop_loss"] = 1.1200
     return store.create_manual_position(**values)
 
 
