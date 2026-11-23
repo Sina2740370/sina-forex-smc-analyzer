@@ -736,3 +736,72 @@ def test_paper_settlement_and_analysis_share_one_common_asof_timestamp(
     assert pd.Timestamp(_state(out)["last_run_ts"]) == expected
     assert result["results"]["GBPUSD"]["signal"] == "WAIT"
     assert result["results"]["USDJPY"]["signal"] == "WAIT"
+
+
+
+def test_paper_floating_loss_from_ledger_blocks_new_risk_authorization(
+    env, monkeypatch
+):
+    from types import SimpleNamespace
+    import engine.mas.paper as paper
+
+    root, data_dir, frame = env
+    out = root / "paper-floating-risk-gate"
+    out.mkdir()
+    # A second symbol supplies a fresh candidate while EURUSD remains open.
+    frame.to_csv(data_dir / "GBPUSD_M15.csv", index=False)
+
+    latest_mark = float(frame["close"].iloc[-1])
+    entry = latest_mark + 0.0003  # 3 pips adverse at one standard lot ~= -$30
+    opened_at = pd.Timestamp(frame["time"].iloc[0]).isoformat()
+    json.dump({
+        "equity": 1000.0,
+        "consecutive_losses": 0,
+        "daily_loss_pct": 0.0,
+        "weekly_loss_pct": 0.0,
+        "open_positions": [{
+            "trade_id": "existing-eurusd-position",
+            "symbol": "EURUSD", "direction": "BUY",
+            "entry_time": opened_at, "entry": entry,
+            "sl": entry - 0.01, "tp2": entry + 0.01,
+            "lots": 1.0, "risk_usd": 5.0, "risk_pct": 0.5,
+            "final_score": 70.0, "regime": "range", "session": "London",
+        }],
+        "runs": 0, "last_run_ts": "1900-01-01T00:00:00+00:00",
+    }, open(out / "state.json", "w"))
+
+    captured = {}
+    def fake_analyze(_df, symbol, _now, acct=None, **_kwargs):
+        if symbol == "GBPUSD":
+            captured["daily_loss_pct"] = acct.daily_loss_pct
+            captured["weekly_loss_pct"] = acct.weekly_loss_pct
+            close = float(_df["close"].iloc[-1])
+            candidate = {
+                "entry": close, "sl": close - 0.01,
+                "tp1": close + 0.01, "tp2": close + 0.02, "rr": 2.0,
+            }
+            return SimpleNamespace(
+                signal="BUY", cand=candidate, final_score=75.0,
+                market_regime="range", session="London",
+                to_json=lambda **_kwargs: {"signal": "BUY"},
+            )
+        return SimpleNamespace(
+            signal="WAIT", cand={}, wait_reason="existing position",
+            to_json=lambda **_kwargs: {"signal": "WAIT"},
+        )
+
+    monkeypatch.setattr(paper, "analyze_mas", fake_analyze)
+    now = pd.Timestamp(frame["time"].iloc[-1]) + pd.Timedelta(minutes=15)
+    result = paper.run_paper(
+        str(data_dir), ["EURUSD", "GBPUSD"], out_dir=str(out),
+        feeds=None, now=now, min_gap_hours=0,
+    )
+
+    assert captured["daily_loss_pct"] >= 2.0
+    assert captured["weekly_loss_pct"] >= 2.0
+    assert result["results"]["GBPUSD"]["risk_approved"] is False
+    assert "R-DAY" in result["results"]["GBPUSD"]["wait_reason"]
+    assert result["opened_this_cycle"] == []
+    persisted = _state(out)
+    assert persisted["equity"] < 1000.0
+    assert persisted["daily_loss_pct"] >= 2.0
