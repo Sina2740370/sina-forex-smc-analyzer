@@ -1,7 +1,9 @@
 """
-موتور مدیریت چرخه حیات سفارشات (MT5 Real-Time Limit/Pending Order State Machine):
-مدیریت حالت‌های PENDING, FILLED, PARTIAL_FILL, CANCELLED, EXPIRED, REJECTED
-بر اساس تست دقیق برخورد سایه (Wick/Tail) کندل و محاسبه اسلیپیج و اسپرد.
+Paper/Backtest-only pending-order fill simulator.
+
+این ماژول صرفاً برخورد فرضی سفارش با کندل تاریخی/شبیه‌سازی‌شده را مدل می‌کند.
+هیچ اتصال شبکه‌ای، حساب بروکر یا مسیر ارسال/اصلاح/لغو سفارش واقعی ندارد و
+نباید به‌عنوان MT5 live execution یا broker order router استفاده شود.
 """
 from __future__ import annotations
 

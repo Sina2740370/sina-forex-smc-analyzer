@@ -525,7 +525,30 @@ button,.mini-btn,.tab-btn{touch-action:manipulation}
         <div id="j-stats" class="stats-grid"></div>
 
         <div class="form-card">
-          <h3>ثبت معامله‌ی بسته‌شده</h3>
+          <h3>ثبت ورود واقعی (فقط بعد از اجرای دستی شما)</h3>
+          <p class="small-note">این فرم فقط رویداد دستی را ثبت می‌کند؛ هیچ سفارش یا ارتباطی با بروکر ندارد. پیشنهاد سیگنال به‌تنهایی معامله محسوب نمی‌شود.</p>
+          <div class="form-grid">
+            <div class="field"><label for="mp-symbol">نماد</label><input id="mp-symbol" list="sym-list" placeholder="EURUSD" autocapitalize="characters"></div>
+            <div class="field"><label for="mp-side">جهت</label><select id="mp-side"><option value="BUY">خرید (BUY)</option><option value="SELL">فروش (SELL)</option></select></div>
+            <div class="field"><label for="mp-entry">قیمت ورود واقعی</label><input id="mp-entry" type="number" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="mp-sl">حد ضرر اولیه</label><input id="mp-sl" type="number" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="mp-tp">حد سود اولیه (اختیاری)</label><input id="mp-tp" type="number" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="mp-lots">حجم واقعی (لات)</label><input id="mp-lots" type="number" min="0.000001" step="any" inputmode="decimal"></div>
+            <div class="field"><label for="mp-opened-at">زمان ورود واقعی (اختیاری، ساعت محلی)</label><input id="mp-opened-at" type="datetime-local"></div>
+            <div class="field"><label for="mp-version">نسخه استراتژی (اختیاری)</label><input id="mp-version" maxlength="80" placeholder="مثلاً SMC-v2"></div>
+            <div class="field"><label for="mp-note">یادداشت (اختیاری)</label><input id="mp-note" maxlength="500"></div>
+          </div>
+          <button id="mp-open-btn" class="primary-btn" type="button" onclick="openManualPosition()">ثبت ورود دستی</button>
+          <div id="mp-open-msg" class="msg"></div>
+        </div>
+
+        <div class="form-card">
+          <div class="section-head"><div><h3>موقعیت‌های دستی</h3><p>حجم باز، خروج جزئی/کامل و سابقه رویدادها</p></div><button class="mini-btn" type="button" onclick="loadManualPositions()">↻</button></div>
+          <div id="mp-list"><p class="small-note">در حال دریافت موقعیت‌ها...</p></div>
+        </div>
+
+        <div class="form-card">
+          <h3>ثبت سریع معامله بسته‌شده (سازگاری با سوابق قدیمی)</h3><p class="small-note">برای معاملات جدید از فرم ورود دستی و ثبت خروج استفاده کن. یک معامله را در هر دو مسیر ثبت نکن تا آمار دوباره‌شماری نشود.</p>
           <div class="form-grid">
             <div class="field"><label for="jt-symbol">نماد</label><input id="jt-symbol" list="sym-list" placeholder="EURUSD" autocapitalize="characters"></div>
             <div class="field"><label for="jt-side">جهت</label>
@@ -552,7 +575,7 @@ button,.mini-btn,.tab-btn{touch-action:manipulation}
 
   <footer class="app-footer">
     <div class="footer-brand"><img class="footer-logo" src="/static/icon-192.png" width="28" height="28" alt=""><span>Sina Quant</span></div>
-    <div class="footer-center">Smart Money · Price Action · Quant Analysis</div>
+    <div class="footer-center">MANUAL ONLY · Smart Money · Price Action · Quant Analysis</div>
     <div class="footer-status"><span class="footer-dot"></span>سیستم فعال</div>
   </footer>
 
@@ -1066,8 +1089,11 @@ function handleJournalError(e) {
 function renderGuard(g) {
   const map = {ok: '🟢 امروز در محدوده‌ی امن هستی', warn: '🟠 نزدیک سقف روزانه‌ای', stop: '🔴 امروز دیگر معامله‌ی جدید باز نکن'};
   const why = (g.reasons || []).map(esc).join(' · ');
+  const costs = Object.entries(g.recorded_costs_by_currency_today || {})
+    .map(([currency, amount]) => `${fmtN(amount,2)} ${esc(currency)}`).join(' · ');
   $('j-guard').innerHTML = `<div class="guard ${esc(g.state)}"><strong>${map[g.state] || ''}</strong>
-    <small>امروز: <span class="num">${fmtS(g.today_r)}R</span> · ${g.trades_today} معامله${why ? ' · ' + why : ''}</small></div>`;
+    <small>امروز: <span class="num">${fmtS(g.today_r)}R</span> · ${g.trades_today} معامله${why ? ' · ' + why : ''}</small>
+    <small>مبنای نگهبان: R ناخالص؛ هزینه‌های ثبت‌شده از R کسر نشده‌اند${costs ? ' · هزینه امروز: ' + costs : ''}</small></div>`;
 }
 
 function renderJStats(st) {
@@ -1078,13 +1104,18 @@ function renderJStats(st) {
     ? `بازه ۹۵٪: ${fmtS(s.expectancy_ci95[0], 2)} تا ${fmtS(s.expectancy_ci95[1], 2)}` : 'بازه: نامشخص';
   const card = (label, val, sub, cls = '') =>
     `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value ${cls}"><span class="num">${val}</span></div><div class="stat-sub">${sub}</div></div>`;
+  const costs = st.manual_position_costs_by_currency || {};
+  const costText = Object.keys(costs).length
+    ? Object.entries(costs).map(([currency, amount]) => `${fmtN(amount,2)} ${esc(currency)}`).join(' · ')
+    : 'هزینه‌ای ثبت نشده';
   $('j-stats').innerHTML =
     card('تعداد معاملات', s.n, 'بسته‌شده') +
     card('Win Rate', `${(s.win_rate * 100).toFixed(1)}%`, `سربه‌سر: ${(s.breakeven_win_rate * 100).toFixed(1)}%`) +
     card('امید ریاضی (R)', fmtS(s.expectancy_r, 3), ci, s.expectancy_r > 0 ? 'positive' : 'negative') +
     card('Profit Factor', fmtN(s.profit_factor, 2), 'ضریب سودآوری') +
-    card('مجموع R', fmtS(s.total_r, 2), 'کل', s.total_r > 0 ? 'positive' : 'negative') +
-    card('افت فعلی', fmtN(st.drawdown && st.drawdown.current_dd_r, 2) + 'R', `بیشترین: ${fmtN(st.drawdown && st.drawdown.max_dd_r, 2)}R`);
+    card('مجموع R', fmtS(s.total_r, 2), 'R ناخالص؛ پیش از هزینه‌ها', s.total_r > 0 ? 'positive' : 'negative') +
+    card('افت فعلی', fmtN(st.drawdown && st.drawdown.current_dd_r, 2) + 'R', `بیشترین: ${fmtN(st.drawdown && st.drawdown.max_dd_r, 2)}R`) +
+    card('هزینه‌های ثبت‌شده', costText, 'تبدیل ارز و کسر از R انجام نشده');
 }
 
 function renderTags(list) {
@@ -1108,16 +1139,187 @@ function renderTrades(list) {
     </div>`).join('') : '<p class="small-note">هنوز معامله‌ای ثبت نشده.</p>';
 }
 
+function localDateTimeValue(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function getManualIdempotencyKey(scope, payload) {
+  const signature = JSON.stringify(payload);
+  const storageKey = `sq_manual_idem_${scope}`;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+    if (saved && saved.signature === signature && saved.key) return saved.key;
+  } catch (e) {}
+  const token = (window.crypto && typeof window.crypto.randomUUID === 'function')
+    ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const key = `manual-${token}`.slice(0, 128);
+  try { sessionStorage.setItem(storageKey, JSON.stringify({signature, key})); } catch (e) {}
+  return key;
+}
+
+function clearManualIdempotencyKey(scope) {
+  try { sessionStorage.removeItem(`sq_manual_idem_${scope}`); } catch (e) {}
+}
+
+function renderManualPositions(positions) {
+  const host = $('mp-list');
+  if (!host) return;
+  if (!positions.length) {
+    host.innerHTML = '<p class="small-note">هنوز موقعیت دستی ثبت نشده است.</p>';
+    return;
+  }
+  host.innerHTML = positions.map(p => {
+    const id = Number(p.id);
+    const initial = Number(p.initial_lots) || 0;
+    const closed = Number(p.closed_lots) || 0;
+    const remaining = Math.max(0, initial - closed);
+    const open = String(p.status).toUpperCase() === 'OPEN';
+    return `<div class="form-card" style="margin:12px 0;border-color:var(--border-light)">
+      <div class="row-item">
+        <div><strong>${esc(p.symbol)} · ${esc(p.side)}</strong><small>${esc(p.status)} · ورود: ${esc(String(p.opened_at || '').replace('T',' ').slice(0,19))}</small></div>
+        <div class="num">${fmtP(p.entry_price,p.symbol)}<small>قیمت ورود واقعی</small></div>
+        <div class="num">${fmtP(p.stop_loss,p.symbol)}<small>SL اولیه</small></div>
+        <div class="num">${fmtP(p.take_profit,p.symbol)}<small>TP اولیه</small></div>
+        <div class="num">${fmtN(initial,3)}<small>حجم اولیه</small></div>
+        <div class="num">${fmtN(remaining,3)}<small>حجم باقی‌مانده</small></div>
+      </div>
+      ${open ? `<div class="form-grid" style="margin-top:12px">
+        <div class="field"><label for="mp-current-sl-${id}">SL فعلی</label><input id="mp-current-sl-${id}" type="number" step="any" value="${esc(p.current_stop_loss)}" inputmode="decimal"></div>
+        <div class="field"><label for="mp-current-tp-${id}">TP فعلی</label><input id="mp-current-tp-${id}" type="number" step="any" value="${p.current_take_profit == null ? '' : esc(p.current_take_profit)}" inputmode="decimal"></div>
+        <div class="field"><label for="mp-close-lots-${id}">حجم خروج</label><input id="mp-close-lots-${id}" type="number" min="0.000001" max="${remaining}" step="any" value="${remaining}" inputmode="decimal"></div>
+        <div class="field"><label for="mp-close-price-${id}">قیمت خروج واقعی</label><input id="mp-close-price-${id}" type="number" step="any" inputmode="decimal"></div>
+        <div class="field"><label for="mp-close-cost-${id}">هزینه این خروج (اختیاری)</label><input id="mp-close-cost-${id}" type="number" min="0" step="any" value="0" inputmode="decimal"></div>
+        <div class="field"><label for="mp-close-time-${id}">زمان خروج واقعی (ساعت محلی)</label><input id="mp-close-time-${id}" type="datetime-local" value="${localDateTimeValue()}"></div>
+        <div class="field"><label for="mp-close-currency-${id}">ارز هزینه</label><input id="mp-close-currency-${id}" maxlength="8" placeholder="USD"></div>
+      </div>
+      <button class="mini-btn" type="button" onclick="updateManualStops(${id})">ثبت تغییر SL / TP دستی</button>
+      <button class="primary-btn" type="button" onclick="closeManualPosition(${id})">ثبت خروج جزئی / کامل دستی</button>` : `<p class="small-note">بسته‌شده در: ${esc(String(p.closed_at || '').replace('T',' ').slice(0,19))}</p>`}
+      <div style="margin-top:10px"><button class="mini-btn" type="button" onclick="loadManualPositionEvents(${id})">نمایش تاریخچه رویدادها</button></div>
+      <div id="mp-events-${id}" class="small-note" style="margin-top:8px"></div>
+    </div>`;
+  }).join('');
+}
+
+async function loadManualPositions() {
+  if (!journalShow()) return;
+  try {
+    const data = await api2('GET', '/api/manual-positions?limit=100', undefined, true);
+    renderManualPositions(data.positions || []);
+  } catch (e) {
+    const host = $('mp-list');
+    if (host) host.innerHTML = `<p class="msg bad">${esc(e.message)}</p>`;
+    handleJournalError(e);
+  }
+}
+
+async function openManualPosition() {
+  const body = {
+    symbol: $('mp-symbol').value.trim().toUpperCase(),
+    side: $('mp-side').value,
+    entry_price: numVal('mp-entry'),
+    stop_loss: numVal('mp-sl'),
+    take_profit: numVal('mp-tp'),
+    lots: numVal('mp-lots'),
+    opened_at: $('mp-opened-at').value ? new Date($('mp-opened-at').value).toISOString() : null,
+    strategy_version: $('mp-version').value.trim() || null,
+    note: $('mp-note').value.trim() || null
+  };
+  body.idempotency_key = getManualIdempotencyKey('open', body);
+  if (!body.symbol || body.entry_price === null || body.stop_loss === null || body.lots === null) {
+    $('mp-open-msg').textContent = 'نماد، قیمت ورود، حد ضرر و حجم واقعی الزامی است.';
+    $('mp-open-msg').className = 'msg bad';
+    return;
+  }
+  const btn = $('mp-open-btn');
+  btn.disabled = true;
+  try {
+    const data = await api2('POST', '/api/manual-positions', body, true);
+    clearManualIdempotencyKey('open');
+    $('mp-open-msg').textContent = `ورود دستی ثبت شد؛ شناسه موقعیت: ${data.position.id}`;
+    $('mp-open-msg').className = 'msg ok';
+    ['mp-entry','mp-sl','mp-tp','mp-lots','mp-note','mp-opened-at'].forEach(id => { $(id).value = ''; });
+    await loadManualPositions();
+  } catch (e) { handleJournalError(e); }
+  finally { btn.disabled = false; }
+}
+
+async function closeManualPosition(id) {
+  const lots = numVal(`mp-close-lots-${id}`);
+  const price = numVal(`mp-close-price-${id}`);
+  const costs = numVal(`mp-close-cost-${id}`);
+  const currency = $(`mp-close-currency-${id}`).value.trim().toUpperCase() || null;
+  const timeValue = $(`mp-close-time-${id}`).value;
+  const payload = {
+    lots, price, cost_amount: costs ?? 0, cost_currency: currency,
+    event_at: timeValue ? new Date(timeValue).toISOString() : null
+  };
+  if (lots === null || price === null || (costs !== null && costs < 0)) {
+    setJMsg('حجم خروج و قیمت واقعی خروج را وارد کن.', 'bad');
+    return;
+  }
+  try {
+    payload.idempotency_key = getManualIdempotencyKey(`close-${id}`, payload);
+    await api2('POST', `/api/manual-positions/${id}/close`, payload, true);
+    clearManualIdempotencyKey(`close-${id}`);
+    setJMsg('رویداد خروج دستی ثبت شد.', 'ok');
+    await loadManualPositions();
+  } catch (e) { handleJournalError(e); }
+}
+
+async function updateManualStops(id) {
+  const sl = numVal(`mp-current-sl-${id}`);
+  const tp = numVal(`mp-current-tp-${id}`);
+  if (sl === null && tp === null) {
+    setJMsg('حداقل یکی از SL یا TP جدید را وارد کن.', 'bad');
+    return;
+  }
+  const payload = {new_stop_loss: sl, new_take_profit: tp};
+  payload.idempotency_key = getManualIdempotencyKey(`stops-${id}`, payload);
+  try {
+    await api2('POST', `/api/manual-positions/${id}/stops`, payload, true);
+    clearManualIdempotencyKey(`stops-${id}`);
+    setJMsg('تغییر حدها ثبت و در تاریخچه ذخیره شد.', 'ok');
+    await loadManualPositions();
+  } catch (e) { handleJournalError(e); }
+}
+
+async function loadManualPositionEvents(id) {
+  const host = $(`mp-events-${id}`);
+  if (!host) return;
+  host.textContent = 'در حال دریافت تاریخچه...';
+  try {
+    const data = await api2('GET', `/api/manual-positions/${id}`, undefined, true);
+    const events = data.events || [];
+    const changes = data.changes || [];
+    const fillsHtml = events.map(ev =>
+      `<div class="row-item"><div>${esc(ev.event_type)}<small>${esc(String(ev.event_at || '').replace('T',' ').slice(0,19))}</small></div>
+      <div class="num">${fmtN(ev.lots,3)}<small>لات</small></div>
+      <div class="num">${fmtP(ev.price)}<small>قیمت</small></div>
+      <div class="num ${Number(ev.gross_r)>=0?'up':'down'}">${fmtS(ev.gross_r,3)}R<small>R ناخالص</small></div>
+      <div class="num">${fmtN(ev.cost_amount,2)} ${esc(ev.cost_currency || '')}<small>هزینه ثبت‌شده</small></div></div>`
+    ).join('');
+    const changesHtml = changes.map(ch =>
+      `<div class="row-item"><div>تغییر SL/TP<small>${esc(String(ch.event_at || '').replace('T',' ').slice(0,19))}</small></div>
+      <div class="num">${fmtP(ch.old_stop_loss)} ← ${fmtP(ch.new_stop_loss)}<small>تغییر SL</small></div>
+      <div class="num">${fmtP(ch.old_take_profit)} ← ${fmtP(ch.new_take_profit)}<small>تغییر TP</small></div></div>`
+    ).join('');
+    host.innerHTML = fillsHtml + changesHtml || 'رویدادی ثبت نشده است.';
+  } catch (e) { host.textContent = e.message; }
+}
+
 async function loadJournal() {
   if (!journalShow()) return;
   setJMsg('');
   try {
-    const [st, gd, ls] = await Promise.all([
+    const [st, gd, ls, mp] = await Promise.all([
       api2('GET', '/api/journal/stats', undefined, true),
       api2('GET', '/api/journal/guard', undefined, true),
       api2('GET', '/api/journal?limit=20', undefined, true),
+      api2('GET', '/api/manual-positions?limit=100', undefined, true),
     ]);
     renderGuard(gd); renderJStats(st); renderTags(st.by_tag || []); renderTrades(ls.trades || []);
+    renderManualPositions(mp.positions || []);
   } catch (e) { handleJournalError(e); }
 }
 

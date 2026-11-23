@@ -342,13 +342,47 @@ class TradeIn(BaseModel):
     closed_at: Optional[str] = None
 
 
+class ManualPositionOpenIn(BaseModel):
+    symbol: str = Field(min_length=3, max_length=20)
+    side: str
+    entry_price: float = Field(gt=0)
+    stop_loss: float = Field(gt=0)
+    take_profit: Optional[float] = Field(None, gt=0)
+    lots: float = Field(gt=0)
+    opened_at: Optional[str] = None
+    signal_id: Optional[int] = Field(None, gt=0)
+    strategy_version: Optional[str] = Field(None, max_length=80)
+    note: Optional[str] = Field(None, max_length=500)
+    idempotency_key: str = Field(min_length=8, max_length=128)
+
+
+class ManualPositionCloseIn(BaseModel):
+    lots: float = Field(gt=0)
+    price: float = Field(gt=0)
+    event_at: Optional[str] = None
+    cost_amount: float = Field(default=0, ge=0)
+    cost_currency: Optional[str] = Field(None, min_length=3, max_length=8)
+    note: Optional[str] = Field(None, max_length=500)
+    idempotency_key: str = Field(min_length=8, max_length=128)
+
+
+class ManualPositionStopsIn(BaseModel):
+    new_stop_loss: Optional[float] = Field(None, gt=0)
+    new_take_profit: Optional[float] = Field(None, gt=0)
+    event_at: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=500)
+    idempotency_key: str = Field(min_length=8, max_length=128)
+
+
 def _need_tools():
     if not TOOLS_OK:
         raise HTTPException(status_code=503, detail="ابزارهای موتور در دسترس نیستند")
 
 
 def _journal_rows(limit: int = 2000):
-    return journal_store.to_records(journal_store.list_trades(limit=limit))
+    rows = journal_store.to_records(journal_store.list_trades(limit=limit))
+    rows.extend(journal_store.manual_positions_as_journal_records())
+    return rows
 
 
 @app.post("/api/risk/size")
@@ -402,6 +436,8 @@ def journal_stats():
         "summary": _journal.journal_stats(rows),
         "by_tag": _journal.by_tag(rows),
         "drawdown": _journal.drawdown_guard([t["r"] for t in _journal.normalize(rows)]),
+        "r_basis": "GROSS_R_BEFORE_RECORDED_COSTS",
+        "manual_position_costs_by_currency": journal_store.manual_position_costs_by_currency(),
     }
     return _journal.json_safe(out)
 
@@ -416,6 +452,73 @@ def journal_guard(max_daily_loss_r: Optional[float] = Query(None, gt=0),
     g = journal_store.compute_guard({"maxloss": max_daily_loss_r, "maxtrades": max_trades,
                                      "consec": max_consec_losses})
     return _journal.json_safe(g)
+
+
+# ------------------------------ موقعیت‌های واقعی با ثبت دستی؛ بدون API بروکر
+@app.post("/api/manual-positions", dependencies=[Depends(require_admin)])
+def manual_position_open(body: ManualPositionOpenIn):
+    try:
+        position = journal_store.create_manual_position(
+            body.symbol, body.side, body.entry_price, body.stop_loss, body.lots,
+            take_profit=body.take_profit, opened_at=body.opened_at, signal_id=body.signal_id,
+            strategy_version=body.strategy_version, note=body.note,
+            idempotency_key=body.idempotency_key,
+        )
+        return {"position": position, "source": "MANUAL"}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@app.get("/api/manual-positions", dependencies=[Depends(require_admin)])
+def manual_positions_list(status: Optional[str] = Query(None), limit: int = Query(200, ge=1, le=1000)):
+    try:
+        return {"positions": journal_store.list_manual_positions(status=status, limit=limit),
+                "source": "MANUAL"}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@app.get("/api/manual-positions/{position_id}", dependencies=[Depends(require_admin)])
+def manual_position_detail(position_id: int):
+    position = journal_store.get_manual_position(position_id)
+    if not position:
+        raise HTTPException(status_code=404, detail="موقعیت پیدا نشد")
+    return {"position": position,
+            "events": journal_store.list_manual_position_events(position_id),
+            "changes": journal_store.list_manual_position_changes(position_id),
+            "source": "MANUAL"}
+
+
+@app.post("/api/manual-positions/{position_id}/close", dependencies=[Depends(require_admin)])
+def manual_position_close(position_id: int, body: ManualPositionCloseIn):
+    try:
+        event = journal_store.close_manual_position(
+            position_id, body.lots, body.price, event_at=body.event_at,
+            cost_amount=body.cost_amount, cost_currency=body.cost_currency,
+            note=body.note, idempotency_key=body.idempotency_key,
+        )
+        return {"event": event, "position": journal_store.get_manual_position(position_id),
+                "source": "MANUAL"}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@app.post("/api/manual-positions/{position_id}/stops", dependencies=[Depends(require_admin)])
+def manual_position_update_stops(position_id: int, body: ManualPositionStopsIn):
+    try:
+        change = journal_store.update_manual_position_stops(
+            position_id, new_stop_loss=body.new_stop_loss,
+            new_take_profit=body.new_take_profit, event_at=body.event_at,
+            note=body.note, idempotency_key=body.idempotency_key,
+        )
+        return {"change": change, "position": journal_store.get_manual_position(position_id),
+                "source": "MANUAL"}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 # ------------------------------ تلگرام (webhook)

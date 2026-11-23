@@ -72,12 +72,14 @@ def by_tag(rows: Iterable[dict], key: str = "tag") -> list:
 
 
 def daily_guard(today_r: list, max_daily_loss_r: float = 3.0, max_trades: int = 5,
-                max_consec_losses: int = 3) -> dict:
+                max_consec_losses: int = 3, trades_today: Optional[int] = None) -> dict:
     """
-    نگهبان روزانه بر اساس R معاملات امروز (به ترتیب بسته‌شدن).
-    state: ok / warn / stop. stop یعنی «امروز دیگر معامله‌ی جدید باز نکن».
+    نگهبان روزانه بر اساس R تحقق‌یافته و تعداد موقعیت‌های بازشده امروز.
+    trades_today is optional for backward compatibility; partial exits must not
+    inflate the number of new positions opened during the day.
     """
     reasons, state = [], "ok"
+    trade_count = len(today_r) if trades_today is None else max(0, int(trades_today))
     total = sum(today_r)
     consec = 0
     for x in reversed(today_r):
@@ -91,11 +93,11 @@ def daily_guard(today_r: list, max_daily_loss_r: float = 3.0, max_trades: int = 
         state = "warn"; reasons.append(f"ضرر امروز {total:.2f}R نزدیک سقف {max_daily_loss_r}R است")
     if consec >= max_consec_losses:
         state = "stop"; reasons.append(f"{consec} ضرر پشت‌سرهم")
-    if len(today_r) >= max_trades:
+    if trade_count >= max_trades:
         state = "stop"; reasons.append(f"تعداد معاملات امروز به سقف {max_trades} رسید")
-    elif len(today_r) == max_trades - 1 and state == "ok":
+    elif trade_count == max_trades - 1 and state == "ok":
         state = "warn"; reasons.append("یک معامله تا سقف روزانه مانده")
-    return {"state": state, "today_r": round(total, 2), "trades_today": len(today_r),
+    return {"state": state, "today_r": round(total, 2), "trades_today": trade_count,
             "consecutive_losses": consec, "reasons": reasons}
 
 
