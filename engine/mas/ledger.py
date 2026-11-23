@@ -836,8 +836,11 @@ class SQLiteLedger:
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
             )
-            daily_loss_by_date[key] = max(
-                daily_loss_by_date.get(key, Decimal("0")), calculated_pct
+            # A legacy RiskStateSnapshot is a migration baseline for
+            # losses that predate this event ledger; add only the subsequent
+            # timeline excursion to that one-time baseline.
+            daily_loss_by_date[key] = (
+                daily_loss_by_date.get(key, Decimal("0")) + calculated_pct
             )
         for key, loss_usd in week_loss_usd.items():
             opening_equity = week_open_equity[key]
@@ -845,8 +848,8 @@ class SQLiteLedger:
                 loss_usd / opening_equity * Decimal("100")
                 if opening_equity > 0 else Decimal("0")
             )
-            weekly_loss_by_week[key] = max(
-                weekly_loss_by_week.get(key, Decimal("0")), calculated_pct
+            weekly_loss_by_week[key] = (
+                weekly_loss_by_week.get(key, Decimal("0")) + calculated_pct
             )
 
         # Consecutive-loss state is a trade-level metric, not an append-order
