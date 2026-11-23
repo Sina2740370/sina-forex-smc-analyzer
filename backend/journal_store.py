@@ -646,6 +646,8 @@ def manual_position_costs_by_currency(since: Optional[str] = None) -> dict:
             if cutoff and event["event_at"] < cutoff:
                 continue
             amount = float(event.get("cost_amount") or 0)
+            if amount <= 0:
+                continue
             currency = event.get("cost_currency") or "UNSPECIFIED"
             totals[currency] = totals.get(currency, 0.0) + amount
     return {key: round(value, 8) for key, value in sorted(totals.items())}
