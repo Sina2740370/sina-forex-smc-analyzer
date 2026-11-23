@@ -70,11 +70,21 @@ class BTResult:
     def expectancy_r(self) -> float:
         return (sum(t.r_multiple for t in self.trades) / len(self.trades)) if self.trades else 0.0
 
+    equity_curve: list[dict] = field(default_factory=list)
+
     @property
     def max_drawdown_pct(self) -> float:
+        if self.equity_curve:
+            peak = max(float(self.equity_curve[0]["equity"]), 1e-12)
+            mdd = 0.0
+            for point in self.equity_curve:
+                current = float(point["equity"])
+                peak = max(peak, current)
+                mdd = min(mdd, (current - peak) / peak)
+            return abs(mdd) * 100
         eq, peak, mdd = self.equity_start, self.equity_start, 0.0
-        for t in self.trades:
-            eq += t.pnl_usd
+        for trade in self.trades:
+            eq += trade.pnl_usd
             peak = max(peak, eq)
             mdd = min(mdd, (eq - peak) / peak)
         return abs(mdd) * 100
@@ -123,6 +133,10 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
 
     res = BTResult(symbol=symbol)
     equity = res.equity_start
+    res.equity_curve.append({
+        "time": pd.Timestamp(t0).isoformat(),
+        "equity": equity, "cash_balance": equity, "unrealized_pnl": 0.0,
+    })
     acct = AccountState(equity=equity, consecutive_losses=0)
     ledger = SQLiteLedger(":memory:")
     ledger_account_id = f"backtest:{symbol}"
@@ -139,10 +153,41 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     from ..data.providers import BASE_TFS, resample_ohlc
     top_cache = {tf: resample_ohlc(df, tf) for tf in BASE_TFS}
 
+    def record_position_mark(position: dict, mark_idx: int, mark_time) -> None:
+        mark_price = float(df["close"].iloc[mark_idx])
+        unrealized = realized_pnl_usd(
+            symbol, position["entry"], mark_price,
+            position["direction"], position["lots"],
+        )
+        mark_stamp = pd.Timestamp(mark_time).isoformat()
+        ledger.append_event({
+            "account_id": ledger_account_id,
+            "trade_id": position["trade_id"],
+            "event_type": "PositionMarked",
+            "idempotency_key": f"bt-mark:{position['trade_id']}:{mark_stamp}",
+            "occurred_at": mark_stamp,
+            "payload": {
+                "unrealized_pnl": str(unrealized),
+                "mark_price": str(mark_price),
+                "mark_time": mark_stamp,
+            },
+        })
+        res.equity_curve.append({
+            "time": mark_stamp,
+            "equity": equity + unrealized,
+            "cash_balance": equity,
+            "unrealized_pnl": unrealized,
+        })
+
     for i, now in enumerate(times):
         # ۱) مدیریت معامله باز روی کندل‌های M15 از آخرین ایندکس تا now
         if pos is not None:
-            outcome = _advance_position(pos, df, t_arr, now, spec)
+            outcome = _advance_position(
+                pos, df, t_arr, now, spec,
+                on_mark=lambda mark_idx, mark_time: record_position_mark(
+                    pos, mark_idx, mark_time
+                ),
+            )
             if outcome is not None:
                 exit_px, exit_time, last_idx, was_loss = outcome
                 gross_pnl = realized_pnl_usd(
@@ -195,6 +240,10 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                           pos.get("confidence", 0.0),
                                           "SL" if was_loss else "TP"))
                 equity = float(projection["equity"])
+                res.equity_curve.append({
+                    "time": pd.Timestamp(exit_time).isoformat(),
+                    "equity": equity, "cash_balance": equity, "unrealized_pnl": 0.0,
+                })
                 acct.equity = equity
                 acct.consecutive_losses = int(projection["consecutive_losses"])
                 acct.risk_lock_active = bool(projection["risk_lock_active"])
@@ -260,8 +309,13 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                   f"{len(res.trades)} معامله بسته", flush=True)
 
     if pos is not None:      # بستن معامله بازِ باقیمانده با آخرین کلوز (نشانه‌گذاری‌شده)
-        outcome = _advance_position(pos, df, t_arr, df["time"].iloc[-1], spec,
-                                    force_exit=True)
+        outcome = _advance_position(
+            pos, df, t_arr, df["time"].iloc[-1], spec,
+            force_exit=True,
+            on_mark=lambda mark_idx, mark_time: record_position_mark(
+                pos, mark_idx, mark_time
+            ),
+        )
         if outcome is not None:
             exit_px, exit_time, last_idx, _ = outcome
             gross_pnl = realized_pnl_usd(
@@ -313,6 +367,10 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                                       pos.get("final_score", 50.0),
                                       pos.get("confidence", 0.0), "TIME_EXIT"))
             equity = float(projection["equity"])
+            res.equity_curve.append({
+                "time": pd.Timestamp(exit_time).isoformat(),
+                "equity": equity, "cash_balance": equity, "unrealized_pnl": 0.0,
+            })
 
     res.equity_end = equity
     ledger.close()
@@ -320,7 +378,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
 
 
 def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
-                      spec, force_exit: bool = False):
+                      spec, force_exit: bool = False, on_mark=None):
     """معامله باز را روی کندل‌های M15 جلو می‌برد.
 
     خروجی None = هنوز باز است؛ در غیر این صورت (exit_px, exit_time, last_idx, was_loss)، که was_loss=None یعنی TIME_EXIT.
@@ -353,6 +411,8 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
             return exit_price, df["time"].iloc[last_idx] + pd.Timedelta(minutes=15), last_idx, True
         if hit_tp:
             return pos["tp2"], df["time"].iloc[last_idx] + pd.Timedelta(minutes=15), last_idx, False
+        if on_mark is not None:
+            on_mark(last_idx, close_times.iloc[last_idx])
     if force_exit:
         # Mark to the latest fully closed candle only. If no post-entry
         # closed candle exists, leave the position open rather than inventing
