@@ -7,10 +7,10 @@ from engine.mas.symbols import get_spec, realized_pnl_usd
 
 def test_forced_end_of_data_close_is_classified_as_time_exit_not_take_profit():
     frame = pd.DataFrame({
-        "time": pd.to_datetime(["2026-01-01T00:00:00Z", "2026-01-01T00:15:00Z"]),
-        "high": [1.1010, 1.1010],
-        "low": [1.0990, 1.0990],
-        "close": [1.1000, 1.1005],
+        "time": pd.to_datetime(["2026-01-01T00:00:00Z", "2026-01-01T00:15:00Z", "2026-01-01T00:30:00Z"]),
+        "high": [1.1010, 1.1010, 1.1010],
+        "low": [1.0990, 1.0990, 1.0990],
+        "close": [1.1000, 1.1005, 1.1008],
     })
     position = {
         "direction": "BUY", "last_idx": 0, "sl": 1.0900, "tp2": 1.1100,
@@ -21,6 +21,7 @@ def test_forced_end_of_data_close_is_classified_as_time_exit_not_take_profit():
 
     assert result is not None
     assert result[0] == 1.1005
+    assert result[1] == frame["time"].iloc[1]
     assert result[3] is None
 
 
@@ -37,7 +38,7 @@ def test_sell_position_stops_when_high_reaches_stop_loss():
     }
 
     result = _advance_position(
-        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1] + pd.Timedelta(minutes=15),
         get_spec("EURUSD"),
     )
 
