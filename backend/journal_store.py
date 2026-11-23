@@ -252,6 +252,16 @@ def _manual_row(cur):
     return rows[0] if rows else None
 
 
+def _lock_manual_position(conn, position_id: int) -> None:
+    """Serialize lifecycle writes for one position before reading mutable state."""
+    if USE_POSTGRES:
+        _execute(conn, "SELECT id FROM manual_positions WHERE id = ? FOR UPDATE",
+                 (int(position_id),))
+    else:
+        # Acquire the SQLite write reservation before the read/validate/write sequence.
+        conn.execute("BEGIN IMMEDIATE")
+
+
 def create_manual_position(
     symbol: str, side: str, entry_price: float, stop_loss: float, lots: float,
     *, take_profit=None, opened_at=None, signal_id=None, strategy_version=None, note=None,
@@ -394,6 +404,7 @@ def close_manual_position(
     timestamp = norm_ts(event_at)
     now = norm_ts(None)
     with get_conn() as conn:
+        _lock_manual_position(conn, position_id)
         cur = _execute(conn, "SELECT * FROM manual_position_events WHERE idempotency_key = ?", (key,))
         duplicate = _manual_row(cur)
         if duplicate:
@@ -504,6 +515,7 @@ def update_manual_position_stops(
     timestamp = norm_ts(event_at)
     now = norm_ts(None)
     with get_conn() as conn:
+        _lock_manual_position(conn, position_id)
         cur = _execute(conn, "SELECT * FROM manual_position_changes WHERE idempotency_key = ?", (key,))
         duplicate = _manual_row(cur)
         if duplicate:
