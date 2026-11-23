@@ -771,7 +771,10 @@ class SQLiteLedger:
                 parsed = parsed.replace(tzinfo=timezone.utc)
             return parsed.astimezone(timezone.utc)
 
-        financial_events.sort(key=lambda item: (event_time(item), item.sequence))
+        ordered_financial_events = sorted(
+            ((event_time(item), item) for item in financial_events),
+            key=lambda pair: (pair[0], pair[1].sequence),
+        )
         timeline_cash = dec(initial_balance, "initial_balance")
         timeline_unrealized: dict[str, Decimal] = {}
         day_open_equity: dict[str, Decimal] = {}
@@ -779,44 +782,57 @@ class SQLiteLedger:
         day_loss_usd: dict[str, Decimal] = {}
         week_loss_usd: dict[str, Decimal] = {}
 
-        for financial_event in financial_events:
-            moment = event_time(financial_event)
+        # Apply all events sharing one market timestamp before measuring
+        # equity. This avoids transient drawdown caused only by sequentially
+        # refreshing multiple symbols that have the same mark timestamp.
+        event_index = 0
+        while event_index < len(ordered_financial_events):
+            moment = ordered_financial_events[event_index][0]
+            same_time_events = []
+            while (
+                event_index < len(ordered_financial_events)
+                and ordered_financial_events[event_index][0] == moment
+            ):
+                same_time_events.append(ordered_financial_events[event_index][1])
+                event_index += 1
+
             day_key = moment.date().isoformat()
             week_key = (moment.date() - timedelta(days=moment.date().weekday())).isoformat()
-            current_equity_before = timeline_cash + sum(
+            equity_before = timeline_cash + sum(
                 timeline_unrealized.values(), Decimal("0")
             )
-            day_open_equity.setdefault(day_key, current_equity_before)
-            week_open_equity.setdefault(week_key, current_equity_before)
+            day_open_equity.setdefault(day_key, equity_before)
+            week_open_equity.setdefault(week_key, equity_before)
 
-            event_type = financial_event.event_type
-            fp = financial_event.payload
-            trade_id = financial_event.trade_id or fp.get("trade_id")
+            for financial_event in same_time_events:
+                event_type = financial_event.event_type
+                fp = financial_event.payload
+                trade_id = financial_event.trade_id or fp.get("trade_id")
 
-            if event_type == "CashAdjustment":
-                timeline_cash += dec(fp.get("amount"), "amount")
-            elif event_type in ("DailyRiskReset", "WeeklyRiskReset", "PositionOpened"):
-                pass
-            elif event_type == "PositionMarked":
-                if not trade_id:
-                    raise LedgerError("PositionMarked requires trade_id for risk replay")
-                timeline_unrealized[trade_id] = dec(
-                    fp.get("unrealized_pnl"), "unrealized_pnl"
-                )
-            elif event_type in ("PositionPartiallyClosed", "PositionClosed"):
-                if not trade_id:
-                    raise LedgerError("close event requires trade_id for risk replay")
-                net_pnl = (
-                    dec(fp.get("pnl_gross"), "pnl_gross")
-                    - dec(fp.get("commission", "0"), "commission")
-                    - dec(fp.get("slippage", "0"), "slippage")
-                    - dec(fp.get("swap", "0"), "swap")
-                )
-                timeline_cash += net_pnl
-                # A close settles the marked PnL into cash. Partial-close
-                # marks are reset too, preventing the old full-position mark
-                # from being counted alongside the realized partial result.
-                timeline_unrealized.pop(trade_id, None)
+                if event_type == "CashAdjustment":
+                    timeline_cash += dec(fp.get("amount"), "amount")
+                elif event_type in ("DailyRiskReset", "WeeklyRiskReset", "PositionOpened"):
+                    pass
+                elif event_type == "PositionMarked":
+                    if not trade_id:
+                        raise LedgerError("PositionMarked requires trade_id for risk replay")
+                    timeline_unrealized[trade_id] = dec(
+                        fp.get("unrealized_pnl"), "unrealized_pnl"
+                    )
+                elif event_type in ("PositionPartiallyClosed", "PositionClosed"):
+                    if not trade_id:
+                        raise LedgerError("close event requires trade_id for risk replay")
+                    net_pnl = (
+                        dec(fp.get("pnl_gross"), "pnl_gross")
+                        - dec(fp.get("commission", "0"), "commission")
+                        - dec(fp.get("slippage", "0"), "slippage")
+                        - dec(fp.get("swap", "0"), "swap")
+                    )
+                    timeline_cash += net_pnl
+                    # A close settles the marked PnL into cash. Partial-close
+                    # marks are reset too, preventing the old full-position mark
+                    # from being counted alongside the realized partial result.
+                    timeline_unrealized.pop(trade_id, None)
 
             current_equity = timeline_cash + sum(
                 timeline_unrealized.values(), Decimal("0")
