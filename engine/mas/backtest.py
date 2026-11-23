@@ -153,13 +153,44 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
     from ..data.providers import BASE_TFS, resample_ohlc
     top_cache = {tf: resample_ohlc(df, tf) for tf in BASE_TFS}
 
+    last_mark_day = None
+    last_mark_week = None
+
     def record_position_mark(position: dict, mark_idx: int, mark_time) -> None:
+        nonlocal last_mark_day, last_mark_week
+        mark_stamp_value = pd.Timestamp(mark_time)
+        mark_day = mark_stamp_value.date()
+        day_key = mark_day.isoformat()
+        week_key = (mark_day - timedelta(days=mark_day.weekday())).isoformat()
+        if day_key != last_mark_day:
+            ledger.append_event({
+                "account_id": ledger_account_id,
+                "event_type": "DailyRiskReset",
+                "idempotency_key": f"bt-daily-reset:{day_key}",
+                "occurred_at": mark_stamp_value.normalize().isoformat(),
+                "payload": {"daily_risk_date": day_key},
+            })
+            last_mark_day = day_key
+        if week_key != last_mark_week:
+            week_open = (
+                mark_stamp_value.normalize()
+                - pd.Timedelta(days=mark_day.weekday())
+            ).isoformat()
+            ledger.append_event({
+                "account_id": ledger_account_id,
+                "event_type": "WeeklyRiskReset",
+                "idempotency_key": f"bt-weekly-reset:{week_key}",
+                "occurred_at": week_open,
+                "payload": {"weekly_risk_week": week_key},
+            })
+            last_mark_week = week_key
+
         mark_price = float(df["close"].iloc[mark_idx])
         unrealized = realized_pnl_usd(
             symbol, position["entry"], mark_price,
             position["direction"], position["lots"],
         )
-        mark_stamp = pd.Timestamp(mark_time).isoformat()
+        mark_stamp = mark_stamp_value.isoformat()
         ledger.append_event({
             "account_id": ledger_account_id,
             "trade_id": position["trade_id"],
@@ -194,22 +225,28 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                     symbol, pos["entry"], exit_px, pos["direction"], pos["lots"]
                 )
                 exit_ts = pd.Timestamp(exit_time).isoformat()
-                exit_day = pd.Timestamp(exit_time).date().isoformat()
+                exit_stamp = pd.Timestamp(exit_time)
+                exit_day = exit_stamp.date().isoformat()
+                day_open = exit_stamp.normalize().isoformat()
                 current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
                 if current_projection["daily_risk_date"] != exit_day:
                     ledger.append_event({
                         "account_id": ledger_account_id, "event_type": "DailyRiskReset",
                         "idempotency_key": f"bt-daily-reset:{exit_day}",
-                        "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
+                        "occurred_at": day_open, "payload": {"daily_risk_date": exit_day},
                     })
                     current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
                 exit_date = pd.Timestamp(exit_time).date()
                 exit_week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
+                week_open = (
+                    exit_stamp.normalize()
+                    - pd.Timedelta(days=exit_date.weekday())
+                ).isoformat()
                 if current_projection["weekly_risk_week"] != exit_week:
                     ledger.append_event({
                         "account_id": ledger_account_id, "event_type": "WeeklyRiskReset",
                         "idempotency_key": f"bt-weekly-reset:{exit_week}",
-                        "occurred_at": exit_ts, "payload": {"weekly_risk_week": exit_week},
+                        "occurred_at": week_open, "payload": {"weekly_risk_week": exit_week},
                     })
                     current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
                 loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
@@ -322,22 +359,28 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
                 symbol, pos["entry"], exit_px, pos["direction"], pos["lots"]
             )
             exit_ts = pd.Timestamp(exit_time).isoformat()
-            exit_day = pd.Timestamp(exit_time).date().isoformat()
+            exit_stamp = pd.Timestamp(exit_time)
+            exit_day = exit_stamp.date().isoformat()
+            day_open = exit_stamp.normalize().isoformat()
             current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
             if current_projection["daily_risk_date"] != exit_day:
                 ledger.append_event({
                     "account_id": ledger_account_id, "event_type": "DailyRiskReset",
                     "idempotency_key": f"bt-daily-reset:{exit_day}",
-                    "occurred_at": exit_ts, "payload": {"daily_risk_date": exit_day},
+                    "occurred_at": day_open, "payload": {"daily_risk_date": exit_day},
                 })
                 current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
             exit_date = pd.Timestamp(exit_time).date()
             exit_week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
+            week_open = (
+                exit_stamp.normalize()
+                - pd.Timedelta(days=exit_date.weekday())
+            ).isoformat()
             if current_projection["weekly_risk_week"] != exit_week:
                 ledger.append_event({
                     "account_id": ledger_account_id, "event_type": "WeeklyRiskReset",
                     "idempotency_key": f"bt-weekly-reset:{exit_week}",
-                    "occurred_at": exit_ts, "payload": {"weekly_risk_week": exit_week},
+                    "occurred_at": week_open, "payload": {"weekly_risk_week": exit_week},
                 })
                 current_projection = ledger.replay_account(ledger_account_id, ledger_initial_balance)
             loss_delta = max(0.0, -gross_pnl) / max(float(current_projection["equity"]), 1e-9) * 100.0
