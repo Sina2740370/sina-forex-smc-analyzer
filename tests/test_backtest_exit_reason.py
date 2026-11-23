@@ -21,7 +21,7 @@ def test_forced_end_of_data_close_is_classified_as_time_exit_not_take_profit():
 
     assert result is not None
     assert result[0] == 1.1005
-    assert result[1] == frame["time"].iloc[1]
+    assert result[1] == frame["time"].iloc[1] + pd.Timedelta(minutes=15)
     assert result[3] is None
 
 
@@ -42,7 +42,7 @@ def test_sell_position_stops_when_high_reaches_stop_loss():
         get_spec("EURUSD"),
     )
 
-    assert result == (1.1010, frame["time"].iloc[1], 1, True)
+    assert result == (1.1010, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
 
 
 def test_same_bar_stop_and_target_collision_is_resolved_conservatively():
@@ -58,7 +58,7 @@ def test_same_bar_stop_and_target_collision_is_resolved_conservatively():
     }
 
     result = _advance_position(
-        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1] + pd.Timedelta(minutes=15),
         get_spec("EURUSD"),
     )
 
