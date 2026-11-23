@@ -23,7 +23,7 @@ from .backtest import _advance_position
 from .contracts import BUY
 from .portfolio import _csv_path
 from .risk_agent import AccountState, RISK_RULES
-from .symbols import get_spec, pip_value_usd
+from .symbols import get_spec, pip_value_usd, size_lots_for_risk
 
 
 def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
@@ -119,9 +119,16 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             spec = spec_of[sym]
             d = 1 if sig.signal == BUY else -1
             entry = float(row["close"]) + d * spec.spread_price()
-            risk_usd = state["equity"] * RISK_RULES["risk_per_trade_pct"] / 100.0
-            pips = abs(entry - float(sig.cand["sl"])) / spec.pip
-            lots = round(risk_usd / max(1e-9, pips * pip_value_usd(sym, entry)), 2)
+            requested_risk_usd = state["equity"] * RISK_RULES["risk_per_trade_pct"] / 100.0
+            try:
+                lots, risk_usd = size_lots_for_risk(
+                    sym, entry, float(sig.cand["sl"]), requested_risk_usd
+                )
+            except (KeyError, ValueError, ArithmeticError):
+                lots, risk_usd = 0.0, 0.0
+            if lots <= 0 or risk_usd <= 0:
+                results[sym]["wait_reason"] = "حجم معتبر با محدودیت لات/ریسک قابل محاسبه نیست"
+                continue
             new_signals.append({
                 "symbol": sym, "direction": sig.signal, "entry_time": str(t_now[sym]),
                 "entry": entry, "sl": float(sig.cand["sl"]), "tp1": float(sig.cand["tp1"]),
