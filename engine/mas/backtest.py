@@ -350,18 +350,18 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
                 bar_open = float(df["open"].iloc[last_idx])
                 if (d > 0 and bar_open < pos["sl"]) or (d < 0 and bar_open > pos["sl"]):
                     exit_price = bar_open
-            return exit_price, df["time"].iloc[last_idx], last_idx, True
+            return exit_price, df["time"].iloc[last_idx] + pd.Timedelta(minutes=15), last_idx, True
         if hit_tp:
-            return pos["tp2"], df["time"].iloc[last_idx], last_idx, False
+            return pos["tp2"], df["time"].iloc[last_idx] + pd.Timedelta(minutes=15), last_idx, False
     if force_exit:
         # Mark to the latest fully closed candle only. If no post-entry
         # closed candle exists, leave the position open rather than inventing
         # a terminal price from an unfinished bar.
         if limit >= 0 and last_idx >= limit:
             mark_idx = min(last_idx, limit)
-            return float(df["close"].iloc[mark_idx]), df["time"].iloc[mark_idx], mark_idx, None
+            return float(df["close"].iloc[mark_idx]), close_times.iloc[mark_idx], mark_idx, None
         if limit >= 0 and last_idx < limit:
-            return float(df["close"].iloc[limit]), df["time"].iloc[limit], limit, None
+            return float(df["close"].iloc[limit]), close_times.iloc[limit], limit, None
     else:
         # Do not move the cursor backwards when `now` precedes the first
         # eligible close timestamp.
