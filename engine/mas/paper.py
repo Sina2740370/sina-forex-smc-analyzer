@@ -331,6 +331,45 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         projection = ledger.replay_account(account_id, initial_balance)
         state = _projection_to_paper_state(projection)
 
+    # Mark surviving positions from the latest fully closed M15 candle only.
+    # The forming candle and the entry candle are never used for MTM risk.
+    mark_events = []
+    for position in state["open_positions"]:
+        symbol = position["symbol"]
+        if symbol not in t_now:
+            continue
+        frame = dfs[symbol]
+        closed_cutoff = t_now[symbol] - pd.Timedelta(minutes=15)
+        mark_idx = int(frame["time"].searchsorted(closed_cutoff, side="right")) - 1
+        if mark_idx < 0:
+            continue
+        mark_time = pd.Timestamp(frame["time"].iloc[mark_idx]) + pd.Timedelta(minutes=15)
+        entry_time = pd.Timestamp(position["entry_time"])
+        if mark_time <= entry_time:
+            continue
+        mark_price = float(frame["close"].iloc[mark_idx])
+        unrealized = realized_pnl_usd(
+            symbol, position["entry"], mark_price,
+            position["direction"], position["lots"],
+        )
+        mark_stamp = mark_time.isoformat()
+        mark_events.append({
+            "account_id": account_id,
+            "trade_id": position["trade_id"],
+            "event_type": "PositionMarked",
+            "idempotency_key": f"paper-mark:{position['trade_id']}:{mark_stamp}",
+            "occurred_at": mark_stamp,
+            "payload": {
+                "unrealized_pnl": str(unrealized),
+                "mark_price": str(mark_price),
+                "mark_time": mark_stamp,
+            },
+        })
+    if mark_events:
+        ledger.append_events(mark_events)
+        projection = ledger.replay_account(account_id, initial_balance)
+        state = _projection_to_paper_state(projection)
+
     # 2. Analyze and obtain a fresh Risk Agent authorization at the simulated fill price.
     acct = AccountState(
         equity=state["equity"],
