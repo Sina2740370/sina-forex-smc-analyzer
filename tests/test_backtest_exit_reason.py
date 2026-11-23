@@ -62,7 +62,7 @@ def test_same_bar_stop_and_target_collision_is_resolved_conservatively():
         get_spec("EURUSD"),
     )
 
-    assert result == (1.0900, frame["time"].iloc[1], 1, True)
+    assert result == (1.0900, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
 
 
 def test_position_advance_does_not_consume_candles_after_decision_time():
@@ -102,7 +102,7 @@ def test_buy_stop_gap_fills_at_worse_bar_open():
         position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
         get_spec("EURUSD"),
     )
-    assert result == (1.0850, frame["time"].iloc[1], 1, True)
+    assert result == (1.0850, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
 
 
 def test_sell_stop_gap_fills_at_worse_bar_open():
@@ -121,7 +121,7 @@ def test_sell_stop_gap_fills_at_worse_bar_open():
         position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
         get_spec("EURUSD"),
     )
-    assert result == (1.1050, frame["time"].iloc[1], 1, True)
+    assert result == (1.1050, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
 
 
 def test_non_usd_quote_currency_pnl_uses_exit_conversion_rate():
