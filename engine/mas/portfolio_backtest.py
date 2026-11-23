@@ -346,7 +346,7 @@ def backtest_portfolio(
                 row = frame.iloc[row_index]
                 direction_sign = 1 if signal.signal == BUY else -1
                 spread = (spreads or {}).get(symbol, get_spec(symbol).spread_price())
-                entry = float(row["close"]) + direction_sign * spread
+                entry = float(row["open"]) + direction_sign * spread
                 sl, tp2 = float(signal.cand["sl"]), float(signal.cand["tp2"])
                 verdict = evaluate_risk(
                     symbol, signal.signal, entry, sl, tp2, entry, acct=account,
@@ -386,7 +386,7 @@ def backtest_portfolio(
                 positions[symbol] = {
                     "trade_id": trade_id, "direction": signal.signal,
                     "entry_time": now, "entry": entry, "sl": sl, "tp2": tp2,
-                    "lots": lots, "risk_usd": risk_usd, "last_idx": row_index,
+                    "lots": lots, "risk_usd": risk_usd, "last_idx": row_index - 1,
                     "regime": signal.market_regime, "session": signal.session,
                     "final_score": float(signal.final_score),
                     "confidence": float(signal.confidence),

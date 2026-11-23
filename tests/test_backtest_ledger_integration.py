@@ -336,3 +336,35 @@ def test_paper_and_backtest_match_same_market_input_through_stop_loss(
                 assert float(paper_event["payload"][field]) == pytest.approx(
                     float(backtest_event["payload"][field]), abs=1e-10
                 )
+
+
+def test_position_exit_waits_for_entry_candle_close():
+    """An entry candle must not be evaluated using its unfinished OHLC."""
+    start = pd.Timestamp("2026-01-05T00:00:00Z")
+    frame = pd.DataFrame({
+        "time": [start, start + pd.Timedelta(minutes=15), start + pd.Timedelta(minutes=30)],
+        "open": [1.1000, 1.1000, 1.1010],
+        "high": [1.1005, 1.1020, 1.1015],
+        "low": [1.0995, 1.0998, 1.1005],
+        "close": [1.1000, 1.1010, 1.1012],
+    })
+    position = {
+        "direction": "BUY", "entry_time": frame["time"].iloc[1],
+        "entry": 1.1000, "sl": 1.0990, "tp2": 1.1015,
+        "lots": 0.01, "last_idx": 0,
+    }
+    from engine.mas.symbols import get_spec
+    timestamps = frame["time"].to_numpy()
+    early = backtest._advance_position(
+        position, frame, timestamps, start + pd.Timedelta(minutes=20),
+        get_spec("EURUSD"),
+    )
+    assert early is None
+    assert position["last_idx"] == 0
+    closed = backtest._advance_position(
+        position, frame, timestamps, start + pd.Timedelta(minutes=30),
+        get_spec("EURUSD"),
+    )
+    assert closed is not None
+    assert closed[0] == pytest.approx(1.1015)
+    assert closed[3] is False

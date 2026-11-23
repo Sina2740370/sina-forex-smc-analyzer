@@ -1,8 +1,8 @@
 """فاز ۲ — بک‌تست سیگنال MAS: هر سیگنال عبوری از ۷ گیت = یک معامله.
 
 قواعد شبیه‌سازی (بدون lookahead و بدون خوش‌بینی):
-- نقاط تصمیم: هر `step_hours` ساعت (پیش‌فرض ۸ = دو بار در روز کاری) روی کلوز M15.
-- ورود: کلوز نقطه تصمیم + اسپرد جهت‌دار (اسپرد معمول نماد از symbols.py).
+- نقاط تصمیم: هر `step_hours` ساعت در زمان بازشدن کندل M15؛ تحلیل فقط کندل‌های بسته‌شده را می‌بیند.
+- ورود: Open کندل تصمیم + اسپرد جهت‌دار؛ خروج فقط پس از بسته‌شدن کندل ارزیابی می‌شود.
 - خروج: برخورد SL یا TP2 در کندل‌های M15 بعدی؛ اگر هر دو در یک کندل → بدبینانه SL.
 - ریسک ثابت ۰٫۵٪ از حقوق متغیر (compounding)؛ حجم از pip value واقعی نماد.
 - اگر معامله باز باشد، در همان نماد ورود جدید انجام نمی‌شود (قانون R-SYM).
@@ -218,7 +218,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
             continue
         row = df.iloc[j]
         d = 1 if sig.signal == BUY else -1
-        entry = float(row["close"]) + d * sp
+        entry = float(row["open"]) + d * sp
         sl, tp2 = float(sig.cand["sl"]), float(sig.cand["tp2"])
         if not (0 < abs(entry - sl) and abs(tp2 - entry) > 0):
             continue
@@ -252,7 +252,7 @@ def backtest_mas(df15: pd.DataFrame, symbol: str,
         pos = {"trade_id": trade_id, "direction": sig.signal, "entry_time": now, "entry": entry,
                "sl": sl, "tp2": tp2, "lots": lots, "risk_usd": risk_usd,
                "sizing_result": execution_verdict.sizing_result,
-               "last_idx": j, "regime": sig.market_regime, "session": sig.session,
+               "last_idx": j - 1, "regime": sig.market_regime, "session": sig.session,
                "final_score": float(sig.final_score), "confidence": float(sig.confidence)}
         res.n_signals += 1
         if progress and (i + 1) % 500 == 0:
@@ -328,7 +328,7 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
     """
     d = 1 if pos["direction"] == BUY else -1
     last_idx = pos["last_idx"]
-    limit = len(df) - 1 if force_exit else int(df["time"].searchsorted(now, side="right")) - 1
+    limit = (len(df) - 1 if force_exit else int((df["time"] + pd.Timedelta(minutes=15)).searchsorted(now, side="right")) - 1)
     while last_idx < limit:
         last_idx += 1
         hi, lo = float(df["high"].iloc[last_idx]), float(df["low"].iloc[last_idx])
