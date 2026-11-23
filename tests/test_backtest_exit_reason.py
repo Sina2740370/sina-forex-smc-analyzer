@@ -99,7 +99,7 @@ def test_buy_stop_gap_fills_at_worse_bar_open():
         "entry": 1.1000,
     }
     result = _advance_position(
-        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1] + pd.Timedelta(minutes=15),
         get_spec("EURUSD"),
     )
     assert result == (1.0850, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
@@ -118,7 +118,7 @@ def test_sell_stop_gap_fills_at_worse_bar_open():
         "entry": 1.1000,
     }
     result = _advance_position(
-        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1],
+        position, frame, frame["time"].to_numpy(), frame["time"].iloc[-1] + pd.Timedelta(minutes=15),
         get_spec("EURUSD"),
     )
     assert result == (1.1050, frame["time"].iloc[1] + pd.Timedelta(minutes=15), 1, True)
