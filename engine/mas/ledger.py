@@ -912,6 +912,18 @@ class SQLiteLedger:
         consecutive_losses = chronological_streak
         risk_lock_active = chronological_lock
 
+        # Reset events are preferred explicit period markers, but the equity
+        # timeline must remain correct for accounts that have not emitted them yet.
+        if financial_events:
+            latest_period_moment = event_time(financial_events[-1])
+            if daily_risk_date is None:
+                daily_risk_date = latest_period_moment.date().isoformat()
+            if weekly_risk_week is None:
+                weekly_risk_week = (
+                    latest_period_moment.date()
+                    - timedelta(days=latest_period_moment.date().weekday())
+                ).isoformat()
+
         daily_loss_pct = daily_loss_by_date.get(
             daily_risk_date, daily_loss_pct if daily_risk_date is None else Decimal("0")
         )
