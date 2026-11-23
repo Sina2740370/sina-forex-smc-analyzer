@@ -1454,3 +1454,91 @@ def test_append_validates_mark_references_active_position(tmp_path):
             "payload": {"unrealized_pnl": "1.00"},
         })
     assert ledger.read_events("paper-account") == []
+
+
+
+def test_floating_marks_drive_daily_and_weekly_equity_risk(tmp_path):
+    from engine.mas.ledger import SQLiteLedger
+
+    ledger = SQLiteLedger(tmp_path / "floating-risk.db")
+    account = "floating-risk"
+    ledger.append_event({
+        "account_id": account, "trade_id": "marked-trade",
+        "event_type": "PositionOpened", "idempotency_key": "open:marked-trade",
+        "occurred_at": "2026-01-05T09:00:00+00:00",
+        "payload": {
+            "symbol": "EURUSD", "direction": "BUY", "lots": "1",
+            "entry_price": "1.1000",
+        },
+    })
+
+    def mark(key, at, pnl):
+        ledger.append_event({
+            "account_id": account, "trade_id": "marked-trade",
+            "event_type": "PositionMarked", "idempotency_key": key,
+            "occurred_at": at,
+            "payload": {"unrealized_pnl": pnl, "mark_time": at},
+        })
+
+    mark("mark:minus-50", "2026-01-05T10:00:00+00:00", "-50")
+    first = ledger.replay_account(account, "1000")
+    assert first["unrealized_pnl"] == "-50"
+    assert first["equity"] == "950"
+    assert first["daily_loss_pct"] == "5"
+    assert first["weekly_loss_pct"] == "5"
+
+    # A newer mark replaces the previous mark; it is not added to it.
+    mark("mark:minus-20", "2026-01-05T11:00:00+00:00", "-20")
+    second = ledger.replay_account(account, "1000")
+    assert second["unrealized_pnl"] == "-20"
+    assert second["equity"] == "980"
+    # Period risk retains the worst intraday equity excursion.
+    assert second["daily_loss_pct"] == "5"
+    assert second["weekly_loss_pct"] == "5"
+
+    ledger.append_event({
+        "account_id": account, "trade_id": "marked-trade",
+        "event_type": "PositionClosed", "idempotency_key": "close:marked-trade",
+        "occurred_at": "2026-01-05T12:00:00+00:00",
+        "payload": {
+            "lots_closed": "1", "pnl_gross": "-20",
+            "commission": "0", "slippage": "0", "swap": "0",
+        },
+    })
+    closed = ledger.replay_account(account, "1000")
+    assert closed["unrealized_pnl"] == "0"
+    assert closed["equity"] == "980"
+    assert closed["daily_loss_pct"] == "5"
+    assert closed["weekly_loss_pct"] == "5"
+
+
+def test_floating_profit_then_equity_reversal_uses_period_opening_equity(tmp_path):
+    from engine.mas.ledger import SQLiteLedger
+
+    ledger = SQLiteLedger(tmp_path / "floating-profit-risk.db")
+    account = "floating-profit-risk"
+    ledger.append_event({
+        "account_id": account, "trade_id": "profit-trade",
+        "event_type": "PositionOpened", "idempotency_key": "open:profit-trade",
+        "occurred_at": "2026-01-05T09:00:00+00:00",
+        "payload": {
+            "symbol": "EURUSD", "direction": "BUY", "lots": "1",
+            "entry_price": "1.1000",
+        },
+    })
+    for key, at, pnl in (
+        ("mark:plus-100", "2026-01-05T10:00:00+00:00", "100"),
+        ("mark:minus-20", "2026-01-05T11:00:00+00:00", "-20"),
+    ):
+        ledger.append_event({
+            "account_id": account, "trade_id": "profit-trade",
+            "event_type": "PositionMarked", "idempotency_key": key,
+            "occurred_at": at,
+            "payload": {"unrealized_pnl": pnl, "mark_time": at},
+        })
+
+    state = ledger.replay_account(account, "1000")
+    assert state["equity"] == "980"
+    assert state["unrealized_pnl"] == "-20"
+    assert state["daily_loss_pct"] == "2"
+    assert state["weekly_loss_pct"] == "2"
