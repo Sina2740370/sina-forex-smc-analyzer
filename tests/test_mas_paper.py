@@ -748,12 +748,16 @@ def test_paper_floating_loss_from_ledger_blocks_new_risk_authorization(
     root, data_dir, frame = env
     out = root / "paper-floating-risk-gate"
     out.mkdir()
+    # Keep a short deterministic tail so the legacy position remains open;
+    # the full fixture spans 420 days and can legitimately hit a stop/target.
+    short_frame = frame.tail(20).reset_index(drop=True)
+    short_frame.to_csv(data_dir / "EURUSD_M15.csv", index=False)
     # A second symbol supplies a fresh candidate while EURUSD remains open.
-    frame.to_csv(data_dir / "GBPUSD_M15.csv", index=False)
+    short_frame.to_csv(data_dir / "GBPUSD_M15.csv", index=False)
 
-    latest_mark = float(frame["close"].iloc[-1])
+    latest_mark = float(short_frame["close"].iloc[-1])
     entry = latest_mark + 0.0003  # 3 pips adverse at one standard lot ~= -$30
-    opened_at = pd.Timestamp(frame["time"].iloc[0]).isoformat()
+    opened_at = pd.Timestamp(short_frame["time"].iloc[0]).isoformat()
     json.dump({
         "equity": 1000.0,
         "consecutive_losses": 0,
@@ -763,7 +767,7 @@ def test_paper_floating_loss_from_ledger_blocks_new_risk_authorization(
             "trade_id": "existing-eurusd-position",
             "symbol": "EURUSD", "direction": "BUY",
             "entry_time": opened_at, "entry": entry,
-            "sl": entry - 0.01, "tp2": entry + 0.01,
+            "sl": entry - 0.1, "tp2": entry + 0.1,
             "lots": 1.0, "risk_usd": 5.0, "risk_pct": 0.5,
             "final_score": 70.0, "regime": "range", "session": "London",
         }],
@@ -791,7 +795,7 @@ def test_paper_floating_loss_from_ledger_blocks_new_risk_authorization(
         )
 
     monkeypatch.setattr(paper, "analyze_mas", fake_analyze)
-    now = pd.Timestamp(frame["time"].iloc[-1]) + pd.Timedelta(minutes=15)
+    now = pd.Timestamp(short_frame["time"].iloc[-1]) + pd.Timedelta(minutes=15)
     result = paper.run_paper(
         str(data_dir), ["EURUSD", "GBPUSD"], out_dir=str(out),
         feeds=None, now=now, min_gap_hours=0,
