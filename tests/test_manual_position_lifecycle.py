@@ -324,3 +324,58 @@ def test_stop_update_idempotency_rejects_changed_request(journal_db):
     assert current["current_take_profit"] == pytest.approx(1.1200)
     assert len(store.list_manual_position_changes(position["id"])) == 1
 
+
+
+def test_concurrent_closes_cannot_over_close_position(journal_db):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    position = open_position()
+    barrier = Barrier(2)
+
+    def close(key):
+        barrier.wait(timeout=5)
+        try:
+            return store.close_manual_position(
+                position["id"], 0.7, 1.1050,
+                idempotency_key=key,
+            )
+        except ValueError as exc:
+            return exc
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(close, [
+            "manual-race-close-001",
+            "manual-race-close-002",
+        ]))
+
+    successes = [item for item in results if isinstance(item, dict)]
+    failures = [item for item in results if isinstance(item, ValueError)]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    current = store.get_manual_position(position["id"])
+    assert current["closed_lots"] == pytest.approx(0.7)
+    assert current["status"] == "OPEN"
+    assert len(store.list_manual_position_events(position["id"])) == 2
+
+
+def test_concurrent_retry_with_same_close_key_is_idempotent(journal_db):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    position = open_position()
+    barrier = Barrier(2)
+
+    def close():
+        barrier.wait(timeout=5)
+        return store.close_manual_position(
+            position["id"], 0.4, 1.1050,
+            idempotency_key="manual-race-same-key",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first, second = list(pool.map(lambda _: close(), range(2)))
+
+    assert first["id"] == second["id"]
+    assert store.get_manual_position(position["id"])["closed_lots"] == pytest.approx(0.4)
+    assert len(store.list_manual_position_events(position["id"])) == 2
