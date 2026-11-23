@@ -294,3 +294,33 @@ def test_daily_trade_limit_uses_new_positions_not_partial_exit_count(journal_db)
     result = daily_guard([0.1], max_trades=5, trades_today=5)
     assert result["state"] == "stop"
     assert result["trades_today"] == 5
+
+def test_manual_stop_update_rejects_stop_crossing_entry(journal_db):
+    position = open_position()
+    with pytest.raises(ValueError, match="عبور کند"):
+        store.update_manual_position_stops(
+            position["id"], new_stop_loss=1.1010,
+            idempotency_key="manual-stop-cross-entry",
+        )
+    current = store.get_manual_position(position["id"])
+    assert current["current_stop_loss"] == pytest.approx(1.0900)
+    assert store.list_manual_position_changes(position["id"]) == []
+
+
+def test_stop_update_idempotency_rejects_changed_request(journal_db):
+    position = open_position(take_profit=1.1200)
+    first = store.update_manual_position_stops(
+        position["id"], new_stop_loss=1.0950,
+        idempotency_key="manual-stop-reuse-key",
+    )
+    assert first["new_stop_loss"] == pytest.approx(1.0950)
+    with pytest.raises(ValueError, match="تغییر SL/TP متفاوت"):
+        store.update_manual_position_stops(
+            position["id"], new_take_profit=1.1300,
+            idempotency_key="manual-stop-reuse-key",
+        )
+    current = store.get_manual_position(position["id"])
+    assert current["current_stop_loss"] == pytest.approx(1.0950)
+    assert current["current_take_profit"] == pytest.approx(1.1200)
+    assert len(store.list_manual_position_changes(position["id"])) == 1
+
