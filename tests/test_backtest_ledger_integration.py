@@ -59,6 +59,16 @@ def test_backtest_settles_final_trade_through_ledger_and_marks_time_exit(monkeyp
     marks = [event for event in captured_events if event["event_type"] == "PositionMarked"]
     assert len(marks) >= 2
     assert all(event["payload"]["mark_time"] == event["occurred_at"] for event in marks)
+    daily_resets = [
+        event for event in captured_events if event["event_type"] == "DailyRiskReset"
+    ]
+    weekly_resets = [
+        event for event in captured_events if event["event_type"] == "WeeklyRiskReset"
+    ]
+    assert len(daily_resets) == 1
+    assert len(weekly_resets) == 1
+    assert daily_resets[0]["occurred_at"] == start.normalize().isoformat()
+    assert weekly_resets[0]["occurred_at"] == start.normalize().isoformat()
     assert result.equity_curve
     assert result.max_drawdown_pct > 0
 
