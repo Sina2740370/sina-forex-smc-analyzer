@@ -118,3 +118,26 @@ def test_mas_walkforward_no_lookahead():
     s1 = analyze_mas(m, "EURUSD", t)
     s2 = analyze_mas(m.iloc[:i + 1].reset_index(drop=True), "EURUSD", t)
     assert s1.signal == s2.signal and abs(s1.final_score - s2.final_score) < 1e-9
+
+
+def test_analyze_mas_excludes_the_still_forming_m15_bar(monkeypatch):
+    """An M15 bar is unavailable until its close, even if its open <= now."""
+    times = pd.date_range("2025-01-01", periods=6002, freq="15min", tz="UTC")
+    frame = pd.DataFrame({
+        "time": times, "open": np.ones(len(times)), "high": np.ones(len(times)),
+        "low": np.ones(len(times)), "close": np.ones(len(times)),
+        "volume": np.ones(len(times)),
+    })
+    decision_time = times[-1] + pd.Timedelta(minutes=5)
+    observed = {}
+
+    def capture_data_agent(past):
+        observed["past"] = past.copy()
+        return {"df": past, "warnings": [], "quality": 0.0}
+
+    monkeypatch.setattr("engine.mas.aggregator.run_data_agent", capture_data_agent)
+    analyze_mas(frame, "EURUSD", decision_time)
+
+    assert len(observed["past"]) == len(frame) - 1
+    assert observed["past"]["time"].iloc[-1] == times[-2]
+    assert times[-1] not in set(observed["past"]["time"])
