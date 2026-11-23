@@ -362,7 +362,7 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         row = dfs[symbol].iloc[index]
         spec = spec_of[symbol]
         direction_sign = 1 if signal.signal == BUY else -1
-        fill_price = float(row["close"]) + direction_sign * spec.spread_price()
+        fill_price = float(row["open"]) + direction_sign * spec.spread_price()
         execution_verdict = evaluate_risk(
             symbol, signal.signal, fill_price, float(signal.cand["sl"]),
             float(signal.cand["tp2"]), fill_price, acct=acct,
