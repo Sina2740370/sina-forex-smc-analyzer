@@ -263,19 +263,22 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             "account_id": account_id,
             "event_type": "DailyRiskReset",
             "idempotency_key": f"daily-reset:{daily_risk_date}",
-            "occurred_at": analysis_point,
+            "occurred_at": day_open.isoformat(),
             "payload": {"daily_risk_date": daily_risk_date},
         })
         projection = ledger.replay_account(account_id, initial_balance)
         state = _projection_to_paper_state(projection)
-    analysis_date = pd.Timestamp(analysis_point).date()
+    analysis_stamp = pd.Timestamp(analysis_point)
+    analysis_date = analysis_stamp.date()
+    day_open = analysis_stamp.normalize()
     weekly_risk_week = (analysis_date - timedelta(days=analysis_date.weekday())).isoformat()
     if state.get("weekly_risk_week") != weekly_risk_week:
+        week_open = day_open - pd.Timedelta(days=analysis_date.weekday())
         ledger.append_event({
             "account_id": account_id,
             "event_type": "WeeklyRiskReset",
             "idempotency_key": f"weekly-reset:{weekly_risk_week}",
-            "occurred_at": analysis_point,
+            "occurred_at": week_open.isoformat(),
             "payload": {"weekly_risk_week": weekly_risk_week},
         })
         projection = ledger.replay_account(account_id, initial_balance)
