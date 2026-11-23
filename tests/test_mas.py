@@ -137,7 +137,7 @@ def test_mas_excludes_the_forming_m15_candle(monkeypatch):
 
     def capture_data(past):
         observed["times"] = list(past["time"])
-        return SimpleNamespace(df=past, warnings=[], quality=0.0)
+        return {"df": past, "warnings": [], "quality": 0.0}
 
     monkeypatch.setattr(aggregator, "run_data_agent", capture_data)
     monkeypatch.setattr(aggregator, "build_topdown", lambda _df: {})
