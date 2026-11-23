@@ -56,8 +56,8 @@ def test_risk_agent_rejects_low_rr_and_sizes_lots():
     assert not v.approved and any(g.gate == "R-RR" for g in v.gates)   # RR=1.5 < 2
     v2 = evaluate_risk("EURUSD", "BUY", entry=1.1000, sl=1.0990, tp2=1.1020, price=1.1000)
     assert v2.approved and v2.lots > 0
-    # ریاضی حجم: 1% از 10k = $100؛ ریسک 10 پیپ × $10/لات → 1 لات
-    assert abs(v2.lots - 1.0) < 0.01 and abs(v2.risk_amount - 100) < 1.0
+    # ریاضی حجم: 0.5% از 10k = $50؛ ریسک 10 پیپ × $10/لات → 0.5 لات
+    assert abs(v2.lots - 0.5) < 0.01 and abs(v2.risk_amount - 50) < 1.0
     v3 = evaluate_risk("EURUSD", "BUY", 1.1, 1.099, 1.102, 1.1,
                        acct=AccountState(equity=10_000, open_trades=3))
     assert not v3.approved and any(g.gate == "R-OPEN" for g in v3.gates)
@@ -118,3 +118,29 @@ def test_mas_walkforward_no_lookahead():
     s1 = analyze_mas(m, "EURUSD", t)
     s2 = analyze_mas(m.iloc[:i + 1].reset_index(drop=True), "EURUSD", t)
     assert s1.signal == s2.signal and abs(s1.final_score - s2.final_score) < 1e-9
+
+
+def test_mas_excludes_the_forming_m15_candle(monkeypatch):
+    """A candle stamped at now has not closed yet and must not reach agents."""
+    from types import SimpleNamespace
+    import engine.mas.aggregator as aggregator
+
+    now = pd.Timestamp("2026-01-01T00:15:00Z")
+    frame = pd.DataFrame({
+        "time": [now - pd.Timedelta(minutes=15), now],
+        "open": [1.1, 1.1],
+        "high": [1.101, 1.102],
+        "low": [1.099, 1.098],
+        "close": [1.1, 1.101],
+    })
+    observed = {}
+
+    def capture_data(past):
+        observed["times"] = list(past["time"])
+        return {"df": past, "warnings": [], "quality": 0.0}
+
+    monkeypatch.setattr(aggregator, "run_data_agent", capture_data)
+    monkeypatch.setattr(aggregator, "build_topdown", lambda _df: {})
+    aggregator.analyze_mas(frame, "EURUSD", now)
+
+    assert observed["times"] == [now - pd.Timedelta(minutes=15)]
