@@ -118,3 +118,29 @@ def test_mas_walkforward_no_lookahead():
     s1 = analyze_mas(m, "EURUSD", t)
     s2 = analyze_mas(m.iloc[:i + 1].reset_index(drop=True), "EURUSD", t)
     assert s1.signal == s2.signal and abs(s1.final_score - s2.final_score) < 1e-9
+
+
+def test_mas_excludes_the_forming_m15_candle(monkeypatch):
+    """A candle stamped at now has not closed yet and must not reach agents."""
+    from types import SimpleNamespace
+    import engine.mas.aggregator as aggregator
+
+    now = pd.Timestamp("2026-01-01T00:15:00Z")
+    frame = pd.DataFrame({
+        "time": [now - pd.Timedelta(minutes=15), now],
+        "open": [1.1, 1.1],
+        "high": [1.101, 1.102],
+        "low": [1.099, 1.098],
+        "close": [1.1, 1.101],
+    })
+    observed = {}
+
+    def capture_data(past):
+        observed["times"] = list(past["time"])
+        return SimpleNamespace(df=past, warnings=[], quality=0.0)
+
+    monkeypatch.setattr(aggregator, "run_data_agent", capture_data)
+    monkeypatch.setattr(aggregator, "build_topdown", lambda _df: {})
+    aggregator.analyze_mas(frame, "EURUSD", now)
+
+    assert observed["times"] == [now - pd.Timedelta(minutes=15)]
