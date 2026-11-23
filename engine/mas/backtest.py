@@ -328,7 +328,13 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
     """
     d = 1 if pos["direction"] == BUY else -1
     last_idx = pos["last_idx"]
-    limit = (len(df) - 1 if force_exit else int((df["time"] + pd.Timedelta(minutes=15)).searchsorted(now, side="right")) - 1)
+    # OHLC belongs to the interval [time, time + 15m). Never inspect a
+    # candle until its close timestamp is <= now. At dataset exhaustion the
+    # final row is still an open candle (there is no following close event),
+    # so terminal marking is limited to the penultimate row at most.
+    close_times = df["time"] + pd.Timedelta(minutes=15)
+    limit = (len(df) - 2 if force_exit else
+             int(close_times.searchsorted(now, side="right")) - 1)
     while last_idx < limit:
         last_idx += 1
         hi, lo = float(df["high"].iloc[last_idx]), float(df["low"].iloc[last_idx])
@@ -347,8 +353,17 @@ def _advance_position(pos: dict, df: pd.DataFrame, t_arr, now: pd.Timestamp,
             return exit_price, df["time"].iloc[last_idx], last_idx, True
         if hit_tp:
             return pos["tp2"], df["time"].iloc[last_idx], last_idx, False
-    if force_exit and last_idx >= len(df) - 1:
-        return float(df["close"].iloc[-1]), df["time"].iloc[-1], last_idx, None
-    if not force_exit:
-        pos["last_idx"] = limit
+    if force_exit:
+        # Mark to the latest fully closed candle only. If no post-entry
+        # closed candle exists, leave the position open rather than inventing
+        # a terminal price from an unfinished bar.
+        if limit >= 0 and last_idx >= limit:
+            mark_idx = min(last_idx, limit)
+            return float(df["close"].iloc[mark_idx]), df["time"].iloc[mark_idx], mark_idx, None
+        if limit >= 0 and last_idx < limit:
+            return float(df["close"].iloc[limit]), df["time"].iloc[limit], limit, None
+    else:
+        # Do not move the cursor backwards when `now` precedes the first
+        # eligible close timestamp.
+        pos["last_idx"] = max(last_idx, limit)
     return None
