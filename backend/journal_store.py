@@ -509,10 +509,19 @@ def update_manual_position_stops(
         if duplicate:
             same_request = (
                 int(duplicate["position_id"]) == int(position_id)
-                and (new_sl is None or abs(float(duplicate["new_stop_loss"]) - new_sl) <= 1e-12)
-                and (new_tp is None or
-                     (duplicate.get("new_take_profit") is not None and
-                      abs(float(duplicate["new_take_profit"]) - new_tp) <= 1e-12))
+                and ((new_sl is None and abs(float(duplicate["new_stop_loss"]) -
+                                                   float(duplicate["old_stop_loss"])) <= 1e-12)
+                     or (new_sl is not None and
+                         abs(float(duplicate["new_stop_loss"]) - new_sl) <= 1e-12))
+                and ((new_tp is None and
+                      ((duplicate.get("new_take_profit") is None and
+                        duplicate.get("old_take_profit") is None) or
+                       (duplicate.get("new_take_profit") is not None and
+                        duplicate.get("old_take_profit") is not None and
+                        abs(float(duplicate["new_take_profit"]) -
+                            float(duplicate["old_take_profit"])) <= 1e-12)))
+                     or (new_tp is not None and duplicate.get("new_take_profit") is not None and
+                         abs(float(duplicate["new_take_profit"]) - new_tp) <= 1e-12))
                 and (event_at is None or duplicate["event_at"] == timestamp)
                 and duplicate.get("note") == note
             )
@@ -541,6 +550,10 @@ def update_manual_position_stops(
         final_sl = new_sl if new_sl is not None else old_sl
         final_tp = new_tp if new_tp is not None else old_tp
         entry = float(position["entry_price"])
+        # Break-even is valid; a stop moved through entry is not.
+        if ((position["side"] == "BUY" and final_sl > entry) or
+                (position["side"] == "SELL" and final_sl < entry)):
+            raise ValueError("حد ضرر جدید نباید از قیمت ورود عبور کند")
         if final_tp is not None and ((position["side"] == "BUY" and final_tp <= entry) or
                                      (position["side"] == "SELL" and final_tp >= entry)):
             raise ValueError("حد سود باید در سمت سودآور قیمت ورود باشد")
