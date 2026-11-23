@@ -257,7 +257,10 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
             t_now[symbol] = analysis_at
 
     analysis_point = analysis_at.isoformat()
-    daily_risk_date = pd.Timestamp(analysis_point).date().isoformat()
+    analysis_stamp = pd.Timestamp(analysis_point)
+    analysis_date = analysis_stamp.date()
+    day_open = analysis_stamp.normalize()
+    daily_risk_date = analysis_date.isoformat()
     if state.get("daily_risk_date") != daily_risk_date:
         ledger.append_event({
             "account_id": account_id,
@@ -268,9 +271,6 @@ def run_paper(csv_dir: str, symbols: list, out_dir: str = "out_mas/paper",
         })
         projection = ledger.replay_account(account_id, initial_balance)
         state = _projection_to_paper_state(projection)
-    analysis_stamp = pd.Timestamp(analysis_point)
-    analysis_date = analysis_stamp.date()
-    day_open = analysis_stamp.normalize()
     weekly_risk_week = (analysis_date - timedelta(days=analysis_date.weekday())).isoformat()
     if state.get("weekly_risk_week") != weekly_risk_week:
         week_open = day_open - pd.Timedelta(days=analysis_date.weekday())
