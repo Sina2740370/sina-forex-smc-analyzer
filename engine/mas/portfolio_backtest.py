@@ -106,25 +106,30 @@ def _append_period_resets(ledger: SQLiteLedger, account_id: str,
                           initial_balance: str, exit_time: pd.Timestamp) -> dict:
     """Append deterministic daily/weekly reset events before the close event."""
     projection = ledger.replay_account(account_id, initial_balance)
-    stamp = pd.Timestamp(exit_time).isoformat()
-    day = pd.Timestamp(exit_time).date().isoformat()
+    exit_stamp = pd.Timestamp(exit_time)
+    day = exit_stamp.date().isoformat()
+    day_open = exit_stamp.normalize().isoformat()
     if projection["daily_risk_date"] != day:
         ledger.append_event({
             "account_id": account_id,
             "event_type": "DailyRiskReset",
             "idempotency_key": f"portfolio-bt-daily-reset:{day}",
-            "occurred_at": stamp,
+            # Period-boundary timestamp is stable even when historical closes
+            # are replayed out of chronological append order.
+            "occurred_at": day_open,
             "payload": {"daily_risk_date": day},
         })
         projection = ledger.replay_account(account_id, initial_balance)
-    exit_date = pd.Timestamp(exit_time).date()
-    week = (exit_date - timedelta(days=exit_date.weekday())).isoformat()
+    exit_date = exit_stamp.date()
+    week_start = exit_date - timedelta(days=exit_date.weekday())
+    week = week_start.isoformat()
+    week_open = (exit_stamp.normalize() - pd.Timedelta(days=exit_date.weekday())).isoformat()
     if projection["weekly_risk_week"] != week:
         ledger.append_event({
             "account_id": account_id,
             "event_type": "WeeklyRiskReset",
             "idempotency_key": f"portfolio-bt-weekly-reset:{week}",
-            "occurred_at": stamp,
+            "occurred_at": week_open,
             "payload": {"weekly_risk_week": week},
         })
         projection = ledger.replay_account(account_id, initial_balance)
