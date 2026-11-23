@@ -933,8 +933,17 @@ class SQLiteLedger:
 
         # Reset events are preferred explicit period markers, but the equity
         # timeline must remain correct for accounts that have not emitted them yet.
-        if financial_events:
-            latest_period_moment = event_time(financial_events[-1])
+        equity_timeline_events = [
+            item for item in financial_events
+            if item.event_type in (
+                "CashAdjustment", "PositionOpened", "PositionMarked",
+                "PositionPartiallyClosed", "PositionClosed",
+            )
+        ]
+        if equity_timeline_events:
+            latest_period_moment = max(
+                (event_time(item) for item in equity_timeline_events)
+            )
             if daily_risk_date is None:
                 daily_risk_date = latest_period_moment.date().isoformat()
             if weekly_risk_week is None:
