@@ -1542,3 +1542,47 @@ def test_floating_profit_then_equity_reversal_uses_period_opening_equity(tmp_pat
     assert state["unrealized_pnl"] == "-20"
     assert state["daily_loss_pct"] == "2"
     assert state["weekly_loss_pct"] == "2"
+
+
+
+def test_same_timestamp_marks_are_aggregated_before_risk_measurement(tmp_path):
+    from engine.mas.ledger import SQLiteLedger
+
+    ledger = SQLiteLedger(tmp_path / "same-time-marks.db")
+    account = "same-time-marks"
+    ledger.append_events([
+        {
+            "account_id": account, "trade_id": "loss-trade",
+            "event_type": "PositionOpened", "idempotency_key": "open:loss",
+            "occurred_at": "2026-01-05T09:00:00+00:00",
+            "payload": {"symbol": "EURUSD", "direction": "BUY",
+                        "lots": "1", "entry_price": "1.1000"},
+        },
+        {
+            "account_id": account, "trade_id": "profit-trade",
+            "event_type": "PositionOpened", "idempotency_key": "open:profit",
+            "occurred_at": "2026-01-05T09:00:00+00:00",
+            "payload": {"symbol": "GBPUSD", "direction": "BUY",
+                        "lots": "1", "entry_price": "1.3000"},
+        },
+        {
+            "account_id": account, "trade_id": "loss-trade",
+            "event_type": "PositionMarked", "idempotency_key": "mark:loss",
+            "occurred_at": "2026-01-05T10:00:00+00:00",
+            "payload": {"unrealized_pnl": "-50",
+                        "mark_time": "2026-01-05T10:00:00+00:00"},
+        },
+        {
+            "account_id": account, "trade_id": "profit-trade",
+            "event_type": "PositionMarked", "idempotency_key": "mark:profit",
+            "occurred_at": "2026-01-05T10:00:00+00:00",
+            "payload": {"unrealized_pnl": "100",
+                        "mark_time": "2026-01-05T10:00:00+00:00"},
+        },
+    ])
+
+    state = ledger.replay_account(account, "1000")
+    assert state["equity"] == "1050"
+    assert state["unrealized_pnl"] == "50"
+    assert state["daily_loss_pct"] == "0"
+    assert state["weekly_loss_pct"] == "0"
